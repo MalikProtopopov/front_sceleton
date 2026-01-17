@@ -1,10 +1,13 @@
 import { apiClient } from "@/shared/api";
 import { API_ENDPOINTS } from "@/shared/config";
+import type { PaginatedResponse } from "@/shared/types";
 import type { Role, Permission, CreateRoleDto, UpdateRoleDto } from "@/entities/user";
 
 export const rolesApi = {
-  getAll: () =>
-    apiClient.get<Role[]>(API_ENDPOINTS.AUTH.ROLES),
+  getAll: async (): Promise<Role[]> => {
+    const response = await apiClient.get<PaginatedResponse<Role>>(API_ENDPOINTS.AUTH.ROLES);
+    return response.items;
+  },
 
   getById: (id: string) =>
     apiClient.get<Role>(API_ENDPOINTS.AUTH.ROLE_BY_ID(id)),
@@ -18,8 +21,11 @@ export const rolesApi = {
   delete: (id: string) =>
     apiClient.delete(API_ENDPOINTS.AUTH.ROLE_BY_ID(id)),
 
-  getPermissions: () =>
-    apiClient.get<Permission[]>(API_ENDPOINTS.AUTH.PERMISSIONS),
+  getPermissions: async (): Promise<Permission[]> => {
+    const response = await apiClient.get<PaginatedResponse<Permission> | Permission[]>(API_ENDPOINTS.AUTH.PERMISSIONS);
+    // Handle both paginated and array responses
+    return Array.isArray(response) ? response : response.items;
+  },
 };
 
 // Query keys factory
