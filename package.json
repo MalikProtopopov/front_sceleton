@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "docker:build": "docker build --build-arg NEXT_PUBLIC_API_URL=https://api.mediann.de --build-arg NEXT_PUBLIC_ADMIN_URL=https://admin.mediann.de -t mediann-admin .",
+    "docker:build": "docker build --build-arg NEXT_PUBLIC_API_URL=https://api.mediann.dev --build-arg NEXT_PUBLIC_ADMIN_URL=https://admin.mediann.dev -t mediann-admin .",
     "docker:run": "docker run -p 3000:3000 --rm mediann-admin",
     "compose:dev": "docker compose -f docker-compose.dev.yml up",
     "compose:dev:build": "docker compose -f docker-compose.dev.yml up --build",

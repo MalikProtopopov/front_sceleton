@@ -40,8 +40,8 @@ REMOTE_HOST="${REMOTE_HOST:-your-server-ip}"
 REMOTE_PATH="/opt/backend_sceleton"
 
 # Production environment variables
-NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL:-https://api.mediann.de}"
-NEXT_PUBLIC_ADMIN_URL="${NEXT_PUBLIC_ADMIN_URL:-https://admin.mediann.de}"
+NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL:-https://api.mediann.dev}"
+NEXT_PUBLIC_ADMIN_URL="${NEXT_PUBLIC_ADMIN_URL:-https://admin.mediann.dev}"
 
 # Docker registry (if using --push option)
 DOCKER_REGISTRY="${DOCKER_REGISTRY:-}"

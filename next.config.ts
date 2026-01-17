@@ -48,15 +48,15 @@ const nextConfig: NextConfig = {
       // Production patterns
       {
         protocol: "https",
-        hostname: "api.mediann.de",
+        hostname: "api.mediann.dev",
       },
       {
         protocol: "https",
-        hostname: "admin.mediann.de",
+        hostname: "admin.mediann.dev",
       },
       {
         protocol: "https",
-        hostname: "mediann.de",
+        hostname: "mediann.dev",
       },
       // AWS S3 (if used for media storage)
       {
