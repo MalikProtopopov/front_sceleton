@@ -115,8 +115,10 @@ admin/
 
 ### Шаг 3: .env.production
 
+**⚠️ ВАЖНО: API URL должен включать `/api/v1` префикс!**
+
 ```bash
-NEXT_PUBLIC_API_URL=https://api.domain.com
+NEXT_PUBLIC_API_URL=https://api.domain.com/api/v1
 NEXT_PUBLIC_ADMIN_URL=https://admin.domain.com
 ```
 
@@ -314,6 +316,8 @@ export default nextConfig;
 
 ### Шаг 3: Docker Compose для production (уже создан)
 
+**⚠️ ВАЖНО: В docker-compose.prod.yml НЕТ хардкодов - все значения берутся из .env.production!**
+
 **docker-compose.prod.yml:**
 ```yaml
 services:
@@ -322,8 +326,8 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.mediann.de}
-        NEXT_PUBLIC_ADMIN_URL: ${NEXT_PUBLIC_ADMIN_URL:-https://admin.mediann.de}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_ADMIN_URL: ${NEXT_PUBLIC_ADMIN_URL}
     image: mediann-admin:${IMAGE_TAG:-latest}
     container_name: ${COMPOSE_PROJECT_NAME:-mediann}_admin_prod
     restart: unless-stopped
@@ -331,11 +335,13 @@ services:
       - "3000"
     environment:
       - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://api.mediann.de}
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+      - NEXT_PUBLIC_ADMIN_URL=${NEXT_PUBLIC_ADMIN_URL}
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
       interval: 30s
       timeout: 10s
+      start_period: 10s
       retries: 3
     networks:
       - app_network
@@ -343,11 +349,24 @@ services:
       resources:
         limits:
           memory: 512M
+        reservations:
+          memory: 256M
 
 networks:
   app_network:
     name: ${NETWORK_NAME:-mediann_network}
     external: ${EXTERNAL_NETWORK:-false}
+```
+
+**Пример .env.production на сервере:**
+```bash
+# ⚠️ КРИТИЧНО: API URL должен включать /api/v1!
+NEXT_PUBLIC_API_URL=https://api.mediann.dev/api/v1
+NEXT_PUBLIC_ADMIN_URL=https://admin.mediann.dev
+IMAGE_TAG=latest
+COMPOSE_PROJECT_NAME=mediann
+EXTERNAL_NETWORK=true
+NETWORK_NAME=cms_network_prod
 ```
 
 ### Шаг 4: Добавить в docker-compose.prod.yml бекенда
@@ -382,23 +401,52 @@ services:
 
 ### Шаг 5: Обновить nginx.conf.template для proxy
 
+**⚠️ ВАЖНО: Nginx должен проксировать к Docker контейнеру, а НЕ к статическим файлам!**
+
+В файле `/opt/backend_sceleton/backend/nginx/nginx.conf` (или `nginx.conf.template`) найдите блок `server_name admin.mediann.dev` и замените на:
+
 ```nginx
-# Upstream для admin
+# Upstream для admin panel (должен быть раскомментирован)
 upstream admin {
     server admin:3000;
     keepalive 16;
 }
 
-# Admin Panel Server
+# Admin Panel Server (admin.domain.com)
 server {
-    listen 443 ssl http2;
-    server_name admin.${DOMAIN};
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+    server_name admin.mediann.dev;
 
-    ssl_certificate /etc/letsencrypt/live/${DOMAIN}/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/${DOMAIN}/privkey.pem;
+    # SSL certificates
+    ssl_certificate /etc/letsencrypt/live/api.mediann.dev/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/api.mediann.dev/privkey.pem;
 
+    # Security headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+
+    # Health check
+    location /nginx-health {
+        access_log off;
+        return 200 "healthy\n";
+        add_header Content-Type text/plain;
+    }
+
+    # Static assets with caching
+    location /_next/static/ {
+        proxy_pass http://admin:3000;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # Proxy all requests to Next.js container
     location / {
-        proxy_pass http://admin;
+        proxy_pass http://admin:3000;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -406,15 +454,21 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
-    }
 
-    # Static assets caching
-    location /_next/static/ {
-        proxy_pass http://admin;
-        expires 1y;
-        add_header Cache-Control "public, immutable";
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
     }
 }
+```
+
+**После изменения конфига:**
+```bash
+# Проверить синтаксис
+docker compose -f docker-compose.prod.yml --env-file .env.prod exec nginx nginx -t
+
+# Перезагрузить nginx
+docker compose -f docker-compose.prod.yml --env-file .env.prod exec nginx nginx -s reload
 ```
 
 ---
@@ -495,44 +549,128 @@ ssh root@server "gunzip -c /tmp/mediann-admin.tar.gz | docker load"
 ssh root@server "cd /opt/backend_sceleton/backend && docker compose -f docker-compose.prod.yml --env-file .env.prod up -d admin"
 ```
 
-**Вариант C: Standalone docker-compose**
+**Вариант C: Standalone docker-compose (рекомендуемый)**
 ```bash
-# На сервере, если admin отдельно от бекенда
+# На сервере
 cd /opt/mediannfrontadmin
-docker compose -f docker-compose.prod.yml up -d --build
+
+# 1. Создать .env.production если его нет
+cp .env.production.example .env.production
+nano .env.production  # Отредактировать значения
+
+# 2. Убедиться что API URL правильный
+grep API_URL .env.production
+# Должно быть: NEXT_PUBLIC_API_URL=https://api.mediann.dev/api/v1
+
+# 3. Запустить
+docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+
+# 4. Проверить
+docker ps | grep admin
+docker logs mediann_admin_prod --tail 20
+```
+
+**Вариант D: Первый деплой с Git**
+```bash
+# На сервере
+cd /opt
+git clone https://github.com/your-org/front_sceleton.git mediannfrontadmin
+cd mediannfrontadmin
+
+# Создать .env.production
+cat > .env.production << 'EOF'
+NEXT_PUBLIC_API_URL=https://api.mediann.dev/api/v1
+NEXT_PUBLIC_ADMIN_URL=https://admin.mediann.dev
+IMAGE_TAG=latest
+COMPOSE_PROJECT_NAME=mediann
+EXTERNAL_NETWORK=true
+NETWORK_NAME=cms_network_prod
+EOF
+
+# Запустить
+docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
 ```
 
 ---
 
 ## ⚠️ Важные моменты
 
+### API Endpoints структура
+
+**Важно понимать структуру API бекенда:**
+
+- ✅ Admin endpoints: `/api/v1/admin/*` (articles, services, cases, etc.)
+- ✅ Auth endpoints: `/api/v1/auth/*` (login, roles, permissions)
+- ✅ Feature flags: `/api/v1/feature-flags` (БЕЗ `/admin`!)
+- ✅ Public endpoints: `/api/v1/public/*`
+
+**В коде фронтенда:**
+- `API_BASE_URL` = `NEXT_PUBLIC_API_URL` (должен быть `https://api.domain.com/api/v1`)
+- Endpoints в `apiEndpoints.ts` уже правильные (например, `/admin/articles`)
+- Итоговый URL: `API_BASE_URL + endpoint` = `https://api.domain.com/api/v1/admin/articles` ✅
+
 ### CORS на бекенде
 
 В `.env.prod` бекенда добавить admin домен:
 ```
-CORS_ORIGINS=https://admin.mediann.de,https://www.mediann.de
+CORS_ORIGINS=https://admin.mediann.dev,https://www.mediann.dev
 ```
 
 ### Переменные окружения
 
-```bash
-# .env.production (admin)
-NEXT_PUBLIC_API_URL=https://api.mediann.de
-NEXT_PUBLIC_ADMIN_URL=https://admin.mediann.de
+**⚠️ КРИТИЧНО: API URL должен включать `/api/v1` префикс!**
 
-# ВАЖНО: Переменные с NEXT_PUBLIC_ доступны в браузере!
-# Не храни секреты в NEXT_PUBLIC_ переменных!
+```bash
+# .env.production (admin) - на сервере в /opt/mediannfrontadmin/
+NEXT_PUBLIC_API_URL=https://api.mediann.dev/api/v1
+NEXT_PUBLIC_ADMIN_URL=https://admin.mediann.dev
+IMAGE_TAG=latest
+COMPOSE_PROJECT_NAME=mediann
+EXTERNAL_NETWORK=true
+NETWORK_NAME=cms_network_prod
 ```
+
+**Важные моменты:**
+- ✅ Переменные с `NEXT_PUBLIC_` доступны в браузере - не храни секреты!
+- ✅ `NEXT_PUBLIC_API_URL` должен заканчиваться на `/api/v1` (не просто `https://api.domain.com`)
+- ✅ `EXTERNAL_NETWORK=true` для подключения к сети бекенда
+- ✅ `NETWORK_NAME` должен совпадать с сетью бекенда (обычно `cms_network_prod`)
 
 ### Cookie и авторизация
 
 Если используете httpOnly cookies для JWT:
 ```javascript
 // В API запросах
-fetch('https://api.mediann.de/auth/login', {
+fetch('https://api.mediann.de/api/v1/auth/login', {
   credentials: 'include',  // Для отправки cookies
   // ...
 })
+```
+
+### Обработка пагинированных ответов
+
+**Важно:** Некоторые API endpoints возвращают пагинированный ответ:
+```json
+{
+  "items": [...],
+  "total": 5
+}
+```
+
+**В коде это уже обработано:**
+- `rolesApi.getAll()` - извлекает `items` из ответа
+- `articlesApi.getAll()` - ожидает `PaginatedResponse<Article>`
+- Компоненты проверяют `data?.items` перед `.map()`
+
+**Если добавляешь новый endpoint:**
+```typescript
+// Если API возвращает { items: [...], total: N }
+const response = await apiClient.get<PaginatedResponse<Item>>(endpoint);
+return response.items;
+
+// Если API возвращает просто массив
+const response = await apiClient.get<Item[]>(endpoint);
+return response;
 ```
 
 ### Сетевое взаимодействие контейнеров
@@ -557,26 +695,38 @@ NETWORK_NAME=mediann_network
 
 ## 🔄 Обновление admin панели
 
+### Docker (рекомендуемый способ):
+
+**На сервере:**
+```bash
+cd /opt/mediannfrontadmin
+
+# 1. Пулл обновлений из Git
+git pull
+
+# 2. Проверить что .env.production правильный
+cat .env.production | grep API_URL
+# Должно быть: NEXT_PUBLIC_API_URL=https://api.mediann.dev/api/v1
+
+# 3. Пересобрать контейнер с новыми изменениями
+docker compose -f docker-compose.prod.yml --env-file .env.production down
+docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build --force-recreate
+
+# 4. Проверить что контейнер запустился
+docker ps | grep admin
+
+# 5. Посмотреть логи (если что-то пошло не так)
+docker logs mediann_admin_prod --tail 50
+```
+
+**⚠️ ВАЖНО:** После изменения переменных окружения в `.env.production` обязательно пересобери контейнер с `--build`, так как `NEXT_PUBLIC_*` переменные встраиваются на этапе сборки!
+
 ### Static Export:
 ```bash
 # Локально
 cd mediannfrontadmin
 npm run build
 rsync -avz --delete out/ root@server:/var/www/admin/
-```
-
-### Docker:
-```bash
-# Автоматический деплой
-REMOTE_HOST=your-server npm run deploy
-
-# Или вручную на сервере
-cd /opt/backend_sceleton
-git pull origin main
-
-cd backend
-docker compose -f docker-compose.prod.yml --env-file .env.prod build admin
-docker compose -f docker-compose.prod.yml --env-file .env.prod up -d admin
 ```
 
 ---
@@ -601,15 +751,87 @@ npm run compose:prod:down
 
 ---
 
+## 🐛 Известные проблемы и решения
+
+### Проблема 1: 404 ошибки на API endpoints
+
+**Симптомы:** Все запросы к `/admin/*` возвращают 404
+
+**Причина:** API URL не включает префикс `/api/v1`
+
+**Решение:**
+```bash
+# В .env.production должно быть:
+NEXT_PUBLIC_API_URL=https://api.mediann.dev/api/v1  # ✅ Правильно
+# НЕ: NEXT_PUBLIC_API_URL=https://api.mediann.dev    # ❌ Неправильно
+```
+
+### Проблема 2: Feature-flags возвращает 404
+
+**Симптомы:** `GET /api/v1/admin/feature-flags` → 404
+
+**Причина:** Неправильный путь - feature-flags не в admin роутере
+
+**Решение:** Уже исправлено в коде - используется `/api/v1/feature-flags` (без `/admin`)
+
+### Проблема 3: `e.map is not a function` ошибка
+
+**Симптомы:** Ошибка в консоли при загрузке roles, topics, articles
+
+**Причина:** API возвращает пагинированный ответ `{ items: [...], total: N }`, а код ожидает массив
+
+**Решение:** Уже исправлено - добавлена обработка пагинированных ответов в `rolesApi.ts`
+
+### Проблема 4: Nginx возвращает 403 Forbidden
+
+**Симптомы:** `curl https://admin.mediann.dev` → 403
+
+**Причина:** Nginx настроен на статические файлы вместо proxy к Docker контейнеру
+
+**Решение:** См. "Шаг 5: Обновить nginx.conf.template для proxy" выше
+
+### Проблема 5: Переменные окружения не применяются
+
+**Симптомы:** После изменения `.env.production` изменения не вступили в силу
+
+**Причина:** `NEXT_PUBLIC_*` переменные встраиваются на этапе сборки
+
+**Решение:**
+```bash
+# Обязательно пересобрать с --build
+docker compose -f docker-compose.prod.yml --env-file .env.production down
+docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build --force-recreate
+```
+
+### Проблема 6: Контейнер не видит admin контейнер
+
+**Симптомы:** Nginx не может достучаться до `http://admin:3000`
+
+**Причина:** Контейнеры в разных Docker сетях
+
+**Решение:**
+```bash
+# Проверить сети
+docker network ls
+
+# Подключить admin контейнер к сети бекенда
+docker network connect --alias admin cms_network_prod mediann_admin_prod
+
+# Или использовать EXTERNAL_NETWORK=true в docker-compose.prod.yml
+```
+
 ## 📦 Чеклист
 
-- [ ] `NEXT_PUBLIC_API_URL` указывает на правильный API
-- [ ] CORS на бекенде включает `https://admin.mediann.de`
-- [ ] SSL сертификат покрывает `admin.mediann.de`
-- [ ] Nginx настроен для обслуживания admin (proxy или static)
+- [ ] `NEXT_PUBLIC_API_URL` указывает на правильный API **с `/api/v1` префиксом**
+- [ ] `.env.production` содержит все необходимые переменные
+- [ ] `docker-compose.prod.yml` не содержит хардкодов (все из .env)
+- [ ] CORS на бекенде включает `https://admin.mediann.dev`
+- [ ] SSL сертификат покрывает `admin.mediann.dev`
+- [ ] Nginx настроен для **proxy к Docker контейнеру** (не статические файлы!)
 - [ ] Docker образ собирается без ошибок (`npm run docker:build`)
 - [ ] Health check проходит (`curl http://localhost:3000`)
-- [ ] Сеть Docker настроена для связи с бекендом
+- [ ] Сеть Docker настроена для связи с бекендом (`EXTERNAL_NETWORK=true`)
+- [ ] Контейнер admin подключен к сети бекенда с alias `admin`
 
 ### Чеклист файлов в репозитории
 
