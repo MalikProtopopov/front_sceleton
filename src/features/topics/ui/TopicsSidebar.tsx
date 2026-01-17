@@ -21,7 +21,7 @@ export function TopicsSidebar({ isOpen, onClose, selectedTopicId, onSelectTopic 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [topicToDelete, setTopicToDelete] = useState<Topic | null>(null);
 
-  const { data, isLoading } = useTopics({ pageSize: 100 });
+  const { data, isLoading, isError } = useTopics({ pageSize: 100 });
   const { mutate: deleteTopic, isPending: isDeleting } = useDeleteTopic();
 
   const handleDeleteClick = (topic: Topic) => {
@@ -86,7 +86,11 @@ export function TopicsSidebar({ isOpen, onClose, selectedTopicId, onSelectTopic 
             <div className="flex justify-center py-8">
               <Spinner />
             </div>
-          ) : !data?.items || data.items.length === 0 ? (
+          ) : isError || !data?.items ? (
+            <p className="py-8 text-center text-sm text-[var(--color-text-muted)]">
+              {isError ? "Ошибка загрузки тем" : "Темы не найдены"}
+            </p>
+          ) : data.items.length === 0 ? (
             <p className="py-8 text-center text-sm text-[var(--color-text-muted)]">
               Темы не найдены
             </p>
