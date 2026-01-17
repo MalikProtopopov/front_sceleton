@@ -120,8 +120,8 @@ export const API_ENDPOINTS = {
   
   // Feature Flags
   FEATURE_FLAGS: {
-    LIST: "/admin/feature-flags",
-    BY_NAME: (name: string) => `/admin/feature-flags/${name}`,
+    LIST: "/feature-flags",
+    BY_NAME: (name: string) => `/feature-flags/${name}`,
   },
   
   // Cases
