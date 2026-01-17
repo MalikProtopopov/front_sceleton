@@ -46,12 +46,13 @@ Every request must include tenant context:
 | [02-articles.md](./02-articles.md) | 8 admin + 2 public | Articles CRUD, topics, publish workflow |
 | [03-faq.md](./03-faq.md) | 5 admin + 1 public | FAQ management |
 | [04-reviews.md](./04-reviews.md) | 7 admin + 1 public | Reviews/testimonials with moderation |
+| [12-cases.md](./12-cases.md) | **Planned** | Case studies / portfolio (model exists, API not implemented) |
 
 ### Company Module
 | Document | Endpoints | Description |
 |----------|-----------|-------------|
 | [05-services.md](./05-services.md) | 5 admin + 2 public | Services offered |
-| [06-employees.md](./06-employees.md) | 5 admin + 2 public | Team members |
+| [06-employees.md](./06-employees.md) | 5 admin + 6 public | Team, practice areas, advantages, contacts |
 
 ### Operations
 | Document | Endpoints | Description |
@@ -65,6 +66,7 @@ Every request must include tenant context:
 |----------|-----------|-------------|
 | [10-users-rbac.md](./10-users-rbac.md) | 7 endpoints | User management, roles, permissions |
 | [11-localization.md](./11-localization.md) | - | Multi-language content structure |
+| [13-tenants-settings.md](./13-tenants-settings.md) | 8 endpoints | Tenants, settings, feature flags |
 
 ### Reference
 | Document | Description |
@@ -126,5 +128,6 @@ Every request must include tenant context:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.1.0 | 2026-01-14 | Added Cases (planned), Tenants, verified schemas |
 | 1.0.0 | 2026-01-14 | Initial documentation |
 

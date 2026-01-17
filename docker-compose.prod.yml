@@ -1,0 +1,58 @@
+# =============================================================================
+# Mediann Admin Panel - Production Docker Compose
+# =============================================================================
+# Usage (standalone):
+#   docker compose -f docker-compose.prod.yml up -d
+#   docker compose -f docker-compose.prod.yml up -d --build
+#   docker compose -f docker-compose.prod.yml down
+#
+# Usage with environment file:
+#   docker compose -f docker-compose.prod.yml --env-file .env.production up -d
+#
+# This configuration:
+#   - Uses multi-stage production build
+#   - Runs as non-root user
+#   - Includes health checks
+#   - Designed to work with external nginx proxy
+# =============================================================================
+
+services:
+  admin:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.mediann.de}
+        NEXT_PUBLIC_ADMIN_URL: ${NEXT_PUBLIC_ADMIN_URL:-https://admin.mediann.de}
+    image: mediann-admin:${IMAGE_TAG:-latest}
+    container_name: ${COMPOSE_PROJECT_NAME:-mediann}_admin_prod
+    restart: unless-stopped
+    expose:
+      - "3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://api.mediann.de}
+      - NEXT_PUBLIC_ADMIN_URL=${NEXT_PUBLIC_ADMIN_URL:-https://admin.mediann.de}
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      start_period: 10s
+      retries: 3
+    networks:
+      - app_network
+    # Resource limits (adjust based on your server)
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+networks:
+  app_network:
+    # Use external network if connecting to backend's docker-compose
+    # Otherwise, create a new network
+    name: ${NETWORK_NAME:-mediann_network}
+    external: ${EXTERNAL_NETWORK:-false}
+

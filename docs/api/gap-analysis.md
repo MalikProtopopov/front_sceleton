@@ -10,7 +10,8 @@ This document identifies missing features, endpoints, and functionality that nee
 
 | Category | Implemented | Missing | Coverage |
 |----------|-------------|---------|----------|
-| Core CRUD | 45 endpoints | 8 endpoints | 85% |
+| Core CRUD | 50 endpoints | 15 endpoints | 77% |
+| Cases Module | 0 (model only) | 9 endpoints | 0% |
 | Publishing Workflow | Basic | Advanced features | 60% |
 | Bulk Operations | 0 | 6 endpoints | 0% |
 | Search | Partial | Full-text search | 30% |
@@ -19,7 +20,9 @@ This document identifies missing features, endpoints, and functionality that nee
 | Audit & Security | Model only | 5 endpoints | 20% |
 | Localization | Model only | 4 endpoints | 25% |
 
-**Overall Readiness: ~65%**
+**Overall Readiness: ~60%**
+
+**Last Updated:** 2026-01-14
 
 ---
 
@@ -27,7 +30,44 @@ This document identifies missing features, endpoints, and functionality that nee
 
 These features are essential for MVP and block major admin functionality.
 
-### 1. Dashboard Endpoints
+### 1. Cases API
+
+**UX Requirement:** "Case Studies / Portfolio - manage success stories"
+
+**Current Status:** ❌ Model exists, NO API endpoints
+
+**Needed:**
+```
+Admin Endpoints:
+GET /api/v1/admin/cases          - List with filters
+POST /api/v1/admin/cases         - Create case study
+GET /api/v1/admin/cases/{id}     - Get by ID
+PATCH /api/v1/admin/cases/{id}   - Update
+DELETE /api/v1/admin/cases/{id}  - Soft delete
+POST /api/v1/admin/cases/{id}/publish    - Publish
+POST /api/v1/admin/cases/{id}/unpublish  - Unpublish
+
+Public Endpoints:
+GET /api/v1/public/cases         - List published cases
+GET /api/v1/public/cases/{slug}  - Get by slug
+```
+
+**Model Already Exists:**
+- `Case` - Main entity with status, client_name, project_year, is_featured
+- `CaseLocale` - Localized title, description, results, SEO fields
+- `CaseServiceLink` - Many-to-many with Services
+
+**Implementation Required:**
+- Create Pydantic schemas in `app/modules/content/schemas.py`
+- Create `CaseService` class in `app/modules/content/service.py`
+- Add router endpoints in `app/modules/content/router.py`
+- Add permissions: `cases:read`, `cases:create`, `cases:update`, `cases:delete`, `cases:publish`
+
+**See:** [`12-cases.md`](./12-cases.md) for planned API structure.
+
+---
+
+### 2. Dashboard Endpoints
 
 **UX Requirement:** "Overview stats, recent activity, publishing status"
 
@@ -488,9 +528,9 @@ class ReviewStatus(str, Enum):
 
 ## API Endpoint Summary
 
-### Currently Implemented: ~70 endpoints
-### Missing for MVP: ~25 endpoints
-### Missing for Full Spec: ~40 endpoints
+### Currently Implemented: ~75 endpoints
+### Missing for MVP: ~35 endpoints
+### Missing for Full Spec: ~50 endpoints
 
 | Category | Count | Status |
 |----------|-------|--------|
@@ -499,11 +539,15 @@ class ReviewStatus(str, Enum):
 | Topics | 4 | ✅ Complete |
 | FAQ | 5 | ✅ Complete |
 | Reviews | 7 | ✅ Complete |
+| **Cases** | 0 | ❌ Missing (model exists) |
 | Services | 5 | ✅ Complete |
 | Employees | 5 | ✅ Complete |
 | Practice Areas | 1 | ⚠️ 25% (needs full CRUD) |
 | Advantages | 1 | ⚠️ 25% (needs full CRUD) |
 | Contacts | 2 | ⚠️ 40% (needs full CRUD) |
+| Tenants | 5 | ✅ Complete |
+| Tenant Settings | 1 | ✅ Complete |
+| Feature Flags | 2 | ✅ Complete |
 | Inquiries | 6 | ⚠️ 90% (needs export) |
 | Inquiry Forms | 5 | ✅ Complete |
 | Files | 5 | ⚠️ 80% (needs collections) |

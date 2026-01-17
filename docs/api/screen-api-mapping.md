@@ -101,6 +101,25 @@ This document maps each admin UI screen from the UX specification to the corresp
 
 ---
 
+## Content: Cases (Portfolio)
+
+**Screen URL:** `/admin/cases`
+
+| User Action | HTTP Method | Endpoint | Query Params | Notes |
+|-------------|-------------|----------|--------------|-------|
+| List cases | GET | - | - | **GAP**: Model exists, API not implemented |
+| Create case | POST | - | - | **GAP**: Not implemented |
+| Update case | PATCH | - | - | **GAP**: Not implemented |
+| Publish case | POST | - | - | **GAP**: Not implemented |
+| Unpublish case | POST | - | - | **GAP**: Not implemented |
+| Delete case | DELETE | - | - | **GAP**: Not implemented |
+| Link services | PATCH | - | - | **GAP**: Not implemented |
+| View case reviews | GET | `/api/v1/admin/reviews` | `caseId={uuid}` | Via reviews filter ✅ |
+
+**See:** [`12-cases.md`](./12-cases.md) for planned API structure.
+
+---
+
 ## People & Company: Team Members
 
 **Screen URL:** `/admin/team`
@@ -339,9 +358,13 @@ This document maps each admin UI screen from the UX specification to the corresp
 | Articles | 2 | 10 | ✅ 90% |
 | FAQ | 1 | 5 | ✅ 100% |
 | Reviews | 1 | 7 | ✅ 100% |
+| **Cases** | 1 | 0 | ❌ 0% (model exists) |
 | Team | 2 | 5 | ✅ 100% |
 | Services | 1 | 5 | ✅ 100% |
 | Practice Areas | 1 | 1 | ⚠️ 25% |
+| Advantages | 1 | 1 | ⚠️ 25% |
+| Contacts | 1 | 2 | ⚠️ 40% |
+| Tenants | 1 | 8 | ✅ 100% |
 | Leads | 2 | 11 | ✅ 90% |
 | Media | 1 | 5 | ⚠️ 80% |
 | SEO | 2 | 9 | ✅ 90% |
@@ -350,17 +373,20 @@ This document maps each admin UI screen from the UX specification to the corresp
 | Localization | 1 | 0 | ❌ 0% |
 | Settings | 1 | 4 | ✅ 100% |
 
-**Overall Coverage: ~75%**
+**Overall Coverage: ~70%**
+
+**Last Updated:** 2026-01-14
 
 ---
 
 ## Critical Missing Endpoints
 
 Priority 1 (Blocking):
-1. `GET /api/v1/admin/dashboard` - Dashboard stats
-2. `GET /api/v1/admin/audit-logs` - Audit log list
-3. `POST /api/v1/admin/articles/bulk` - Bulk operations
-4. Search parameter for list endpoints
+1. **Cases API** - Full CRUD for `/api/v1/admin/cases` (model exists, router missing)
+2. `GET /api/v1/admin/dashboard` - Dashboard stats
+3. `GET /api/v1/admin/audit-logs` - Audit log list
+4. `POST /api/v1/admin/articles/bulk` - Bulk operations
+5. Search parameter for list endpoints
 
 Priority 2 (Important):
 1. `POST/PATCH /api/v1/auth/roles` - Role management
@@ -373,4 +399,12 @@ Priority 3 (Enhancement):
 2. `GET /api/v1/auth/sessions` - Session management
 3. Media collections
 4. Publishing calendar
+
+---
+
+## Documentation References
+
+- [`12-cases.md`](./12-cases.md) - Planned Cases API structure
+- [`13-tenants-settings.md`](./13-tenants-settings.md) - Tenants and Settings API
+- [`gap-analysis.md`](./gap-analysis.md) - Full gap analysis report
 

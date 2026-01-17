@@ -1,0 +1,5 @@
+{"location":"useAuth.ts:30","message":"Login mutation called","data":{"email":"admin@example.com","hasPassword":true,"passwordLength":8},"timestamp":1768472197764,"sessionId":"debug-session","runId":"post-fix","hypothesisId":"FIX"}
+{"location":"apiClient.ts:60","message":"Login request prepared","data":{"hasTenantId":true,"tenantId":"f8f8a58e-6e2b-4779-a5fc-75a104cc10e7","url":"/auth/login","headers":["Accept","Content-Type","X-Tenant-ID"]},"timestamp":1768472197766,"sessionId":"debug-session","hypothesisId":"NEW"}
+{"location":"apiClient.ts:72","message":"API error intercepted","data":{"status":401,"url":"/auth/login","method":"post","isLoginRequest":true},"timestamp":1768472197844,"sessionId":"debug-session","hypothesisId":"NEW"}
+{"location":"apiClient.ts:78","message":"Skipping refresh for login endpoint","data":{"status":401},"timestamp":1768472197845,"sessionId":"debug-session","runId":"post-fix","hypothesisId":"FIX"}
+{"location":"useAuth.ts:46","message":"Login error","data":{"errorMessage":"Request failed with status code 401","errorType":"AxiosError"},"timestamp":1768472197845,"sessionId":"debug-session","hypothesisId":"A"}

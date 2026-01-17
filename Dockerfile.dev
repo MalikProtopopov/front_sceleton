@@ -1,0 +1,27 @@
+# =============================================================================
+# Mediann Admin Panel - Development Dockerfile
+# =============================================================================
+# Optimized for fast rebuilds and hot-reload during development
+
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install dependencies
+COPY package.json package-lock.json* ./
+RUN npm ci
+
+# Copy source code
+COPY . .
+
+# Expose development port
+EXPOSE 3000
+
+# Set environment for development
+ENV NODE_ENV=development
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV WATCHPACK_POLLING=true
+
+# Start Next.js in development mode with hot-reload
+CMD ["npm", "run", "dev"]
+

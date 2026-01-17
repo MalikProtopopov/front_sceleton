@@ -1,0 +1,44 @@
+# =============================================================================
+# Mediann Admin Panel - Development Docker Compose
+# =============================================================================
+# Usage:
+#   docker compose -f docker-compose.dev.yml up
+#   docker compose -f docker-compose.dev.yml up --build
+#   docker compose -f docker-compose.dev.yml down
+#
+# This configuration:
+#   - Uses hot-reload for development
+#   - Mounts source code as volume
+#   - Exposes port 3000
+# =============================================================================
+
+services:
+  admin:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: mediann_admin_dev
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      # Mount source code for hot-reload
+      - ./src:/app/src:ro
+      - ./public:/app/public:ro
+      # Exclude node_modules from mount
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_ADMIN_URL=http://localhost:3000
+      - WATCHPACK_POLLING=true
+    # Connect to backend network if running backend locally
+    networks:
+      - mediann_dev
+
+networks:
+  mediann_dev:
+    name: mediann_dev
+    driver: bridge
+
