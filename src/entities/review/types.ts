@@ -40,12 +40,12 @@ export interface CreateReviewLocaleDto {
 export interface CreateReviewDto {
   author_name: string;
   author_position?: string;
-  rating?: number;
+  rating: number | null; // Backend requires rating field (can be null)
   is_featured?: boolean;
   sort_order?: number;
   review_date?: string;
   case_id?: string;
-  content: string; // Backend requires content at top level
+  content: string; // Backend requires content at top level (min 10 chars)
   locales: CreateReviewLocaleDto[];
 }
 

@@ -27,7 +27,7 @@ import type { Review, CreateReviewDto, UpdateReviewDto } from "@/entities/review
 // Validation schema
 const localeSchema = z.object({
   locale: z.string().min(1, "Локаль обязательна"),
-  content: z.string().min(1, "Текст отзыва обязателен"),
+  content: z.string().min(10, "Текст отзыва должен содержать минимум 10 символов"),
   company_name: z.string().max(200, "Максимум 200 символов").optional().nullable(),
 });
 
@@ -151,13 +151,16 @@ export function ReviewForm({ review, onSubmit, isSubmitting = false }: ReviewFor
     const firstLocale = data.locales[0];
     const content = firstLocale?.content || "";
 
+    // Ensure rating is always present (can be null)
+    const rating = data.rating !== undefined ? data.rating : null;
+
     const payload: CreateReviewDto = {
       author_name: data.author_name,
       author_position: data.author_position || undefined,
-      rating: data.rating || undefined,
+      rating: rating, // Backend requires rating field (can be null)
       is_featured: data.is_featured ?? false,
       review_date: data.review_date || undefined,
-      content: content, // Backend requires content at top level
+      content: content, // Backend requires content at top level (min 10 chars)
       locales: data.locales.map((l) => ({
         locale: l.locale,
         content: l.content,
