@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -205,6 +205,28 @@ export function CaseForm({ caseItem, services = [], onSubmit, isSubmitting = fal
   const form = (isEditing ? editForm : createForm) as any;
   const locales = isEditing ? [] : createForm.watch("locales");
 
+  // Sync form values when caseItem loads/changes (for edit mode)
+  useEffect(() => {
+    if (isEditing && caseItem) {
+      editForm.reset({
+        status: caseItem.status || "draft",
+        client_name: caseItem.client_name || "",
+        project_year: caseItem.project_year || null,
+        project_duration: caseItem.project_duration || "",
+        is_featured: caseItem.is_featured || false,
+        sort_order: caseItem.sort_order ?? null,
+        service_ids: caseItem.services?.map((s) => s.service_id) || [],
+      });
+    }
+  }, [caseItem, isEditing, editForm]);
+
+  // Sync coverImageUrl when caseItem changes
+  useEffect(() => {
+    if (caseItem?.cover_image_url !== coverImageUrl) {
+      setCoverImageUrl(caseItem?.cover_image_url || null);
+    }
+  }, [caseItem?.cover_image_url, coverImageUrl]);
+
   const handleFormSubmit = isEditing
     ? (data: EditCaseFormValues) => {
         onSubmit({ ...data, client_name: data.client_name || undefined, project_year: data.project_year || undefined, project_duration: data.project_duration || undefined, version: caseItem!.version } as UpdateCaseDto);
@@ -250,7 +272,25 @@ export function CaseForm({ caseItem, services = [], onSubmit, isSubmitting = fal
       <Card>
         <CardHeader><CardTitle>Основные настройки</CardTitle></CardHeader>
         <CardContent className="space-y-4">
-          <Select label="Статус" {...form.register("status")} options={[{ value: "draft", label: "Черновик" }, { value: "published", label: "Опубликовано" }, { value: "archived", label: "В архиве" }]} className="max-w-xs" />
+          <Controller
+            name="status"
+            control={form.control}
+            render={({ field }) => (
+              <Select
+                label="Статус"
+                value={field.value || "draft"}
+                onChange={(e) => field.onChange(e.target.value)}
+                onBlur={field.onBlur}
+                options={[
+                  { value: "draft", label: "Черновик" },
+                  { value: "published", label: "Опубликовано" },
+                  { value: "archived", label: "В архиве" },
+                ]}
+                className="max-w-xs"
+                error={form.formState.errors.status?.message}
+              />
+            )}
+          />
           <div className="grid gap-4 md:grid-cols-2">
             <Input label="Название клиента" placeholder="Acme Corp" {...form.register("client_name")} error={form.formState.errors.client_name?.message} />
             <Input label="Год проекта" type="number" placeholder="2024" {...form.register("project_year", { valueAsNumber: true })} error={form.formState.errors.project_year?.message} />

@@ -654,6 +654,24 @@ export function ServiceForm({ service, onSubmit, isSubmitting = false }: Service
   const form = (isEditing ? editForm : createForm) as any;
   const locales = isEditing ? [] : createForm.watch("locales");
 
+  // Sync form values when service loads/changes (for edit mode)
+  useEffect(() => {
+    if (isEditing && service) {
+      editForm.reset({
+        icon: service.icon || "",
+        is_published: service.is_published ?? false,
+        sort_order: service.sort_order ?? null,
+      });
+    }
+  }, [service, isEditing, editForm]);
+
+  // Sync imageUrl when service changes
+  useEffect(() => {
+    if (service?.cover_image_url !== imageUrl) {
+      setImageUrl(service?.cover_image_url || null);
+    }
+  }, [service?.cover_image_url, imageUrl]);
+
   const handleFormSubmit = isEditing
     ? (data: EditServiceFormValues) => {
         const payload: UpdateServiceDto = {
@@ -771,15 +789,22 @@ export function ServiceForm({ service, onSubmit, isSubmitting = false }: Service
               {...form.register("icon")}
               error={form.formState.errors.icon?.message}
             />
-            <Select
-              label="Статус"
-              {...form.register("is_published", {
-                setValueAs: (v: string) => v === "true",
-              })}
-              options={[
-                { value: "false", label: "Черновик" },
-                { value: "true", label: "Опубликовано" },
-              ]}
+            <Controller
+              name="is_published"
+              control={form.control}
+              render={({ field }) => (
+                <Select
+                  label="Статус"
+                  value={field.value ? "true" : "false"}
+                  onChange={(e) => field.onChange(e.target.value === "true")}
+                  onBlur={field.onBlur}
+                  options={[
+                    { value: "false", label: "Черновик" },
+                    { value: "true", label: "Опубликовано" },
+                  ]}
+                  error={form.formState.errors.is_published?.message}
+                />
+              )}
             />
           </div>
           <Controller

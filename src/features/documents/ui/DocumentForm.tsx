@@ -99,6 +99,7 @@ export function DocumentForm({ document, onSubmit, isSubmitting = false }: Docum
     handleSubmit,
     watch,
     setValue,
+    reset,
     formState: { errors },
   } = useForm<DocumentFormValues>({
     resolver: zodResolver(documentSchema),
@@ -113,6 +114,27 @@ export function DocumentForm({ document, onSubmit, isSubmitting = false }: Docum
       setFileUrl(document?.file_url || null);
     }
   }, [document?.file_url, fileUrl]);
+
+  // Sync form values when document loads/changes (for edit mode)
+  useEffect(() => {
+    if (isEditing && document) {
+      reset({
+        status: document.status || "draft",
+        document_version: document.document_version || null,
+        document_date: document.document_date?.split("T")[0] || null,
+        sort_order: document.sort_order ?? null,
+        locales: document.locales?.map((l) => ({
+          locale: l.locale,
+          title: l.title,
+          slug: l.slug,
+          excerpt: l.excerpt,
+          full_description: l.full_description,
+          meta_title: l.meta_title,
+          meta_description: l.meta_description,
+        })) || defaultValues.locales,
+      });
+    }
+  }, [document, isEditing, reset]);
 
   const handleFormSubmit = (data: DocumentFormValues) => {
     const payload = {
@@ -197,15 +219,24 @@ export function DocumentForm({ document, onSubmit, isSubmitting = false }: Docum
           <CardTitle>Основные настройки</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Select
-            label="Статус"
-            {...register("status")}
-            options={[
-              { value: "draft", label: "Черновик" },
-              { value: "published", label: "Опубликовано" },
-              { value: "archived", label: "В архиве" },
-            ]}
-            className="max-w-xs"
+          <Controller
+            name="status"
+            control={control}
+            render={({ field }) => (
+              <Select
+                label="Статус"
+                value={field.value || "draft"}
+                onChange={(e) => field.onChange(e.target.value)}
+                onBlur={field.onBlur}
+                options={[
+                  { value: "draft", label: "Черновик" },
+                  { value: "published", label: "Опубликовано" },
+                  { value: "archived", label: "В архиве" },
+                ]}
+                className="max-w-xs"
+                error={errors.status?.message}
+              />
+            )}
           />
           <div className="grid gap-4 md:grid-cols-3">
             <Input

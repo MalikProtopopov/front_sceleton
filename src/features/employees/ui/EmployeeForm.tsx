@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -196,6 +196,25 @@ export function EmployeeForm({ employee, onSubmit, isSubmitting = false }: Emplo
   const form = (isEditing ? editForm : createForm) as any;
   const locales = isEditing ? [] : createForm.watch("locales");
 
+  // Sync form values when employee loads/changes (for edit mode)
+  useEffect(() => {
+    if (isEditing && employee) {
+      editForm.reset({
+        email: employee.email || "",
+        phone: employee.phone || "",
+        is_published: employee.is_published ?? false,
+        sort_order: employee.sort_order ?? null,
+      });
+    }
+  }, [employee, isEditing, editForm]);
+
+  // Sync photoUrl when employee changes
+  useEffect(() => {
+    if (employee?.photo_url !== photoUrl) {
+      setPhotoUrl(employee?.photo_url || null);
+    }
+  }, [employee?.photo_url, photoUrl]);
+
   const handleFormSubmit = isEditing
     ? (data: EditEmployeeFormValues) => {
         onSubmit({ ...data, email: data.email || undefined, phone: data.phone || undefined, version: employee!.version } as UpdateEmployeeDto);
@@ -243,7 +262,23 @@ export function EmployeeForm({ employee, onSubmit, isSubmitting = false }: Emplo
             <Input label="Телефон" placeholder="+7 999 123-45-67" {...form.register("phone")} error={form.formState.errors.phone?.message} />
           </div>
           <div className="grid gap-4 md:grid-cols-2">
-            <Select label="Статус" {...form.register("is_published", { setValueAs: (v: string) => v === "true" })} options={[{ value: "false", label: "Черновик" }, { value: "true", label: "Опубликовано" }]} />
+            <Controller
+              name="is_published"
+              control={form.control}
+              render={({ field }) => (
+                <Select
+                  label="Статус"
+                  value={field.value ? "true" : "false"}
+                  onChange={(e) => field.onChange(e.target.value === "true")}
+                  onBlur={field.onBlur}
+                  options={[
+                    { value: "false", label: "Черновик" },
+                    { value: "true", label: "Опубликовано" },
+                  ]}
+                  error={form.formState.errors.is_published?.message}
+                />
+              )}
+            />
             <Controller name="sort_order" control={form.control} render={({ field }) => (<NumberInput label="Порядок сортировки" value={field.value} onChange={(val) => field.onChange(val === undefined ? null : val)} min={0} max={1000} error={form.formState.errors.sort_order?.message} />)} />
           </div>
           <ImageUpload label="Фотография" entityId={employee?.id} currentImageUrl={photoUrl} onUpload={handlePhotoUpload} onDelete={handlePhotoDelete} disabled={!isEditing} helpText={isEditing ? undefined : "Сохраните сотрудника, чтобы загрузить фото"} />

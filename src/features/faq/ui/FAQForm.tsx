@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -167,6 +167,17 @@ export function FAQForm({ faq, onSubmit, isSubmitting = false }: FAQFormProps) {
   const form = (isEditing ? editForm : createForm) as any;
   const locales = isEditing ? [] : createForm.watch("locales");
 
+  // Sync form values when faq loads/changes (for edit mode)
+  useEffect(() => {
+    if (isEditing && faq) {
+      editForm.reset({
+        category: faq.category || "",
+        is_published: faq.is_published ?? false,
+        sort_order: faq.sort_order ?? null,
+      });
+    }
+  }, [faq, isEditing, editForm]);
+
   const handleFormSubmit = isEditing
     ? (data: EditFAQFormValues) => {
         onSubmit({ ...data, category: data.category || undefined, version: faq!.version } as UpdateFAQDto);
@@ -201,7 +212,23 @@ export function FAQForm({ faq, onSubmit, isSubmitting = false }: FAQFormProps) {
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-3">
             <Select label="Категория" {...form.register("category")} options={[{ value: "", label: "Без категории" }, ...FAQ_CATEGORIES.map((c) => ({ value: c.value, label: c.label }))]} />
-            <Select label="Статус" {...form.register("is_published", { setValueAs: (v: string) => v === "true" })} options={[{ value: "false", label: "Черновик" }, { value: "true", label: "Опубликовано" }]} />
+            <Controller
+              name="is_published"
+              control={form.control}
+              render={({ field }) => (
+                <Select
+                  label="Статус"
+                  value={field.value ? "true" : "false"}
+                  onChange={(e) => field.onChange(e.target.value === "true")}
+                  onBlur={field.onBlur}
+                  options={[
+                    { value: "false", label: "Черновик" },
+                    { value: "true", label: "Опубликовано" },
+                  ]}
+                  error={form.formState.errors.is_published?.message}
+                />
+              )}
+            />
             <Controller name="sort_order" control={form.control} render={({ field }) => (<NumberInput label="Порядок сортировки" value={field.value} onChange={(val) => field.onChange(val === undefined ? null : val)} min={0} max={1000} error={form.formState.errors.sort_order?.message} />)} />
           </div>
         </CardContent>
