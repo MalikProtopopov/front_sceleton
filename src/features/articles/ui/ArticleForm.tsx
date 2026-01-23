@@ -272,6 +272,18 @@ export function ArticleForm({ article, topics = [], onSubmit, isSubmitting = fal
     }
   }, [article?.cover_image_url, coverImageUrl]);
 
+  // Sync form values when article loads/changes (for edit mode)
+  useEffect(() => {
+    if (isEditing && article) {
+      editForm.reset({
+        status: article.status || "draft",
+        reading_time_minutes: article.reading_time_minutes || null,
+        sort_order: article.sort_order ?? null,
+        topic_ids: article.topics?.map((t) => t.topic_id) || [],
+      });
+    }
+  }, [article, isEditing, editForm]);
+
   const handleFormSubmit = isEditing
     ? (data: EditArticleFormValues) => {
         const payload: UpdateArticleDto = {
@@ -389,15 +401,24 @@ export function ArticleForm({ article, topics = [], onSubmit, isSubmitting = fal
           <CardTitle>Основные настройки</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Select
-            label="Статус"
-            {...form.register("status")}
-            options={[
-              { value: "draft", label: "Черновик" },
-              { value: "published", label: "Опубликовано" },
-              { value: "archived", label: "В архиве" },
-            ]}
-            className="max-w-xs"
+          <Controller
+            name="status"
+            control={form.control}
+            render={({ field }) => (
+              <Select
+                label="Статус"
+                value={field.value || "draft"}
+                onChange={(e) => field.onChange(e.target.value)}
+                onBlur={field.onBlur}
+                options={[
+                  { value: "draft", label: "Черновик" },
+                  { value: "published", label: "Опубликовано" },
+                  { value: "archived", label: "В архиве" },
+                ]}
+                className="max-w-xs"
+                error={form.formState.errors.status?.message}
+              />
+            )}
           />
           <div className="grid gap-4 md:grid-cols-2">
             <Input
