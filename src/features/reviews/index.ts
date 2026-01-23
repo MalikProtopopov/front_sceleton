@@ -10,4 +10,5 @@ export {
   useToggleReviewFeatured 
 } from "./model/useReviews";
 export { ReviewForm } from "./ui/ReviewForm";
+export { CaseSelector } from "./ui/CaseSelector";
 

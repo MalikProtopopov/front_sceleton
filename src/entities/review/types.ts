@@ -2,6 +2,15 @@
 
 export type ReviewStatus = "pending" | "approved" | "rejected";
 
+// Minimal case info returned with review
+export interface CaseMinimalResponse {
+  id: string;
+  slug: string;
+  title: string;
+  cover_image_url?: string;
+  client_name?: string;
+}
+
 export interface ReviewLocale {
   id: string;
   review_id: string;
@@ -17,6 +26,7 @@ export interface Review {
   tenant_id: string;
   status: ReviewStatus;
   case_id: string | null;
+  case?: CaseMinimalResponse; // Case object returned from API
   author_name: string;
   author_position: string | null;
   author_avatar_url: string | null;
@@ -56,7 +66,7 @@ export interface UpdateReviewDto {
   is_featured?: boolean;
   sort_order?: number;
   review_date?: string;
-  case_id?: string;
+  case_id?: string | null; // UUID of case, or null to unlink
   status?: ReviewStatus;
   content?: string; // Backend may require content at top level
   locales?: CreateReviewLocaleDto[];
@@ -69,6 +79,7 @@ export interface ReviewFilterParams {
   pageSize?: number;
   status?: ReviewStatus;
   caseId?: string;
+  caseSlug?: string; // Filter by case slug
   featured?: boolean;
 }
 

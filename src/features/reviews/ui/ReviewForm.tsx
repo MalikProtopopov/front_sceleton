@@ -22,6 +22,7 @@ import {
   SectionHeader,
 } from "@/shared/ui";
 import { useUploadReviewAuthorPhoto, useDeleteReviewAuthorPhoto } from "@/features/images";
+import { CaseSelector } from "./CaseSelector";
 import type { Review, CreateReviewDto, UpdateReviewDto } from "@/entities/review";
 
 // Validation schema
@@ -43,6 +44,7 @@ const reviewSchema = z.object({
     },
     z.number({ required_error: "Заполните поле", invalid_type_error: "Выберите рейтинг" }).min(1, "Рейтинг должен быть от 1 до 5").max(5, "Рейтинг должен быть от 1 до 5")
   ),
+  case_id: z.string().uuid().optional().nullable(),
   is_featured: z.boolean().optional(),
   sort_order: z.number().min(0).optional().nullable(),
   review_date: z.string().optional(),
@@ -82,6 +84,7 @@ export function ReviewForm({ review, onSubmit, isSubmitting = false }: ReviewFor
     author_name: review?.author_name || "",
     author_position: review?.author_position || "",
     rating: review?.rating ?? undefined, // Required field, undefined for new review
+    case_id: review?.case_id || null,
     is_featured: review?.is_featured ?? false,
     sort_order: review?.sort_order ?? null,
     review_date: review?.review_date || "",
@@ -120,6 +123,7 @@ export function ReviewForm({ review, onSubmit, isSubmitting = false }: ReviewFor
         author_name: review.author_name || "",
         author_position: review.author_position || "",
         rating: review.rating ?? undefined, // Required field, use undefined if null
+        case_id: review.case_id || null,
         is_featured: review.is_featured ?? false,
         sort_order: review.sort_order ?? null,
         review_date: review.review_date || "",
@@ -154,6 +158,7 @@ export function ReviewForm({ review, onSubmit, isSubmitting = false }: ReviewFor
       author_name: data.author_name,
       author_position: data.author_position || undefined,
       rating: data.rating, // Required field (1-5)
+      case_id: data.case_id || undefined,
       is_featured: data.is_featured ?? false,
       review_date: data.review_date || undefined,
       content: content, // Backend requires content at top level (min 10 chars)
@@ -172,6 +177,7 @@ export function ReviewForm({ review, onSubmit, isSubmitting = false }: ReviewFor
     if (isEditing) {
       const updatePayload: UpdateReviewDto = {
         ...payload,
+        case_id: data.case_id, // Can be null to unlink from case
         version: review.version,
       };
       onSubmit(updatePayload);
@@ -312,6 +318,19 @@ export function ReviewForm({ review, onSubmit, isSubmitting = false }: ReviewFor
               )}
             />
           </div>
+          {/* Case selector */}
+          <Controller
+            name="case_id"
+            control={control}
+            render={({ field }) => (
+              <CaseSelector
+                value={field.value}
+                onChange={(caseId) => field.onChange(caseId)}
+                error={errors.case_id?.message}
+                className="max-w-md"
+              />
+            )}
+          />
         </CardContent>
       </Card>
 

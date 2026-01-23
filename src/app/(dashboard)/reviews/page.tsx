@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Trash2, Star, Check, X, User } from "lucide-react";
+import Link from "next/link";
+import { Plus, Pencil, Trash2, Star, Check, X, User, Briefcase } from "lucide-react";
 import { useReviewsList, useDeleteReview, useApproveReview, useRejectReview } from "@/features/reviews";
+import { useCases } from "@/features/cases";
 import { Button, Table, Pagination, Badge, ConfirmModal, Select, BulkActionsToolbar, FilterBar, type Column } from "@/shared/ui";
 import { ROUTES } from "@/shared/config";
-import { formatDate } from "@/shared/lib";
+import { formatDate, getMediaUrl } from "@/shared/lib";
 import type { Review, ReviewFilterParams, ReviewStatus } from "@/entities/review";
 
 const STATUS_BADGES: Record<ReviewStatus, { variant: "secondary" | "success" | "warning" | "error"; label: string }> = {
@@ -26,9 +28,21 @@ export default function ReviewsPage() {
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
 
   const { data, isLoading } = useReviewsList(filters);
+  const { data: casesData } = useCases({ pageSize: 100 });
   const { mutate: deleteReview, isPending: isDeleting } = useDeleteReview();
   const { mutate: approveReview, isPending: isApproving } = useApproveReview();
   const { mutate: rejectReview, isPending: isRejecting } = useRejectReview();
+
+  // Generate case options for filter
+  const caseOptions = useMemo(() => {
+    if (!casesData?.items) return [];
+    return casesData.items.map((caseItem) => {
+      const ruLocale = caseItem.locales?.find((l) => l.locale === "ru");
+      const title = ruLocale?.title || caseItem.locales?.[0]?.title || "Без названия";
+      const slug = ruLocale?.slug || caseItem.locales?.[0]?.slug || "";
+      return { value: slug, label: title };
+    });
+  }, [casesData?.items]);
 
   const handleFiltersChange = (newFilters: Partial<ReviewFilterParams>) => {
     setFilters((prev) => ({
@@ -157,6 +171,36 @@ export default function ReviewsPage() {
       },
     },
     {
+      key: "case",
+      header: "Кейс",
+      width: "180px",
+      render: (review) => {
+        if (!review.case) {
+          return <span className="text-[var(--color-text-muted)]">—</span>;
+        }
+        return (
+          <Link
+            href={ROUTES.CASE_EDIT(review.case.id)}
+            onClick={(e) => e.stopPropagation()}
+            className="flex items-center gap-2 hover:text-[var(--color-accent-primary)] transition-colors"
+          >
+            {review.case.cover_image_url ? (
+              <img
+                src={getMediaUrl(review.case.cover_image_url)}
+                alt={review.case.title}
+                className="h-8 w-8 rounded object-cover flex-shrink-0"
+              />
+            ) : (
+              <div className="flex h-8 w-8 items-center justify-center rounded bg-[var(--color-bg-secondary)] flex-shrink-0">
+                <Briefcase className="h-4 w-4 text-[var(--color-text-muted)]" />
+              </div>
+            )}
+            <span className="text-sm line-clamp-1">{review.case.title}</span>
+          </Link>
+        );
+      },
+    },
+    {
       key: "review_date",
       header: "Дата",
       width: "100px",
@@ -275,6 +319,18 @@ export default function ReviewsPage() {
           ]}
           className="w-48"
         />
+        {caseOptions.length > 0 && (
+          <Select
+            label="Кейс"
+            value={filters.caseSlug || ""}
+            onChange={(e) => handleFiltersChange({ caseSlug: e.target.value || undefined })}
+            options={[
+              { value: "", label: "Все кейсы" },
+              ...caseOptions,
+            ]}
+            className="w-56"
+          />
+        )}
       </FilterBar>
 
       {/* Bulk Actions */}
