@@ -6,6 +6,7 @@ export {
   useUpdatePracticeArea,
   useDeletePracticeArea,
 } from "./model/usePracticeAreas";
+export { PracticeAreaForm } from "./ui/PracticeAreaForm";
 export {
   useAdvantagesList,
   useAdvantage,
