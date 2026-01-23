@@ -160,7 +160,7 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(
             error
               ? "border-[var(--color-error)]"
               : isOpen
-              ? "border-[var(--color-accent-primary)] ring-1 ring-[var(--color-accent-primary)]"
+              ? "border-[var(--color-accent-primary)]"
               : "border-[var(--color-border)]",
             disabled && "cursor-not-allowed opacity-50"
           )}

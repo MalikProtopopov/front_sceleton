@@ -74,11 +74,36 @@ const RATING_OPTIONS = [
 
 export function ReviewForm({ review, onSubmit, isSubmitting = false }: ReviewFormProps) {
   const isEditing = !!review;
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(review?.author_avatar_url || null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(
+    review?.author_avatar_url || review?.author_photo_url || null
+  );
 
   // Image upload hooks
   const uploadAvatar = useUploadReviewAuthorPhoto(review?.id || "");
   const deleteAvatar = useDeleteReviewAuthorPhoto(review?.id || "");
+
+  // Helper to get locales from review (handles both locales array and top-level content)
+  const getLocalesFromReview = (r?: Review) => {
+    if (!r) {
+      return [{ locale: "ru", content: "", company_name: "" }];
+    }
+    
+    // If locales array exists and has data, use it
+    if (r.locales && r.locales.length > 0) {
+      return r.locales.map((l) => ({
+        locale: l.locale,
+        content: l.content,
+        company_name: l.company_name,
+      }));
+    }
+    
+    // Otherwise, use top-level content and author_company
+    return [{
+      locale: "ru",
+      content: r.content || "",
+      company_name: r.author_company || "",
+    }];
+  };
 
   const defaultValues: ReviewFormValues = {
     author_name: review?.author_name || "",
@@ -88,17 +113,7 @@ export function ReviewForm({ review, onSubmit, isSubmitting = false }: ReviewFor
     is_featured: review?.is_featured ?? false,
     sort_order: review?.sort_order ?? null,
     review_date: review?.review_date || "",
-    locales: review?.locales?.map((l) => ({
-      locale: l.locale,
-      content: l.content,
-      company_name: l.company_name,
-    })) || [
-      {
-        locale: "ru",
-        content: "",
-        company_name: "",
-      },
-    ],
+    locales: getLocalesFromReview(review),
   };
 
   const {
@@ -127,27 +142,18 @@ export function ReviewForm({ review, onSubmit, isSubmitting = false }: ReviewFor
         is_featured: review.is_featured ?? false,
         sort_order: review.sort_order ?? null,
         review_date: review.review_date || "",
-        locales: review.locales?.map((l) => ({
-          locale: l.locale,
-          content: l.content,
-          company_name: l.company_name,
-        })) || [
-          {
-            locale: "ru",
-            content: "",
-            company_name: "",
-          },
-        ],
+        locales: getLocalesFromReview(review),
       });
     }
   }, [review, isEditing, reset]);
 
-  // Sync avatarUrl when review changes
+  // Sync avatarUrl when review changes (handle both author_avatar_url and author_photo_url)
   useEffect(() => {
-    if (review?.author_avatar_url !== avatarUrl) {
-      setAvatarUrl(review?.author_avatar_url || null);
+    const photoUrl = review?.author_avatar_url || review?.author_photo_url || null;
+    if (photoUrl !== avatarUrl) {
+      setAvatarUrl(photoUrl);
     }
-  }, [review?.author_avatar_url, avatarUrl]);
+  }, [review?.author_avatar_url, review?.author_photo_url, avatarUrl]);
 
   const handleFormSubmit = (data: ReviewFormValues) => {
     // Get content from first locale (backend requires it at top level)

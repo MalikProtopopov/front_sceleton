@@ -30,6 +30,9 @@ export interface Review {
   author_name: string;
   author_position: string | null;
   author_avatar_url: string | null;
+  author_photo_url?: string | null; // Alternative field name from backend
+  author_company?: string | null; // Company name at top level from backend
+  content?: string; // Content at top level from backend
   rating: number | null;
   is_featured: boolean;
   sort_order: number;
@@ -37,7 +40,7 @@ export interface Review {
   version: number;
   created_at: string;
   updated_at: string;
-  locales: ReviewLocale[];
+  locales?: ReviewLocale[]; // May be undefined if backend returns content at top level
 }
 
 // Request DTOs
