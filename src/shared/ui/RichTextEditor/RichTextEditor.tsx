@@ -110,6 +110,26 @@ interface MenuBarProps {
 function MenuBar({ editor }: MenuBarProps) {
   const [linkUrl, setLinkUrl] = useState("");
   const [showLinkInput, setShowLinkInput] = useState(false);
+  // Force re-render on selection/transaction changes to update toolbar button states
+  const [, forceUpdate] = useState(0);
+
+  // Subscribe to editor events to update toolbar state when selection changes
+  useEffect(() => {
+    if (!editor) return;
+
+    const updateHandler = () => {
+      forceUpdate((prev) => prev + 1);
+    };
+
+    // Listen to selection and transaction changes
+    editor.on("selectionUpdate", updateHandler);
+    editor.on("transaction", updateHandler);
+
+    return () => {
+      editor.off("selectionUpdate", updateHandler);
+      editor.off("transaction", updateHandler);
+    };
+  }, [editor]);
 
   const setLink = useCallback(() => {
     if (!editor) return;

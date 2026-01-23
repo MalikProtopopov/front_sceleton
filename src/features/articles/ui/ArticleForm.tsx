@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { Globe } from "lucide-react";
 import {
   Button,
   Input,
@@ -466,52 +467,62 @@ export function ArticleForm({ article, topics = [], onSubmit, isSubmitting = fal
       ) : (
         <Card>
           <CardHeader>
-            <SectionHeader
-              title="Локализации"
-              actions={
-                availableLocales.length > 0 ? (
-                  <Select
-                    value=""
-                    onChange={(e) => {
-                      if (e.target.value) {
-                        addLocale(e.target.value);
-                      }
-                    }}
-                    options={[{ value: "", label: "Добавить язык" }, ...availableLocales]}
-                    minWidth="200px"
-                  />
-                ) : undefined
-              }
-            />
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <Globe className="h-5 w-5 text-[var(--color-text-muted)]" />
+                <CardTitle>Локализации</CardTitle>
+                <span className="rounded-full bg-[var(--color-bg-secondary)] px-2 py-0.5 text-xs text-[var(--color-text-muted)]">
+                  {locales.length} {locales.length === 1 ? "язык" : "языка"}
+                </span>
+              </div>
+              {availableLocales.length > 0 && (
+                <Select
+                  value=""
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      addLocale(e.target.value);
+                    }
+                  }}
+                  options={[{ value: "", label: "Добавить язык" }, ...availableLocales]}
+                  minWidth="180px"
+                />
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue={locales[0]?.locale || "ru"}>
-              <TabsList>
-                {locales.map((locale, index) => (
-                  <TabsTrigger key={locale.locale} value={locale.locale}>
-                    {SUPPORTED_LOCALES.find((l) => l.value === locale.locale)?.label || locale.locale}
-                    {locales.length > 1 && (
-                      <span
-                        role="button"
-                        tabIndex={0}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeLocale(index);
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
+              <div className="mb-4 flex items-center gap-2">
+                <span className="text-sm text-[var(--color-text-muted)]">Редактирование:</span>
+                <TabsList>
+                  {locales.map((locale, index) => (
+                    <TabsTrigger key={locale.locale} value={locale.locale}>
+                      <span className="font-medium">{locale.locale.toUpperCase()}</span>
+                      <span className="ml-1.5 hidden sm:inline text-[var(--color-text-muted)]">
+                        {SUPPORTED_LOCALES.find((l) => l.value === locale.locale)?.label}
+                      </span>
+                      {locales.length > 1 && (
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          onClick={(e) => {
                             e.stopPropagation();
                             removeLocale(index);
-                          }
-                        }}
-                        className="ml-2 text-[var(--color-text-muted)] hover:text-[var(--color-error)] cursor-pointer"
-                      >
-                        ×
-                      </span>
-                    )}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.stopPropagation();
+                              removeLocale(index);
+                            }
+                          }}
+                          className="ml-2 text-[var(--color-text-muted)] hover:text-[var(--color-error)] cursor-pointer"
+                        >
+                          ×
+                        </span>
+                      )}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </div>
 
               {locales.map((locale, index) => (
                 <TabsContent key={locale.locale} value={locale.locale}>

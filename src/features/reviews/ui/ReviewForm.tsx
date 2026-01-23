@@ -206,9 +206,14 @@ export function ReviewForm({ review, onSubmit, isSubmitting = false }: ReviewFor
             <Select
               label="Рейтинг"
               {...register("rating", {
-                setValueAs: (v) => (v === "" ? null : parseInt(v, 10)),
+                setValueAs: (v) => {
+                  if (v === "" || v === null || v === undefined) return null;
+                  const num = parseInt(v, 10);
+                  return isNaN(num) ? null : num;
+                },
               })}
               options={RATING_OPTIONS}
+              error={errors.rating?.message}
             />
             <Input
               label="Дата отзыва"
