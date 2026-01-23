@@ -7,6 +7,7 @@ import { casesApi, casesKeys } from "../api/casesApi";
 import { ROUTES } from "@/shared/config";
 import type { CaseFilterParams, CreateCaseDto, UpdateCaseDto, CreateCaseLocaleDto, UpdateCaseLocaleDto } from "@/entities/case";
 import { handleLocaleError } from "@/shared/lib/localeErrors";
+import { handleVersionConflict, getErrorMessage } from "@/shared/lib/versionConflict";
 
 export function useCases(params?: CaseFilterParams) {
   return useQuery({
@@ -52,7 +53,10 @@ export function useUpdateCase(id: string) {
       toast.success("Кейс обновлен");
     },
     onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось обновить кейс";
+      if (handleVersionConflict(error, queryClient, casesKeys.detail(id))) {
+        return;
+      }
+      const message = getErrorMessage(error, "Не удалось обновить кейс");
       toast.error(message);
     },
   });
@@ -86,8 +90,11 @@ export function usePublishCase() {
       queryClient.invalidateQueries({ queryKey: casesKeys.lists() });
       toast.success("Кейс опубликован");
     },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось опубликовать кейс";
+    onError: (error, id) => {
+      if (handleVersionConflict(error, queryClient, casesKeys.detail(id))) {
+        return;
+      }
+      const message = getErrorMessage(error, "Не удалось опубликовать кейс");
       toast.error(message);
     },
   });
@@ -103,8 +110,11 @@ export function useUnpublishCase() {
       queryClient.invalidateQueries({ queryKey: casesKeys.lists() });
       toast.success("Кейс снят с публикации");
     },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось снять кейс с публикации";
+    onError: (error, id) => {
+      if (handleVersionConflict(error, queryClient, casesKeys.detail(id))) {
+        return;
+      }
+      const message = getErrorMessage(error, "Не удалось снять кейс с публикации");
       toast.error(message);
     },
   });

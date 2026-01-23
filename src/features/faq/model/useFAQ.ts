@@ -7,6 +7,7 @@ import { faqApi, faqKeys } from "../api/faqApi";
 import { ROUTES } from "@/shared/config";
 import type { FAQFilterParams, CreateFAQDto, UpdateFAQDto, CreateFAQLocaleDto, UpdateFAQLocaleDto } from "@/entities/faq";
 import { handleLocaleError } from "@/shared/lib/localeErrors";
+import { handleVersionConflict, getErrorMessage } from "@/shared/lib/versionConflict";
 
 export function useFAQList(params?: FAQFilterParams) {
   return useQuery({
@@ -52,7 +53,10 @@ export function useUpdateFAQ(id: string) {
       toast.success("FAQ обновлен");
     },
     onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось обновить FAQ";
+      if (handleVersionConflict(error, queryClient, faqKeys.detail(id))) {
+        return;
+      }
+      const message = getErrorMessage(error, "Не удалось обновить FAQ");
       toast.error(message);
     },
   });
@@ -88,7 +92,10 @@ export function useToggleFAQPublished(id: string) {
       toast.success(faq.is_published ? "FAQ опубликован" : "FAQ снят с публикации");
     },
     onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось изменить статус";
+      if (handleVersionConflict(error, queryClient, faqKeys.detail(id))) {
+        return;
+      }
+      const message = getErrorMessage(error, "Не удалось изменить статус");
       toast.error(message);
     },
   });

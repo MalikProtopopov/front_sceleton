@@ -17,6 +17,7 @@ import type {
   UpdateServiceTagDto,
 } from "@/entities/service";
 import { handleLocaleError } from "@/shared/lib/localeErrors";
+import { handleVersionConflict, getErrorMessage } from "@/shared/lib/versionConflict";
 
 export function useServicesList(params?: ServiceFilterParams) {
   return useQuery({
@@ -62,7 +63,10 @@ export function useUpdateService(id: string) {
       toast.success("Услуга обновлена");
     },
     onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось обновить услугу";
+      if (handleVersionConflict(error, queryClient, servicesKeys.detail(id))) {
+        return;
+      }
+      const message = getErrorMessage(error, "Не удалось обновить услугу");
       toast.error(message);
     },
   });
@@ -98,7 +102,10 @@ export function useToggleServicePublished(id: string) {
       toast.success(service.is_published ? "Услуга опубликована" : "Услуга снята с публикации");
     },
     onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось изменить статус";
+      if (handleVersionConflict(error, queryClient, servicesKeys.detail(id))) {
+        return;
+      }
+      const message = getErrorMessage(error, "Не удалось изменить статус");
       toast.error(message);
     },
   });

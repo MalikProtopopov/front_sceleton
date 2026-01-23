@@ -1,10 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { documentsApi, documentsKeys } from "../api/documentsApi";
 import type {
   CreateDocumentDto,
   UpdateDocumentDto,
   DocumentFilterParams,
 } from "@/entities/document";
+import { handleVersionConflict, getErrorMessage } from "@/shared/lib/versionConflict";
 
 // Hook for fetching documents list
 export function useDocuments(params?: DocumentFilterParams) {
@@ -42,9 +44,17 @@ export function useUpdateDocument() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateDocumentDto }) =>
       documentsApi.update(id, data),
-    onSuccess: (_, variables) => {
+    onSuccess: (document, variables) => {
+      queryClient.setQueryData(documentsKeys.detail(variables.id), document);
       queryClient.invalidateQueries({ queryKey: documentsKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: documentsKeys.detail(variables.id) });
+      toast.success("Документ обновлён");
+    },
+    onError: (error, variables) => {
+      if (handleVersionConflict(error, queryClient, documentsKeys.detail(variables.id))) {
+        return;
+      }
+      const message = getErrorMessage(error, "Не удалось обновить документ");
+      toast.error(message);
     },
   });
 }

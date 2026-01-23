@@ -22,4 +22,10 @@ export {
   canDeleteLocale,
   getAvailableLocalesForCreation,
 } from "./localeErrors";
+export {
+  isVersionConflict,
+  handleVersionConflict,
+  getErrorMessage,
+  createMutationErrorHandler,
+} from "./versionConflict";
 

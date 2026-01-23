@@ -7,6 +7,7 @@ import { articlesApi, articlesKeys, topicsKeys } from "../api/articlesApi";
 import { ROUTES } from "@/shared/config";
 import type { ArticleFilterParams, CreateArticleDto, UpdateArticleDto, CreateArticleLocaleDto, UpdateArticleLocaleDto } from "@/entities/article";
 import { handleLocaleError } from "@/shared/lib/localeErrors";
+import { handleVersionConflict, getErrorMessage } from "@/shared/lib/versionConflict";
 
 export function useArticles(params?: ArticleFilterParams) {
   return useQuery({
@@ -52,7 +53,11 @@ export function useUpdateArticle(id: string) {
       toast.success("Статья обновлена");
     },
     onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось обновить статью";
+      // Handle version conflict - reload fresh data
+      if (handleVersionConflict(error, queryClient, articlesKeys.detail(id))) {
+        return;
+      }
+      const message = getErrorMessage(error, "Не удалось обновить статью");
       toast.error(message);
     },
   });
@@ -86,8 +91,11 @@ export function usePublishArticle() {
       queryClient.invalidateQueries({ queryKey: articlesKeys.lists() });
       toast.success("Статья опубликована");
     },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось опубликовать статью";
+    onError: (error, id) => {
+      if (handleVersionConflict(error, queryClient, articlesKeys.detail(id))) {
+        return;
+      }
+      const message = getErrorMessage(error, "Не удалось опубликовать статью");
       toast.error(message);
     },
   });
@@ -103,8 +111,11 @@ export function useUnpublishArticle() {
       queryClient.invalidateQueries({ queryKey: articlesKeys.lists() });
       toast.success("Статья снята с публикации");
     },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось снять статью с публикации";
+    onError: (error, id) => {
+      if (handleVersionConflict(error, queryClient, articlesKeys.detail(id))) {
+        return;
+      }
+      const message = getErrorMessage(error, "Не удалось снять статью с публикации");
       toast.error(message);
     },
   });
