@@ -23,6 +23,11 @@ const nextConfig: NextConfig = {
         source: "/api/:path*",
         destination: `${BACKEND_URL}/api/:path*`,
       },
+      // Proxy media files to backend
+      {
+        source: "/media/:path*",
+        destination: `${BACKEND_URL}/media/:path*`,
+      },
     ];
   },
   

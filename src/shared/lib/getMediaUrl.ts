@@ -12,11 +12,22 @@ export function getMediaUrl(url: string | null | undefined): string {
     return url;
   }
   
-  // Convert relative URL to absolute using NEXT_PUBLIC_BACKEND_URL
-  // Falls back to empty string for relative URLs (will work with rewrites in production)
-  const backendBaseUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "";
+  // Extract base URL from NEXT_PUBLIC_API_URL (remove /api/v1 if present)
+  // For example: http://localhost:8000/api/v1 -> http://localhost:8000
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
+  let backendBaseUrl = "";
   
-  // If no base URL, return relative (will work with rewrites)
+  if (apiUrl) {
+    // Remove /api/v1 or /api suffix if present
+    backendBaseUrl = apiUrl.replace(/\/api\/v1$|\/api$/, "");
+  }
+  
+  // Fallback to localhost:8000 for development if no env var
+  if (!backendBaseUrl && typeof window !== "undefined") {
+    backendBaseUrl = "http://localhost:8000";
+  }
+  
+  // If still no base URL, return relative (will work with rewrites)
   if (!backendBaseUrl) {
     return url;
   }

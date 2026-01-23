@@ -267,7 +267,7 @@ function SuccessState({
           fill
           className="object-cover"
           sizes="520px"
-          unoptimized={imageUrl.startsWith("http://") || imageUrl.startsWith("https://")}
+          unoptimized={!imageUrl.startsWith("data:")}
         />
 
         {/* Gradient overlay at bottom for better text readability if needed */}
