@@ -261,6 +261,22 @@ function PriceModal({ isOpen, onClose, onSubmit, price, isLoading, existingLocal
   const [currency, setCurrency] = useState<ServiceCurrency>(price?.currency || "RUB");
   const [error, setError] = useState("");
 
+  // Sync form values when price prop changes (when editing different price)
+  useEffect(() => {
+    if (price) {
+      setLocale(price.locale);
+      setPriceValue(price.price?.toString() || "");
+      setCurrency(price.currency || "RUB");
+      setError("");
+    } else {
+      // Reset to defaults when adding new price
+      setLocale(existingLocales[0] || "ru");
+      setPriceValue("");
+      setCurrency("RUB");
+      setError("");
+    }
+  }, [price, existingLocales]);
+
   const handleSubmit = () => {
     const numValue = parseFloat(priceValue);
     if (isNaN(numValue) || numValue < 0) {
