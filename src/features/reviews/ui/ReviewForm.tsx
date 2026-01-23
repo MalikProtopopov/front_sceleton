@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -34,7 +34,15 @@ const localeSchema = z.object({
 const reviewSchema = z.object({
   author_name: z.string().min(1, "Имя автора обязательно").max(200, "Максимум 200 символов"),
   author_position: z.string().max(200, "Максимум 200 символов").optional(),
-  rating: z.number().min(1).max(5).optional().nullable(),
+  rating: z.preprocess(
+    (val) => {
+      if (val === "" || val === null || val === undefined) return null;
+      if (typeof val === "number") return val;
+      const num = parseInt(String(val), 10);
+      return isNaN(num) ? null : num;
+    },
+    z.number().min(1).max(5).optional().nullable()
+  ),
   is_featured: z.boolean().optional(),
   sort_order: z.number().min(0).optional().nullable(),
   review_date: z.string().optional(),
@@ -97,6 +105,7 @@ export function ReviewForm({ review, onSubmit, isSubmitting = false }: ReviewFor
     handleSubmit,
     watch,
     setValue,
+    reset,
     formState: { errors },
   } = useForm<ReviewFormValues>({
     resolver: zodResolver(reviewSchema),
@@ -104,6 +113,38 @@ export function ReviewForm({ review, onSubmit, isSubmitting = false }: ReviewFor
   });
 
   const locales = watch("locales");
+
+  // Sync form values when review loads/changes (for edit mode)
+  useEffect(() => {
+    if (isEditing && review) {
+      reset({
+        author_name: review.author_name || "",
+        author_position: review.author_position || "",
+        rating: review.rating || null,
+        is_featured: review.is_featured ?? false,
+        sort_order: review.sort_order ?? null,
+        review_date: review.review_date || "",
+        locales: review.locales?.map((l) => ({
+          locale: l.locale,
+          content: l.content,
+          company_name: l.company_name,
+        })) || [
+          {
+            locale: "ru",
+            content: "",
+            company_name: "",
+          },
+        ],
+      });
+    }
+  }, [review, isEditing, reset]);
+
+  // Sync avatarUrl when review changes
+  useEffect(() => {
+    if (review?.author_avatar_url !== avatarUrl) {
+      setAvatarUrl(review?.author_avatar_url || null);
+    }
+  }, [review?.author_avatar_url, avatarUrl]);
 
   const handleFormSubmit = (data: ReviewFormValues) => {
     const payload = {
@@ -203,17 +244,27 @@ export function ReviewForm({ review, onSubmit, isSubmitting = false }: ReviewFor
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Select
-              label="Рейтинг"
-              {...register("rating", {
-                setValueAs: (v) => {
-                  if (v === "" || v === null || v === undefined) return null;
-                  const num = parseInt(v, 10);
-                  return isNaN(num) ? null : num;
-                },
-              })}
-              options={RATING_OPTIONS}
-              error={errors.rating?.message}
+            <Controller
+              name="rating"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  label="Рейтинг"
+                  value={field.value === null || field.value === undefined ? "" : field.value.toString()}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === "" || value === null || value === undefined) {
+                      field.onChange(null);
+                    } else {
+                      const num = parseInt(value, 10);
+                      field.onChange(isNaN(num) ? null : num);
+                    }
+                  }}
+                  onBlur={field.onBlur}
+                  options={RATING_OPTIONS}
+                  error={errors.rating?.message}
+                />
+              )}
             />
             <Input
               label="Дата отзыва"
