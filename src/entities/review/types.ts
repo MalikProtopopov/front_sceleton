@@ -40,7 +40,7 @@ export interface CreateReviewLocaleDto {
 export interface CreateReviewDto {
   author_name: string;
   author_position?: string;
-  rating: number | null; // Backend requires rating field (can be null)
+  rating: number; // Required field (1-5)
   is_featured?: boolean;
   sort_order?: number;
   review_date?: string;

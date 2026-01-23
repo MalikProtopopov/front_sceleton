@@ -36,12 +36,12 @@ const reviewSchema = z.object({
   author_position: z.string().max(200, "Максимум 200 символов").optional(),
   rating: z.preprocess(
     (val) => {
-      if (val === "" || val === null || val === undefined) return null;
+      if (val === "" || val === null || val === undefined) return undefined;
       if (typeof val === "number") return val;
       const num = parseInt(String(val), 10);
-      return isNaN(num) ? null : num;
+      return isNaN(num) ? undefined : num;
     },
-    z.number().min(1).max(5).optional().nullable()
+    z.number({ required_error: "Заполните поле", invalid_type_error: "Выберите рейтинг" }).min(1, "Рейтинг должен быть от 1 до 5").max(5, "Рейтинг должен быть от 1 до 5")
   ),
   is_featured: z.boolean().optional(),
   sort_order: z.number().min(0).optional().nullable(),
@@ -63,7 +63,6 @@ const SUPPORTED_LOCALES = [
 ];
 
 const RATING_OPTIONS = [
-  { value: "", label: "Без рейтинга" },
   { value: "5", label: "★★★★★ (5)" },
   { value: "4", label: "★★★★☆ (4)" },
   { value: "3", label: "★★★☆☆ (3)" },
@@ -82,7 +81,7 @@ export function ReviewForm({ review, onSubmit, isSubmitting = false }: ReviewFor
   const defaultValues: ReviewFormValues = {
     author_name: review?.author_name || "",
     author_position: review?.author_position || "",
-    rating: review?.rating || null,
+    rating: review?.rating ?? undefined, // Required field, undefined for new review
     is_featured: review?.is_featured ?? false,
     sort_order: review?.sort_order ?? null,
     review_date: review?.review_date || "",
@@ -120,7 +119,7 @@ export function ReviewForm({ review, onSubmit, isSubmitting = false }: ReviewFor
       reset({
         author_name: review.author_name || "",
         author_position: review.author_position || "",
-        rating: review.rating || null,
+        rating: review.rating ?? undefined, // Required field, use undefined if null
         is_featured: review.is_featured ?? false,
         sort_order: review.sort_order ?? null,
         review_date: review.review_date || "",
@@ -151,13 +150,10 @@ export function ReviewForm({ review, onSubmit, isSubmitting = false }: ReviewFor
     const firstLocale = data.locales[0];
     const content = firstLocale?.content || "";
 
-    // Ensure rating is always present (can be null)
-    const rating = data.rating !== undefined ? data.rating : null;
-
     const payload: CreateReviewDto = {
       author_name: data.author_name,
       author_position: data.author_position || undefined,
-      rating: rating, // Backend requires rating field (can be null)
+      rating: data.rating, // Required field (1-5)
       is_featured: data.is_featured ?? false,
       review_date: data.review_date || undefined,
       content: content, // Backend requires content at top level (min 10 chars)
@@ -273,10 +269,10 @@ export function ReviewForm({ review, onSubmit, isSubmitting = false }: ReviewFor
                   onChange={(e) => {
                     const value = e.target.value;
                     if (value === "" || value === null || value === undefined) {
-                      field.onChange(null);
+                      field.onChange(undefined); // Set undefined to trigger validation error
                     } else {
                       const num = parseInt(value, 10);
-                      field.onChange(isNaN(num) ? null : num);
+                      field.onChange(isNaN(num) ? undefined : num);
                     }
                   }}
                   onBlur={field.onBlur}
