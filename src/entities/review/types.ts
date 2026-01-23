@@ -45,6 +45,7 @@ export interface CreateReviewDto {
   sort_order?: number;
   review_date?: string;
   case_id?: string;
+  content: string; // Backend requires content at top level
   locales: CreateReviewLocaleDto[];
 }
 
@@ -57,6 +58,7 @@ export interface UpdateReviewDto {
   review_date?: string;
   case_id?: string;
   status?: ReviewStatus;
+  content?: string; // Backend may require content at top level
   locales?: CreateReviewLocaleDto[];
   version: number; // Required for optimistic locking
 }

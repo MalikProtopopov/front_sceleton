@@ -147,21 +147,37 @@ export function ReviewForm({ review, onSubmit, isSubmitting = false }: ReviewFor
   }, [review?.author_avatar_url, avatarUrl]);
 
   const handleFormSubmit = (data: ReviewFormValues) => {
-    const payload = {
-      ...data,
+    // Get content from first locale (backend requires it at top level)
+    const firstLocale = data.locales[0];
+    const content = firstLocale?.content || "";
+
+    const payload: CreateReviewDto = {
+      author_name: data.author_name,
       author_position: data.author_position || undefined,
       rating: data.rating || undefined,
+      is_featured: data.is_featured ?? false,
       review_date: data.review_date || undefined,
+      content: content, // Backend requires content at top level
       locales: data.locales.map((l) => ({
-        ...l,
+        locale: l.locale,
+        content: l.content,
         company_name: l.company_name || undefined,
       })),
     };
 
+    // Only include sort_order if it's a number (not null)
+    if (data.sort_order !== null && data.sort_order !== undefined) {
+      payload.sort_order = data.sort_order;
+    }
+
     if (isEditing) {
-      onSubmit({ ...payload, version: review.version } as UpdateReviewDto);
+      const updatePayload: UpdateReviewDto = {
+        ...payload,
+        version: review.version,
+      };
+      onSubmit(updatePayload);
     } else {
-      onSubmit(payload as CreateReviewDto);
+      onSubmit(payload);
     }
   };
 
