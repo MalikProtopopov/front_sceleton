@@ -25,7 +25,7 @@ export function isVersionConflict(error: unknown): boolean {
 export function handleVersionConflict(
   error: unknown,
   queryClient: QueryClient,
-  queryKey: unknown[]
+  queryKey: readonly unknown[]
 ): boolean {
   if (isVersionConflict(error)) {
     // Invalidate cache to get fresh data with correct version
@@ -66,7 +66,7 @@ export function getErrorMessage(error: unknown, defaultMessage: string): string 
  */
 export function createMutationErrorHandler(
   queryClient: QueryClient,
-  queryKey: unknown[],
+  queryKey: readonly unknown[],
   defaultMessage: string
 ) {
   return (error: unknown) => {
