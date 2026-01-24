@@ -5,7 +5,6 @@ import { notFound } from "next/navigation";
 import { usePracticeArea, useUpdatePracticeArea, useDeletePracticeArea, PracticeAreaForm } from "@/features/company";
 import { Button, Spinner, ConfirmModal } from "@/shared/ui";
 import { formatDateTime } from "@/shared/lib";
-import type { UpdatePracticeAreaDto } from "@/entities/company";
 
 export default function EditPracticeAreaPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -44,11 +43,7 @@ export default function EditPracticeAreaPage({ params }: { params: Promise<{ id:
         </Button>
       </div>
 
-      <PracticeAreaForm 
-        practiceArea={item} 
-        onSubmit={(data) => update(data as UpdatePracticeAreaDto)} 
-        isSubmitting={isUpdating} 
-      />
+      <PracticeAreaForm practiceArea={item} onSubmit={update} isSubmitting={isUpdating} />
 
       <ConfirmModal
         isOpen={deleteModalOpen}
