@@ -24,7 +24,7 @@ export function FileCard({
   selectable = false,
 }: FileCardProps) {
   const [copied, setCopied] = useState(false);
-  const isImage = SUPPORTED_IMAGE_TYPES.includes(file.content_type);
+  const isImage = SUPPORTED_IMAGE_TYPES.includes(file.mime_type);
 
   const handleCopyUrl = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -39,13 +39,13 @@ export function FileCard({
     }
   };
 
-  // Determine which icon to render based on content type
+  // Determine which icon to render based on mime type
   const renderFileIcon = () => {
     const iconClass = "h-12 w-12 text-[var(--color-text-muted)]";
-    if (file.content_type.startsWith("image/")) return <ImageIcon className={iconClass} />;
-    if (file.content_type.startsWith("video/")) return <Film className={iconClass} />;
-    if (file.content_type.startsWith("audio/")) return <Music className={iconClass} />;
-    if (file.content_type.includes("pdf") || file.content_type.includes("document")) return <FileText className={iconClass} />;
+    if (file.mime_type.startsWith("image/")) return <ImageIcon className={iconClass} />;
+    if (file.mime_type.startsWith("video/")) return <Film className={iconClass} />;
+    if (file.mime_type.startsWith("audio/")) return <Music className={iconClass} />;
+    if (file.mime_type.includes("pdf") || file.mime_type.includes("document")) return <FileText className={iconClass} />;
     return <File className={iconClass} />;
   };
 

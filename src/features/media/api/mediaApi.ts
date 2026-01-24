@@ -40,7 +40,7 @@ export const mediaApi = {
     folder?: string,
   ): Promise<FileAsset> => {
     // 1. Get presigned upload URL
-    const { upload_url, s3_key } = await mediaApi.getUploadUrl({
+    const { upload_url, file_url, s3_key } = await mediaApi.getUploadUrl({
       filename: file.name,
       content_type: file.type,
       folder,
@@ -57,10 +57,13 @@ export const mediaApi = {
 
     // 3. Register file in database
     const registeredFile = await mediaApi.register({
-      s3_key,
-      original_filename: file.name,
-      content_type: file.type,
+      filename: s3_key.split("/").pop() || file.name,  // имя файла из s3_key
+      original_filename: file.name,                     // оригинальное имя
+      mime_type: file.type,                             // MIME тип
       file_size: file.size,
+      s3_bucket: "cms-assets",                          // bucket в S3
+      s3_key,                                           // полный ключ в S3
+      s3_url: file_url,                                 // относительный URL из ответа
       folder,
     });
 
