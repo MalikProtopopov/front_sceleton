@@ -35,15 +35,7 @@ const localeSchema = z.object({
 const reviewSchema = z.object({
   author_name: z.string().min(1, "Имя автора обязательно").max(200, "Максимум 200 символов"),
   author_position: z.string().max(200, "Максимум 200 символов").optional(),
-  rating: z.preprocess(
-    (val) => {
-      if (val === "" || val === null || val === undefined) return undefined;
-      if (typeof val === "number") return val;
-      const num = parseInt(String(val), 10);
-      return isNaN(num) ? undefined : num;
-    },
-    z.number({ message: "Выберите рейтинг" }).min(1, "Рейтинг должен быть от 1 до 5").max(5, "Рейтинг должен быть от 1 до 5")
-  ),
+  rating: z.coerce.number({ message: "Выберите рейтинг" }).min(1, "Рейтинг должен быть от 1 до 5").max(5, "Рейтинг должен быть от 1 до 5"),
   case_id: z.string().uuid().optional().nullable(),
   is_featured: z.boolean().optional(),
   sort_order: z.number().min(0).optional().nullable(),
@@ -108,7 +100,7 @@ export function ReviewForm({ review, onSubmit, isSubmitting = false }: ReviewFor
   const defaultValues: ReviewFormValues = {
     author_name: review?.author_name || "",
     author_position: review?.author_position || "",
-    rating: review?.rating ?? undefined, // Required field, undefined for new review
+    rating: review?.rating ?? 5, // Default to 5 stars for new reviews
     case_id: review?.case_id || null,
     is_featured: review?.is_featured ?? false,
     sort_order: review?.sort_order ?? null,
