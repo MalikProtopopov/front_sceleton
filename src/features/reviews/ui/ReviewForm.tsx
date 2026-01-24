@@ -35,7 +35,7 @@ const localeSchema = z.object({
 const reviewSchema = z.object({
   author_name: z.string().min(1, "Имя автора обязательно").max(200, "Максимум 200 символов"),
   author_position: z.string().max(200, "Максимум 200 символов").optional(),
-  rating: z.coerce.number({ message: "Выберите рейтинг" }).min(1, "Рейтинг должен быть от 1 до 5").max(5, "Рейтинг должен быть от 1 до 5"),
+  rating: z.number({ message: "Выберите рейтинг" }).min(1, "Рейтинг должен быть от 1 до 5").max(5, "Рейтинг должен быть от 1 до 5"),
   case_id: z.string().uuid().optional().nullable(),
   is_featured: z.boolean().optional(),
   sort_order: z.number().min(0).optional().nullable(),
