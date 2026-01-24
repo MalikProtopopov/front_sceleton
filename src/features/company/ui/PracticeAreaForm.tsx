@@ -26,7 +26,7 @@ import type { PracticeArea, CreatePracticeAreaDto, UpdatePracticeAreaDto } from 
 // Validation schema
 const localeSchema = z.object({
   locale: z.string().min(1, "Локаль обязательна"),
-  name: z.string().min(1, "Название обязательно"),
+  title: z.string().min(1, "Название обязательно"),
   slug: z.string().min(1, "Slug обязателен"),
   description: z.string().optional().nullable(),
 });
@@ -60,13 +60,13 @@ export function PracticeAreaForm({ practiceArea, onSubmit, isSubmitting = false 
     is_active: practiceArea?.is_active ?? true,
     locales: practiceArea?.locales?.map((l) => ({
       locale: l.locale,
-      name: l.name,
+      title: l.title,
       slug: l.slug,
       description: l.description || "",
     })) || [
       {
         locale: "ru",
-        name: "",
+        title: "",
         slug: "",
         description: "",
       },
@@ -97,13 +97,13 @@ export function PracticeAreaForm({ practiceArea, onSubmit, isSubmitting = false 
         is_active: practiceArea.is_active ?? true,
         locales: practiceArea.locales?.map((l) => ({
           locale: l.locale,
-          name: l.name,
+          title: l.title,
           slug: l.slug,
           description: l.description || "",
         })) || [
           {
             locale: "ru",
-            name: "",
+            title: "",
             slug: "",
             description: "",
           },
@@ -119,7 +119,7 @@ export function PracticeAreaForm({ practiceArea, onSubmit, isSubmitting = false 
       is_active: data.is_active,
       locales: data.locales.map((l) => ({
         locale: l.locale,
-        name: l.name,
+        title: l.title,
         slug: l.slug,
         description: l.description || undefined,
       })),
@@ -139,7 +139,7 @@ export function PracticeAreaForm({ practiceArea, onSubmit, isSubmitting = false 
         ...locales,
         {
           locale,
-          name: "",
+          title: "",
           slug: "",
           description: "",
         },
@@ -255,13 +255,13 @@ export function PracticeAreaForm({ practiceArea, onSubmit, isSubmitting = false 
                   <Input
                     label="Название"
                     placeholder="Корпоративное право"
-                    {...register(`locales.${index}.name`, {
+                    {...register(`locales.${index}.title`, {
                       onChange: (e) => {
-                        // Auto-generate slug from name
+                        // Auto-generate slug from title
                         setValue(`locales.${index}.slug`, generateSlug(e.target.value));
                       },
                     })}
-                    error={errors.locales?.[index]?.name?.message}
+                    error={errors.locales?.[index]?.title?.message}
                     required
                   />
 

@@ -15,6 +15,7 @@ export const API_ENDPOINTS = {
     LOGOUT: "/auth/logout",
     REFRESH: "/auth/refresh",
     ME: "/auth/me",
+    ME_FEATURES: "/auth/me/features",
     CHANGE_PASSWORD: "/auth/me/password",
     ME_AVATAR: "/auth/me/avatar",
     USERS: "/auth/users",
@@ -113,6 +114,7 @@ export const API_ENDPOINTS = {
   
   // Tenants/Settings
   TENANTS: {
+    LIST: "/tenants",
     BY_ID: (id: string) => `/tenants/${id}`,
     SETTINGS: (id: string) => `/tenants/${id}/settings`,
     LOGO: (id: string) => `/tenants/${id}/logo`,

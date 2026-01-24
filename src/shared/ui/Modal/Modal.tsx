@@ -101,8 +101,8 @@ export function ModalFooter({ children, className }: ModalFooterProps) {
   return (
     <div
       className={cn(
-        // Fixed footer with border
-        "flex-shrink-0",
+        // Fixed footer with border - position relative for z-index stacking
+        "flex-shrink-0 relative z-0",
         "border-t border-[var(--color-border)]",
         "bg-[var(--color-bg-primary)]",
         "px-6 py-4",

@@ -88,3 +88,34 @@ export function useChangePassword() {
   });
 }
 
+export function useUploadTenantLogo(tenantId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (file: File) => settingsApi.uploadLogo(tenantId, file),
+    onSuccess: (tenant) => {
+      queryClient.setQueryData(settingsKeys.tenant(tenantId), tenant);
+      toast.success("Логотип загружен");
+    },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "Не удалось загрузить логотип";
+      toast.error(message);
+    },
+  });
+}
+
+export function useDeleteTenantLogo(tenantId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => settingsApi.deleteLogo(tenantId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: settingsKeys.tenant(tenantId) });
+      toast.success("Логотип удален");
+    },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "Не удалось удалить логотип";
+      toast.error(message);
+    },
+  });
+}

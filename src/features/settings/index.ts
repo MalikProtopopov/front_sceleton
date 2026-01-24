@@ -6,5 +6,7 @@ export {
   useFeatureFlags,
   useUpdateFeatureFlag,
   useChangePassword,
+  useUploadTenantLogo,
+  useDeleteTenantLogo,
 } from "./model/useSettings";
 

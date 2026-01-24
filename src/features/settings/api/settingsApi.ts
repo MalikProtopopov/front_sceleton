@@ -19,6 +19,13 @@ export const settingsApi = {
   updateTenant: (tenantId: string, data: UpdateTenantDto) =>
     apiClient.patch<Tenant>(API_ENDPOINTS.TENANTS.BY_ID(tenantId), data),
 
+  // Tenant Logo
+  uploadLogo: (tenantId: string, file: File) =>
+    apiClient.uploadFile<Tenant>(API_ENDPOINTS.TENANTS.LOGO(tenantId), file),
+
+  deleteLogo: (tenantId: string) =>
+    apiClient.delete(API_ENDPOINTS.TENANTS.LOGO(tenantId)),
+
   // Settings
   updateSettings: (tenantId: string, data: UpdateTenantSettingsDto) =>
     apiClient.put<TenantSettings>(API_ENDPOINTS.TENANTS.SETTINGS(tenantId), data),

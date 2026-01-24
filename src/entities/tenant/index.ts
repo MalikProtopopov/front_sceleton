@@ -6,6 +6,10 @@ export type {
   UpdateTenantDto,
   UpdateTenantSettingsDto,
   UpdateFeatureFlagDto,
+  CreateTenantDto,
+  TenantListParams,
+  TenantsListResponse,
+  EnabledFeaturesResponse,
 } from "./types";
 
 export {

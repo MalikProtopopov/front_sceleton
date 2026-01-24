@@ -99,7 +99,7 @@ export function TelegramSettingsTab() {
     setWelcomeMessage("");
   };
 
-  const handleSetWebhook = () => {
+  const handleReinstallWebhook = () => {
     if (webhookUrlData?.webhook_url) {
       setWebhook(webhookUrlData.webhook_url);
     }
@@ -251,7 +251,7 @@ export function TelegramSettingsTab() {
         </CardContent>
       </Card>
 
-      {/* Webhook Settings (only if configured) */}
+      {/* Webhook Status (only if configured) */}
       {isConfigured && (
         <Card>
           <CardHeader>
@@ -276,22 +276,27 @@ export function TelegramSettingsTab() {
               )}
             </div>
 
-            {/* Webhook URL */}
-            {webhookUrlData?.is_configured && webhookUrlData.webhook_url && (
+            {/* Auto-setup info */}
+            <p className="text-sm text-[var(--color-text-muted)]">
+              Webhook устанавливается автоматически при подключении бота.
+            </p>
+
+            {/* Current webhook URL from integration */}
+            {integration?.webhook_url && (
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-[var(--color-text-secondary)]">
-                  URL Webhook
+                  Текущий Webhook URL
                 </label>
                 <div className="flex h-11 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-secondary)] px-4">
                   <code className="truncate text-sm text-[var(--color-text-muted)]">
-                    {webhookUrlData.webhook_url}
+                    {integration.webhook_url}
                   </code>
                 </div>
               </div>
             )}
 
             {/* Webhook not configured warning */}
-            {webhookUrlData && !webhookUrlData.is_configured && webhookUrlData.message && (
+            {!integration?.is_webhook_active && webhookUrlData?.message && (
               <div className="flex items-start gap-2 rounded-lg bg-yellow-50 p-3 text-sm text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-200">
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>{webhookUrlData.message}</span>
@@ -299,16 +304,17 @@ export function TelegramSettingsTab() {
             )}
 
             {/* Webhook Actions */}
-            <div className="flex gap-3">
-              <Button
-                variant="secondary"
-                onClick={handleSetWebhook}
-                isLoading={isSettingWebhook}
-                disabled={!webhookUrlData?.is_configured}
-              >
-                <RefreshCw className="mr-2 h-4 w-4" />
-                {integration?.is_webhook_active ? "Переустановить" : "Установить"} webhook
-              </Button>
+            <div className="flex flex-wrap gap-3">
+              {webhookUrlData?.is_configured && (
+                <Button
+                  variant="secondary"
+                  onClick={handleReinstallWebhook}
+                  isLoading={isSettingWebhook}
+                >
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Переустановить webhook
+                </Button>
+              )}
 
               {integration?.is_webhook_active && (
                 <Button

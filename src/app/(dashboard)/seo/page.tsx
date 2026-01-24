@@ -30,7 +30,7 @@ export default function SEORoutesPage() {
     canonical_url: "",
     robots_index: true,
     robots_follow: true,
-    sitemap_priority: 0.5,
+    sitemap_priority: undefined,
     sitemap_changefreq: "weekly",
     include_in_sitemap: true,
   });
@@ -48,7 +48,7 @@ export default function SEORoutesPage() {
       canonical_url: route.canonical_url || "",
       robots_index: route.robots_index,
       robots_follow: route.robots_follow,
-      sitemap_priority: route.sitemap_priority,
+      sitemap_priority: route.sitemap_priority ?? undefined,
       sitemap_changefreq: route.sitemap_changefreq || "weekly",
       include_in_sitemap: route.include_in_sitemap,
     });
@@ -69,7 +69,7 @@ export default function SEORoutesPage() {
       canonical_url: "",
       robots_index: true,
       robots_follow: true,
-      sitemap_priority: 0.5,
+      sitemap_priority: undefined,
       sitemap_changefreq: "weekly",
       include_in_sitemap: true,
     });
@@ -334,8 +334,15 @@ export default function SEORoutesPage() {
                 step="0.1"
                 min="0"
                 max="1"
-                value={formData.sitemap_priority || 0.5}
-                onChange={(e) => setFormData({ ...formData, sitemap_priority: parseFloat(e.target.value) })}
+                value={formData.sitemap_priority ?? ""}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setFormData({
+                    ...formData,
+                    sitemap_priority: val === "" ? undefined : parseFloat(val),
+                  });
+                }}
+                placeholder="0.5"
               />
               <Select
                 label="Частота обновления"

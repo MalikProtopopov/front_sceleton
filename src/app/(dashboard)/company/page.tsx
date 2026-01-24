@@ -78,7 +78,7 @@ export default function CompanyPage() {
             </div>
             <div>
               <p className="font-medium text-[var(--color-text-primary)]">
-                {ruLocale?.name || "—"}
+                {ruLocale?.title || "—"}
               </p>
               <p className="text-sm text-[var(--color-text-muted)]">/{ruLocale?.slug || ""}</p>
             </div>
@@ -113,7 +113,7 @@ export default function CompanyPage() {
             <Button variant="ghost" size="icon" onClick={() => router.push(ROUTES.PRACTICE_AREA_EDIT(item.id))} className="h-8 w-8">
               <Pencil className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={() => handleDeleteClick("practiceArea", item.id, ruLocale?.name || "")} className="h-8 w-8 text-[var(--color-error)]">
+            <Button variant="ghost" size="icon" onClick={() => handleDeleteClick("practiceArea", item.id, ruLocale?.title || "")} className="h-8 w-8 text-[var(--color-error)]">
               <Trash2 className="h-4 w-4" />
             </Button>
           </div>

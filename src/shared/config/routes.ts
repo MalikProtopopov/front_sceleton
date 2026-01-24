@@ -58,6 +58,13 @@ export const ROUTES = {
   // Settings
   SETTINGS: "/settings",
   
+  // Tenants (Platform Owner only)
+  TENANTS: "/tenants",
+  TENANT_NEW: "/tenants/new",
+  TENANT_DETAIL: (id: string) => `/tenants/${id}`,
+  TENANT_EDIT: (id: string) => `/tenants/${id}/edit`,
+  TENANT_MODULES: (id: string) => `/tenants/${id}/modules`,
+  
   // Audit Log
   AUDIT: "/audit",
   

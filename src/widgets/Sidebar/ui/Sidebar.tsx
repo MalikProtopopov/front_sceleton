@@ -16,12 +16,14 @@ import {
   ChevronLeft,
   ChevronRight,
   Building,
+  Building2,
   History,
   Key,
   Files,
 } from "lucide-react";
 import { cn } from "@/shared/lib";
 import { ROUTES } from "@/shared/config";
+import { useAuth } from "@/features/auth";
 import { NavItem } from "./NavItem";
 import { NavGroup } from "./NavGroup";
 
@@ -45,6 +47,14 @@ interface NavSection {
 function isNavGroup(item: NavItemData | NavGroupData): item is NavGroupData {
   return 'items' in item;
 }
+
+// Platform section (only for superusers)
+const platformNavigation: NavSection = {
+  label: "Платформа",
+  items: [
+    { href: ROUTES.TENANTS, icon: Building2, label: "Проекты" },
+  ],
+};
 
 const navigation: NavSection[] = [
   {
@@ -92,6 +102,15 @@ const navigation: NavSection[] = [
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
+  const { user } = useAuth();
+
+  // Check if user is superuser (platform owner)
+  const isSuperuser = user?.is_superuser || false;
+
+  // Build navigation with conditional platform section
+  const fullNavigation = isSuperuser 
+    ? [platformNavigation, ...navigation] 
+    : navigation;
 
   return (
     <aside
@@ -118,7 +137,7 @@ export function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto p-3">
-        {navigation.map((section) => (
+        {fullNavigation.map((section) => (
           <div key={section.label} className="mb-6">
             {!collapsed && (
               <h3 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">

@@ -5,7 +5,7 @@ export interface PracticeAreaLocale {
   id: string;
   practice_area_id: string;
   locale: string;
-  name: string;
+  title: string;
   slug: string;
   description: string | null;
   created_at: string;
@@ -26,7 +26,7 @@ export interface PracticeArea {
 
 export interface CreatePracticeAreaLocaleDto {
   locale: string;
-  name: string;
+  title: string;
   slug: string;
   description?: string;
 }
@@ -171,7 +171,7 @@ export interface CompanyFilterParams {
 // Locale DTOs (for independent locale management)
 export interface UpdatePracticeAreaLocaleDto {
   locale: string; // Required
-  name?: string;
+  title?: string;
   slug?: string;
   description?: string;
 }

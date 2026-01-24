@@ -1,6 +1,7 @@
 "use client";
 
-import { forwardRef, useState, useRef, useEffect, useCallback } from "react";
+import { forwardRef, useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { ChevronDown, Check } from "lucide-react";
 import { cn } from "@/shared/lib";
 
@@ -57,7 +58,9 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(
     const [internalValue, setInternalValue] = useState(defaultValue || "");
     const [highlightedIndex, setHighlightedIndex] = useState(-1);
     const containerRef = useRef<HTMLDivElement>(null);
+    const buttonRef = useRef<HTMLButtonElement>(null);
     const listRef = useRef<HTMLUListElement>(null);
+    const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
 
     const currentValue = value !== undefined ? value : internalValue;
     const selectedOption = options.find((opt) => opt.value === currentValue);
@@ -68,6 +71,48 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(
         ? { minWidth: `${minWidth}px` }
         : { minWidth }
       : undefined;
+    
+    // Calculate dropdown position when opening
+    useEffect(() => {
+      if (isOpen && buttonRef.current) {
+        const rect = buttonRef.current.getBoundingClientRect();
+        setDropdownPosition({
+          top: rect.bottom + 4,
+          left: rect.left,
+          width: rect.width,
+        });
+      }
+    }, [isOpen]);
+
+    // Update position on scroll/resize
+    useEffect(() => {
+      if (!isOpen) return;
+
+      const updatePosition = () => {
+        if (buttonRef.current) {
+          const rect = buttonRef.current.getBoundingClientRect();
+          setDropdownPosition({
+            top: rect.bottom + 4,
+            left: rect.left,
+            width: rect.width,
+          });
+        }
+      };
+
+      window.addEventListener("scroll", updatePosition, true);
+      window.addEventListener("resize", updatePosition);
+      return () => {
+        window.removeEventListener("scroll", updatePosition, true);
+        window.removeEventListener("resize", updatePosition);
+      };
+    }, [isOpen]);
+
+    // Check if dropdown should open upward
+    const shouldOpenUpward = useMemo(() => {
+      if (!dropdownPosition) return false;
+      const spaceBelow = window.innerHeight - dropdownPosition.top;
+      return spaceBelow < 250 && dropdownPosition.top > 250;
+    }, [dropdownPosition]);
 
     const handleSelect = useCallback(
       (optionValue: string) => {
@@ -94,15 +139,21 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(
     // Close on click outside
     useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
-        if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        const target = event.target as Node;
+        // Check if click is outside both container and dropdown list (which is in portal)
+        const isOutsideContainer = containerRef.current && !containerRef.current.contains(target);
+        const isOutsideDropdown = listRef.current && !listRef.current.contains(target);
+        
+        if (isOutsideContainer && isOutsideDropdown) {
           setIsOpen(false);
           setHighlightedIndex(-1);
         }
       };
 
       if (isOpen) {
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
+        // Use mouseup instead of mousedown to allow onClick handlers to fire first
+        document.addEventListener("mouseup", handleClickOutside);
+        return () => document.removeEventListener("mouseup", handleClickOutside);
       }
     }, [isOpen]);
 
@@ -208,14 +259,25 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(
 
           {/* Custom trigger button */}
           <button
-            ref={ref}
+            ref={(node) => {
+              // Handle both refs
+              buttonRef.current = node;
+              if (typeof ref === "function") {
+                ref(node);
+              } else if (ref) {
+                ref.current = node;
+              }
+            }}
             type="button"
             role="combobox"
             aria-expanded={isOpen}
             aria-haspopup="listbox"
             aria-controls={`${selectId}-listbox`}
             disabled={disabled}
-            onClick={handleToggle}
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent event bubbling to parent (e.g., table row)
+              handleToggle();
+            }}
             onKeyDown={handleKeyDown}
             onBlur={() => onBlur?.({ target: { value: currentValue, name } })}
             className={cn(
@@ -225,7 +287,8 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(
               "disabled:cursor-not-allowed disabled:opacity-50",
               error
                 ? "border-[var(--color-error)] focus:border-[var(--color-error)] focus:ring-[var(--color-error)]"
-                : "border-[var(--color-border)]"
+                : "border-[var(--color-border)]",
+              className?.includes("h-9") && "h-9 px-3 text-sm"
             )}
           >
             <span
@@ -244,8 +307,8 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(
             />
           </button>
 
-          {/* Dropdown menu */}
-          {isOpen && (
+          {/* Dropdown menu - rendered in portal for proper z-index stacking */}
+          {isOpen && dropdownPosition && typeof document !== "undefined" && createPortal(
             <ul
               ref={listRef}
               id={`${selectId}-listbox`}
@@ -253,10 +316,21 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(
               aria-activedescendant={
                 highlightedIndex >= 0 ? `${selectId}-option-${highlightedIndex}` : undefined
               }
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent event bubbling to parent
+              }}
               className={cn(
-                "absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-primary)] py-1 shadow-lg",
+                "fixed z-[9999] max-h-60 overflow-auto rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-primary)] py-1 shadow-lg",
                 "animate-in fade-in-0 zoom-in-95 duration-100"
               )}
+              style={{
+                top: shouldOpenUpward ? "auto" : dropdownPosition.top,
+                bottom: shouldOpenUpward ? window.innerHeight - dropdownPosition.top + buttonRef.current!.offsetHeight + 8 : "auto",
+                left: dropdownPosition.left,
+                width: Math.max(dropdownPosition.width, 140),
+                minWidth: "max-content",
+                maxWidth: "calc(100vw - 2rem)",
+              }}
             >
               {options.map((option, index) => {
                 const isSelected = option.value === currentValue;
@@ -269,7 +343,13 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(
                     role="option"
                     aria-selected={isSelected}
                     aria-disabled={option.disabled}
-                    onClick={() => !option.disabled && handleSelect(option.value)}
+                    onMouseDown={(e) => {
+                      e.preventDefault(); // Prevent focus loss and allow selection before dropdown closes
+                      e.stopPropagation(); // Prevent event bubbling
+                      if (!option.disabled) {
+                        handleSelect(option.value);
+                      }
+                    }}
                     onMouseEnter={() => !option.disabled && setHighlightedIndex(index)}
                     className={cn(
                       "flex cursor-pointer items-center justify-between px-4 py-2.5 text-sm transition-colors",
@@ -290,7 +370,8 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(
                   Нет вариантов
                 </li>
               )}
-            </ul>
+            </ul>,
+            document.body
           )}
         </div>
         {error && <p className="mt-1 text-sm text-[var(--color-error)]">{error}</p>}

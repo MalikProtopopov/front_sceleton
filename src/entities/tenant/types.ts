@@ -79,6 +79,37 @@ export interface UpdateFeatureFlagDto {
   enabled: boolean;
 }
 
+export interface CreateTenantDto {
+  name: string;
+  slug: string;
+  domain?: string;
+  is_active?: boolean;
+  contact_email?: string;
+  contact_phone?: string;
+  logo_url?: string;
+  primary_color?: string;
+}
+
+// List params
+export interface TenantListParams {
+  page?: number;
+  pageSize?: number;
+  is_active?: boolean;
+}
+
+// Response types
+export interface TenantsListResponse {
+  items: Tenant[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export interface EnabledFeaturesResponse {
+  enabled_features: string[];
+  all_features_enabled: boolean;
+}
+
 // Constants
 export const AVAILABLE_LOCALES = [
   { code: "ru", name: "Русский" },

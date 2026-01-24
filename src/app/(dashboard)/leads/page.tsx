@@ -130,15 +130,26 @@ export default function LeadsPage() {
       header: "Статус",
       width: "140px",
       render: (lead) => (
+        <div
+          className="w-full max-w-[140px]"
+          onClick={(e) => {
+            // Stop row click when interacting with status select
+            e.stopPropagation();
+          }}
+        >
         <Select
           value={lead.status}
-          onChange={(e) => handleStatusChange(lead, e.target.value as InquiryStatus)}
+            onChange={(e) => {
+              handleStatusChange(lead, e.target.value as InquiryStatus);
+            }}
           options={Object.entries(INQUIRY_STATUS_CONFIG).map(([value, { label }]) => ({
             value,
             label,
           }))}
-          className="w-32"
+            minWidth={undefined}
+            className="h-9 text-sm"
         />
+        </div>
       ),
     },
     {
@@ -306,8 +317,13 @@ export default function LeadsPage() {
           )}
         </>
       ) : (
-        /* Kanban View */
-        <LeadsKanban />
+        /* Kanban View - pass search and form filters, status is shown via columns */
+        <LeadsKanban
+          filters={{
+            search: filters.search,
+            formId: filters.formId,
+          }}
+        />
       )}
 
       {/* Delete confirmation modal */}

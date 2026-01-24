@@ -68,11 +68,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
       if (event.query.queryKey[0] === "auth" && event.query.queryKey[1] === "me") {
         const data = event.query.state.data as UserWithPermissions | undefined;
-        if (data) {
-          setUser(data);
-        } else if (event.query.state.status === "error") {
-          setUser(null);
-        }
+        // Defer state update to avoid "Cannot update a component while rendering" warning
+        queueMicrotask(() => {
+          if (data) {
+            setUser(data);
+          } else if (event.query.state.status === "error") {
+            setUser(null);
+          }
+        });
       }
     });
 

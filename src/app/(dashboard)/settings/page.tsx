@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Settings, Globe, Bell, BarChart3, ToggleLeft, KeyRound, MessageSquare } from "lucide-react";
-import { useTenant, useUpdateTenant, useUpdateTenantSettings, useFeatureFlags, useUpdateFeatureFlag, useChangePassword } from "@/features/settings";
+import { useState, useEffect, useCallback } from "react";
+import { Settings, Globe, Bell, BarChart3, KeyRound, MessageSquare } from "lucide-react";
+import { useTenant, useUpdateTenant, useUpdateTenantSettings, useChangePassword, useUploadTenantLogo, useDeleteTenantLogo } from "@/features/settings";
 import { 
   Button, Input, Select, Card, CardHeader, CardTitle, CardContent, 
-  Tabs, Tab, Spinner, Switch 
+  Tabs, Tab, Spinner, Switch
 } from "@/shared/ui";
 import { useAuth } from "@/features/auth";
 import { TelegramSettingsTab } from "@/features/telegram";
@@ -17,13 +17,23 @@ export default function SettingsPage() {
   const tenantId = user?.tenant_id || "";
   
   const { data: tenant, isLoading } = useTenant(tenantId);
-  const { data: featureFlagsData, isLoading: flagsLoading } = useFeatureFlags(tenantId);
   const { mutate: updateTenant, isPending: isUpdatingTenant } = useUpdateTenant(tenantId);
   const { mutate: updateSettings, isPending: isUpdatingSettings } = useUpdateTenantSettings(tenantId);
-  const { mutate: updateFeatureFlag, isPending: isUpdatingFlag } = useUpdateFeatureFlag(tenantId);
   const { mutate: changePassword, isPending: isChangingPassword } = useChangePassword();
+  const { mutate: uploadLogo, isPending: isUploadingLogo } = useUploadTenantLogo(tenantId);
+  const { mutate: deleteLogo, isPending: isDeletingLogo } = useDeleteTenantLogo(tenantId);
 
   const [activeTab, setActiveTab] = useState(0);
+  
+  // Logo state - track preview URL (either from tenant data or local preview after upload)
+  const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
+  
+  // Update preview when tenant data loads
+  useEffect(() => {
+    if (tenant?.logo_url) {
+      setLogoPreviewUrl(tenant.logo_url);
+    }
+  }, [tenant?.logo_url]);
 
   // Password change state
   const [passwordForm, setPasswordForm] = useState({
@@ -38,7 +48,6 @@ export default function SettingsPage() {
     name: "",
     contact_email: "",
     contact_phone: "",
-    logo_url: "",
     primary_color: "#1E40AF",
   });
 
@@ -71,7 +80,6 @@ export default function SettingsPage() {
         name: tenant.name,
         contact_email: tenant.contact_email || "",
         contact_phone: tenant.contact_phone || "",
-        logo_url: tenant.logo_url || "",
         primary_color: tenant.primary_color || "#1E40AF",
       });
 
@@ -104,12 +112,41 @@ export default function SettingsPage() {
         name: generalForm.name,
         contact_email: generalForm.contact_email || undefined,
         contact_phone: generalForm.contact_phone || undefined,
-        logo_url: generalForm.logo_url || undefined,
         primary_color: generalForm.primary_color,
         version: tenant.version,
       });
     }
   };
+
+  const handleLogoUpload = useCallback((file: File) => {
+    // Create local preview URL immediately
+    const previewUrl = URL.createObjectURL(file);
+    setLogoPreviewUrl(previewUrl);
+    
+    uploadLogo(file, {
+      onSuccess: (updatedTenant) => {
+        // If backend returns logo_url, use it; otherwise keep local preview
+        if (updatedTenant?.logo_url) {
+          setLogoPreviewUrl(updatedTenant.logo_url);
+          // Revoke the blob URL to free memory
+          URL.revokeObjectURL(previewUrl);
+        }
+      },
+      onError: () => {
+        // Revert to previous state on error
+        setLogoPreviewUrl(tenant?.logo_url || null);
+        URL.revokeObjectURL(previewUrl);
+      },
+    });
+  }, [uploadLogo, tenant?.logo_url]);
+
+  const handleLogoDelete = useCallback(() => {
+    deleteLogo(undefined, {
+      onSuccess: () => {
+        setLogoPreviewUrl(null);
+      },
+    });
+  }, [deleteLogo]);
 
   const handleSaveLocale = () => {
     updateSettings(localeForm);
@@ -121,13 +158,6 @@ export default function SettingsPage() {
 
   const handleSaveAnalytics = () => {
     updateSettings(analyticsForm);
-  };
-
-  const handleToggleFeature = (featureName: string, currentEnabled: boolean) => {
-    updateFeatureFlag({
-      featureName,
-      data: { enabled: !currentEnabled },
-    });
   };
 
   const handleChangePassword = () => {
@@ -210,12 +240,59 @@ export default function SettingsPage() {
                   onChange={(e) => setGeneralForm({ ...generalForm, contact_phone: e.target.value })}
                 />
               </div>
-              <Input
-                label="URL логотипа"
-                value={generalForm.logo_url}
-                onChange={(e) => setGeneralForm({ ...generalForm, logo_url: e.target.value })}
-                placeholder="https://..."
-              />
+              <div>
+                <label className="mb-2 block text-sm font-medium text-[var(--color-text-primary)]">
+                  Логотип
+                </label>
+                <div className="space-y-3">
+                  {logoPreviewUrl && (
+                    <div className="relative inline-block">
+                      <img
+                        src={logoPreviewUrl}
+                        alt="Логотип"
+                        className="h-20 w-auto rounded border border-[var(--color-border)] object-contain"
+                        onError={() => {
+                          setLogoPreviewUrl(null);
+                        }}
+                      />
+                    </div>
+                  )}
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          handleLogoUpload(file);
+                        }
+                      }}
+                      disabled={isUploadingLogo || isDeletingLogo}
+                      className="block w-full text-sm text-[var(--color-text-secondary)]
+                        file:mr-4 file:py-2 file:px-4
+                        file:rounded-[var(--radius-md)] file:border-0
+                        file:text-sm file:font-medium
+                        file:bg-[var(--color-accent-primary)] file:text-white
+                        file:cursor-pointer
+                        hover:file:bg-[var(--color-accent-primary-hover)]
+                        disabled:opacity-50 disabled:cursor-not-allowed"
+                    />
+                    {logoPreviewUrl && (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={handleLogoDelete}
+                        disabled={isUploadingLogo || isDeletingLogo}
+                      >
+                        Удалить
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-xs text-[var(--color-text-muted)]">
+                    Поддерживаемые форматы: JPEG, PNG, WebP, GIF. Максимальный размер: 10 MB
+                  </p>
+                </div>
+              </div>
               <div>
                 <label className="mb-2 block text-sm font-medium text-[var(--color-text-primary)]">
                   Основной цвет бренда
@@ -387,56 +464,6 @@ export default function SettingsPage() {
                   Сохранить
                 </Button>
               </div>
-            </CardContent>
-          </Card>
-        </Tab>
-
-        {/* Feature Flags */}
-        <Tab 
-          label={
-            <span className="flex items-center gap-2">
-              <ToggleLeft className="h-4 w-4" />
-              Модули
-            </span>
-          }
-        >
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle>Управление модулями</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {flagsLoading ? (
-                <div className="flex justify-center py-8">
-                  <Spinner />
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {featureFlagsData?.available_features &&
-                    Object.entries(featureFlagsData.available_features).map(([name, description]) => {
-                      const flag = featureFlagsData.items.find((f) => f.feature_name === name);
-                      const isEnabled = flag?.enabled ?? false;
-
-                      return (
-                        <div
-                          key={name}
-                          className="flex items-center justify-between rounded-lg border border-[var(--color-border)] p-4"
-                        >
-                          <div>
-                            <p className="font-medium text-[var(--color-text-primary)]">
-                              {name.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())}
-                            </p>
-                            <p className="text-sm text-[var(--color-text-muted)]">{description}</p>
-                          </div>
-                          <Switch
-                            checked={isEnabled}
-                            onChange={() => handleToggleFeature(name, isEnabled)}
-                            disabled={isUpdatingFlag}
-                          />
-                        </div>
-                      );
-                    })}
-                </div>
-              )}
             </CardContent>
           </Card>
         </Tab>

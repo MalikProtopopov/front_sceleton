@@ -68,8 +68,8 @@ export function Table<T extends object>({
 
   return (
     <div className={cn("overflow-hidden rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-bg-primary)]", className)}>
-      <div className="overflow-x-auto">
-        <table className="w-full">
+      <div className="overflow-x-auto overflow-y-visible">
+        <table className="w-full min-w-full">
           <thead>
             <tr className="border-b border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
               {onSelectRow && (
@@ -172,10 +172,13 @@ export function Table<T extends object>({
                       <td
                         key={column.key}
                         className="px-4 py-3 text-sm text-[var(--color-text-primary)]"
+                        style={column.width ? { width: column.width, minWidth: column.width } : undefined}
                       >
+                        <div className="w-full overflow-visible">
                         {column.render
                           ? column.render(row, index)
                           : ((row as Record<string, unknown>)[column.key] as React.ReactNode)}
+                        </div>
                       </td>
                     ))}
                   </tr>
