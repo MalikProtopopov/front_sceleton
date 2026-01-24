@@ -27,7 +27,7 @@ export default function EditPracticeAreaPage({ params }: { params: Promise<{ id:
   }
 
   const getTitle = () =>
-    item.locales?.find((l) => l.locale === "ru")?.name || item.locales?.[0]?.name || "Направление";
+    item.locales?.find((l) => l.locale === "ru")?.title || item.locales?.[0]?.title || "Направление";
 
   return (
     <div className="space-y-6">
