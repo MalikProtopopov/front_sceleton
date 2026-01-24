@@ -21,7 +21,6 @@ import {
   CardContent,
   RichTextEditor,
   ImageUpload,
-  SectionHeader,
   LocaleManager,
   ModalBody,
   ModalFooter,
