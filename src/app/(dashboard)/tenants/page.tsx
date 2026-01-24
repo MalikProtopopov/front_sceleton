@@ -102,8 +102,10 @@ export default function TenantsPage() {
           {data && data.total > filters.pageSize! && (
             <Pagination
               page={filters.page || 1}
-              totalPages={Math.ceil(data.total / (filters.pageSize || 12))}
+              pageSize={filters.pageSize || 12}
+              total={data.total}
               onPageChange={(page) => handleFiltersChange({ page })}
+              showPageSize={false}
             />
           )}
         </>
