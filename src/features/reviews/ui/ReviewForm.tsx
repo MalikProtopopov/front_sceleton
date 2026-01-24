@@ -42,7 +42,7 @@ const reviewSchema = z.object({
       const num = parseInt(String(val), 10);
       return isNaN(num) ? undefined : num;
     },
-    z.number({ required_error: "Заполните поле", invalid_type_error: "Выберите рейтинг" }).min(1, "Рейтинг должен быть от 1 до 5").max(5, "Рейтинг должен быть от 1 до 5")
+    z.number({ message: "Выберите рейтинг" }).min(1, "Рейтинг должен быть от 1 до 5").max(5, "Рейтинг должен быть от 1 до 5")
   ),
   case_id: z.string().uuid().optional().nullable(),
   is_featured: z.boolean().optional(),
