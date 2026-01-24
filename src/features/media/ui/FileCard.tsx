@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { File, Image as ImageIcon, FileText, Film, Music, Trash2, Copy, Check } from "lucide-react";
-import { cn, formatFileSize, formatDate } from "@/shared/lib";
+import { cn, formatFileSize, formatDate, getMediaUrl } from "@/shared/lib";
 import { Button } from "@/shared/ui";
 import type { FileAsset } from "@/entities/file";
 import { SUPPORTED_IMAGE_TYPES } from "@/entities/file";
@@ -24,11 +24,18 @@ export function FileCard({
   selectable = false,
 }: FileCardProps) {
   const [copied, setCopied] = useState(false);
-  const isImage = SUPPORTED_IMAGE_TYPES.includes(file.mime_type);
+  
+  // Get the display URL (prefer cdn_url, then file_url, then s3_url)
+  const fileUrl = file.cdn_url || file.file_url || file.s3_url || "";
+  const absoluteUrl = getMediaUrl(fileUrl);
+  
+  // Check if it's an image by mime_type (with fallback for old data)
+  const mimeType = file.mime_type || "";
+  const isImage = SUPPORTED_IMAGE_TYPES.includes(mimeType) || mimeType.startsWith("image/");
 
   const handleCopyUrl = (e: React.MouseEvent) => {
     e.stopPropagation();
-    navigator.clipboard.writeText(file.file_url);
+    navigator.clipboard.writeText(absoluteUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -42,10 +49,10 @@ export function FileCard({
   // Determine which icon to render based on mime type
   const renderFileIcon = () => {
     const iconClass = "h-12 w-12 text-[var(--color-text-muted)]";
-    if (file.mime_type.startsWith("image/")) return <ImageIcon className={iconClass} />;
-    if (file.mime_type.startsWith("video/")) return <Film className={iconClass} />;
-    if (file.mime_type.startsWith("audio/")) return <Music className={iconClass} />;
-    if (file.mime_type.includes("pdf") || file.mime_type.includes("document")) return <FileText className={iconClass} />;
+    if (mimeType.startsWith("image/")) return <ImageIcon className={iconClass} />;
+    if (mimeType.startsWith("video/")) return <Film className={iconClass} />;
+    if (mimeType.startsWith("audio/")) return <Music className={iconClass} />;
+    if (mimeType.includes("pdf") || mimeType.includes("document")) return <FileText className={iconClass} />;
     return <File className={iconClass} />;
   };
 
@@ -62,13 +69,14 @@ export function FileCard({
     >
       {/* Preview area */}
       <div className="relative aspect-square overflow-hidden bg-[var(--color-bg-secondary)]">
-        {isImage ? (
+        {isImage && absoluteUrl ? (
           <Image
-            src={file.file_url}
-            alt={file.alt_text || file.original_filename}
+            src={absoluteUrl}
+            alt={file.alt_text || file.original_filename || "Image"}
             fill
             className="object-cover transition-transform duration-300 group-hover:scale-105"
             sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+            unoptimized
           />
         ) : (
           <div className="flex h-full items-center justify-center">
