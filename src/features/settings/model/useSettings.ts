@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { settingsApi, settingsKeys } from "../api/settingsApi";
+import { tenantsKeys } from "@/features/tenants/api/tenantsApi";
 import type { UpdateTenantDto, UpdateTenantSettingsDto, UpdateFeatureFlagDto } from "@/entities/tenant";
 
 export function useTenant(tenantId: string) {
@@ -103,6 +104,8 @@ export function useUpdateFeatureFlag(tenantId: string) {
     // Всегда перезапрашиваем после мутации для синхронизации с сервером
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey });
+      // Обновляем список фич для сайдбара текущего пользователя
+      queryClient.invalidateQueries({ queryKey: tenantsKeys.enabledFeatures() });
     },
   });
 }

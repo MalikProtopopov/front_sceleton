@@ -119,7 +119,7 @@ export default function TenantModulesPage() {
           </p>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {Object.entries(availableFeatures).map(([featureName, description]) => {
             const Icon = featureIcons[featureName] || ToggleLeft;
             const isEnabled = enabledFeatures.get(featureName) ?? false;
@@ -127,29 +127,32 @@ export default function TenantModulesPage() {
 
             return (
               <Card key={featureName} className="relative">
-                <CardContent className="p-5">
-                  <div className="flex items-start gap-4">
-                    <div
-                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors ${
-                        isEnabled
-                          ? "bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)]"
-                          : "bg-[var(--color-bg-secondary)] text-[var(--color-text-muted)]"
-                      }`}
-                    >
-                      <Icon className="h-5 w-5" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-[var(--color-text-primary)]">
-                        {label}
-                      </h3>
-                      <p className="mt-1 text-sm text-[var(--color-text-muted)] line-clamp-2">
-                        {description}
-                      </p>
+                <CardContent className="p-4 sm:p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3 min-w-0 flex-1">
+                      <div
+                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors ${
+                          isEnabled
+                            ? "bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)]"
+                            : "bg-[var(--color-bg-secondary)] text-[var(--color-text-muted)]"
+                        }`}
+                      >
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-medium text-[var(--color-text-primary)] leading-tight">
+                          {label}
+                        </h3>
+                        <p className="mt-1 text-sm text-[var(--color-text-muted)] line-clamp-2">
+                          {description}
+                        </p>
+                      </div>
                     </div>
                     <Switch
                       checked={isEnabled}
                       onChange={(checked) => handleToggle(featureName, checked)}
                       disabled={isUpdating}
+                      className="shrink-0"
                     />
                   </div>
                 </CardContent>

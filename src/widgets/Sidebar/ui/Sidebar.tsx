@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   FileText,
   HelpCircle,
@@ -24,6 +24,7 @@ import {
 import { cn } from "@/shared/lib";
 import { ROUTES } from "@/shared/config";
 import { useAuth } from "@/features/auth";
+import { useEnabledFeatures } from "@/features/tenants";
 import { NavItem } from "./NavItem";
 import { NavGroup } from "./NavGroup";
 
@@ -31,12 +32,14 @@ interface NavItemData {
   href: string;
   icon: React.ComponentType<{ className?: string }>;
   label: string;
+  feature?: string; // Optional feature flag requirement
 }
 
 interface NavGroupData {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   items: NavItemData[];
+  feature?: string; // Optional feature flag requirement
 }
 
 interface NavSection {
@@ -56,36 +59,37 @@ const platformNavigation: NavSection = {
   ],
 };
 
+// Navigation with feature flags
 const navigation: NavSection[] = [
   {
     label: "Контент",
     items: [
-      { href: ROUTES.ARTICLES, icon: FileText, label: "Статьи" },
-      { href: ROUTES.CASES, icon: FolderOpen, label: "Кейсы" },
-      { href: ROUTES.FAQ, icon: HelpCircle, label: "FAQ" },
-      { href: ROUTES.SERVICES, icon: Briefcase, label: "Услуги" },
-      { href: ROUTES.DOCUMENTS, icon: Files, label: "Документы" },
+      { href: ROUTES.ARTICLES, icon: FileText, label: "Статьи", feature: "blog_module" },
+      { href: ROUTES.CASES, icon: FolderOpen, label: "Кейсы", feature: "cases_module" },
+      { href: ROUTES.FAQ, icon: HelpCircle, label: "FAQ", feature: "faq_module" },
+      { href: ROUTES.SERVICES, icon: Briefcase, label: "Услуги" }, // Always visible
+      { href: ROUTES.DOCUMENTS, icon: Files, label: "Документы" }, // Always visible
     ],
   },
   {
     label: "Команда и компания",
     items: [
-      { href: ROUTES.TEAM, icon: Users, label: "Команда" },
-      { href: ROUTES.REVIEWS, icon: Star, label: "Отзывы" },
-      { href: ROUTES.COMPANY, icon: Building, label: "О компании" },
+      { href: ROUTES.TEAM, icon: Users, label: "Команда", feature: "team_module" },
+      { href: ROUTES.REVIEWS, icon: Star, label: "Отзывы", feature: "reviews_module" },
+      { href: ROUTES.COMPANY, icon: Building, label: "О компании" }, // Always visible
     ],
   },
   {
     label: "Медиа и заявки",
     items: [
-      { href: ROUTES.MEDIA, icon: Image, label: "Медиатека" },
-      { href: ROUTES.LEADS, icon: MessageSquare, label: "Заявки" },
+      { href: ROUTES.MEDIA, icon: Image, label: "Медиатека" }, // Always visible
+      { href: ROUTES.LEADS, icon: MessageSquare, label: "Заявки" }, // Always visible
     ],
   },
   {
     label: "Администрирование",
     items: [
-      { href: ROUTES.SEO, icon: Search, label: "SEO" },
+      { href: ROUTES.SEO, icon: Search, label: "SEO", feature: "seo_advanced" },
       {
         icon: Shield,
         label: "Пользователи",
@@ -94,8 +98,8 @@ const navigation: NavSection[] = [
           { href: ROUTES.ROLES, icon: Key, label: "Роли" },
         ],
       },
-      { href: ROUTES.AUDIT, icon: History, label: "Журнал аудита" },
-      { href: ROUTES.SETTINGS, icon: Settings, label: "Настройки" },
+      { href: ROUTES.AUDIT, icon: History, label: "Журнал аудита" }, // Always visible
+      { href: ROUTES.SETTINGS, icon: Settings, label: "Настройки" }, // Always visible
     ],
   },
 ];
@@ -103,14 +107,57 @@ const navigation: NavSection[] = [
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const { user } = useAuth();
+  const { data: featuresData } = useEnabledFeatures();
 
   // Check if user is superuser (platform owner)
   const isSuperuser = user?.is_superuser || false;
 
+  // Get enabled features
+  const enabledFeatures = featuresData?.enabled_features ?? [];
+  const allFeaturesEnabled = featuresData?.all_features_enabled ?? false;
+
+  // Filter function for nav items based on feature flags
+  const isFeatureEnabled = (feature?: string): boolean => {
+    // If no feature required, always show
+    if (!feature) return true;
+    // Superusers see everything
+    if (isSuperuser || allFeaturesEnabled) return true;
+    // Check if feature is in enabled list
+    return enabledFeatures.includes(feature);
+  };
+
+  // Filter navigation based on feature flags
+  const filteredNavigation = useMemo(() => {
+    return navigation.map((section) => ({
+      ...section,
+      items: section.items
+        .filter((item) => {
+          if (isNavGroup(item)) {
+            // Filter group items and only show group if it has visible items
+            const visibleItems = item.items.filter((subItem) => 
+              isFeatureEnabled(subItem.feature)
+            );
+            return visibleItems.length > 0 && isFeatureEnabled(item.feature);
+          }
+          return isFeatureEnabled(item.feature);
+        })
+        .map((item) => {
+          if (isNavGroup(item)) {
+            // Return group with filtered items
+            return {
+              ...item,
+              items: item.items.filter((subItem) => isFeatureEnabled(subItem.feature)),
+            };
+          }
+          return item;
+        }),
+    })).filter((section) => section.items.length > 0); // Remove empty sections
+  }, [enabledFeatures, allFeaturesEnabled, isSuperuser]);
+
   // Build navigation with conditional platform section
   const fullNavigation = isSuperuser 
-    ? [platformNavigation, ...navigation] 
-    : navigation;
+    ? [platformNavigation, ...filteredNavigation] 
+    : filteredNavigation;
 
   return (
     <aside
