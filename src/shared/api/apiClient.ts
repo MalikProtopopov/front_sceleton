@@ -39,6 +39,9 @@ class ApiClient {
       baseURL: API_BASE_URL,
       headers: {
         "Content-Type": "application/json",
+        // Запрещаем браузеру кэшировать ответы API
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache",
       },
       timeout: 30000, // 30 seconds
     });
