@@ -10,6 +10,7 @@ export function useTenant(tenantId: string) {
     queryKey: settingsKeys.tenant(tenantId),
     queryFn: () => settingsApi.getTenant(tenantId),
     enabled: !!tenantId,
+    staleTime: 0, // Данные сразу считаются устаревшими - не кэшировать
   });
 }
 
@@ -50,22 +51,58 @@ export function useFeatureFlags(tenantId: string) {
     queryKey: settingsKeys.featureFlags(tenantId),
     queryFn: () => settingsApi.getFeatureFlags(tenantId),
     enabled: !!tenantId,
+    staleTime: 0, // Данные сразу считаются устаревшими - не кэшировать
   });
 }
 
 export function useUpdateFeatureFlag(tenantId: string) {
   const queryClient = useQueryClient();
+  const queryKey = settingsKeys.featureFlags(tenantId);
 
   return useMutation({
     mutationFn: ({ featureName, data }: { featureName: string; data: UpdateFeatureFlagDto }) =>
       settingsApi.updateFeatureFlag(featureName, tenantId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: settingsKeys.featureFlags(tenantId) });
-      toast.success("Модуль обновлен");
+    
+    // Optimistic update для мгновенного отклика UI
+    onMutate: async ({ featureName, data }) => {
+      // Отменяем исходящие запросы
+      await queryClient.cancelQueries({ queryKey });
+      
+      // Сохраняем предыдущее состояние
+      const previousFlags = queryClient.getQueryData(queryKey);
+      
+      // Оптимистично обновляем кэш
+      queryClient.setQueryData(queryKey, (old: { items: Array<{ feature_name: string; enabled: boolean }> } | undefined) => {
+        if (!old) return old;
+        return {
+          ...old,
+          items: old.items.map((item) =>
+            item.feature_name === featureName 
+              ? { ...item, enabled: data.enabled } 
+              : item
+          ),
+        };
+      });
+      
+      return { previousFlags };
     },
-    onError: (error) => {
+    
+    // Откат при ошибке
+    onError: (error, _variables, context) => {
+      if (context?.previousFlags) {
+        queryClient.setQueryData(queryKey, context.previousFlags);
+      }
       const message = error instanceof Error ? error.message : "Не удалось обновить модуль";
       toast.error(message);
+    },
+    
+    onSuccess: () => {
+      toast.success("Модуль обновлен");
+    },
+    
+    // Всегда перезапрашиваем после мутации для синхронизации с сервером
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey });
     },
   });
 }
