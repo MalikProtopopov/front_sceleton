@@ -142,8 +142,9 @@ export function ArticleForm({ article, topics = [], onSubmit, isSubmitting = fal
       setEditingLocales(initialState);
       
       // Set active tab to first locale
-      if (article.locales.length > 0) {
-        setActiveLocaleTab(article.locales[0].locale);
+      const firstLocale = article.locales[0];
+      if (firstLocale) {
+        setActiveLocaleTab(firstLocale.locale);
       }
     }
   }, [isEditing, article?.locales]);
@@ -248,8 +249,9 @@ export function ArticleForm({ article, topics = [], onSubmit, isSubmitting = fal
     setDeletingLocaleId(null);
     // Switch to first available locale
     const remainingLocales = articleLocales.filter((l) => l.id !== deletingLocaleId);
-    if (remainingLocales.length > 0) {
-      setActiveLocaleTab(remainingLocales[0].locale);
+    const firstRemaining = remainingLocales[0];
+    if (firstRemaining) {
+      setActiveLocaleTab(firstRemaining.locale);
     }
   }, [deletingLocaleId, deleteLocale, articleLocales]);
 
