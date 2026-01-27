@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Globe, Plus, Trash2 } from "lucide-react";
+import { Globe, Trash2 } from "lucide-react";
 import {
   Button,
   Input,
