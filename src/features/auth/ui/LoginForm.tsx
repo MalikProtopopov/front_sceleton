@@ -35,12 +35,36 @@ export function LoginForm() {
     login(data);
   };
 
-  // Extract error message
-  const errorMessage = error
-    ? error instanceof Error
-      ? error.message
-      : "Неверный email или пароль"
-    : null;
+  // Extract error message from various error formats
+  const getErrorMessage = () => {
+    if (!error) return null;
+    
+    if (error && typeof error === "object") {
+      // Axios error with response
+      const axiosError = error as { response?: { status?: number; data?: { detail?: string; message?: string } }; message?: string };
+      
+      if (axiosError.response?.status === 401) {
+        return "Неверный email или пароль";
+      }
+      if (axiosError.response?.data?.detail) {
+        return axiosError.response.data.detail;
+      }
+      if (axiosError.response?.data?.message) {
+        return axiosError.response.data.message;
+      }
+      if (axiosError.message && !axiosError.message.includes("status code")) {
+        return axiosError.message;
+      }
+    }
+    
+    if (error instanceof Error) {
+      return error.message;
+    }
+    
+    return "Неверный email или пароль";
+  };
+  
+  const errorMessage = getErrorMessage();
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">

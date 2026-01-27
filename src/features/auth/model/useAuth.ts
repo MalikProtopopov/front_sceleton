@@ -34,11 +34,27 @@ export function useLogin() {
       toast.success("Вы успешно вошли в систему");
       router.push(ROUTES.ARTICLES);
     },
-    onError: (error) => {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Неверный email или пароль";
+    onError: (error: unknown) => {
+      // Extract error message from various error formats
+      let message = "Неверный email или пароль";
+      
+      if (error && typeof error === "object") {
+        // Axios error with response
+        const axiosError = error as { response?: { status?: number; data?: { detail?: string; message?: string } }; message?: string };
+        
+        if (axiosError.response?.status === 401) {
+          message = "Неверный email или пароль";
+        } else if (axiosError.response?.data?.detail) {
+          message = axiosError.response.data.detail;
+        } else if (axiosError.response?.data?.message) {
+          message = axiosError.response.data.message;
+        } else if (axiosError.message && axiosError.message !== "Request failed with status code 401") {
+          message = axiosError.message;
+        }
+      } else if (error instanceof Error) {
+        message = error.message;
+      }
+      
       toast.error(message);
     },
   });

@@ -35,7 +35,7 @@ const localeSchema = z.object({
 const reviewSchema = z.object({
   author_name: z.string().min(1, "Имя автора обязательно").max(200, "Максимум 200 символов"),
   author_position: z.string().max(200, "Максимум 200 символов").optional(),
-  rating: z.number({ message: "Выберите рейтинг" }).min(1, "Рейтинг должен быть от 1 до 5").max(5, "Рейтинг должен быть от 1 до 5"),
+  rating: z.number({ required_error: "Выберите рейтинг", invalid_type_error: "Выберите рейтинг" }).min(1, "Рейтинг должен быть от 1 до 5").max(5, "Рейтинг должен быть от 1 до 5"),
   case_id: z.string().uuid().optional().nullable(),
   is_featured: z.boolean().optional(),
   sort_order: z.number().min(0).optional().nullable(),
@@ -57,6 +57,7 @@ const SUPPORTED_LOCALES = [
 ];
 
 const RATING_OPTIONS = [
+  { value: "", label: "Выберите рейтинг" },
   { value: "5", label: "★★★★★ (5)" },
   { value: "4", label: "★★★★☆ (4)" },
   { value: "3", label: "★★★☆☆ (3)" },
@@ -100,7 +101,7 @@ export function ReviewForm({ review, onSubmit, isSubmitting = false }: ReviewFor
   const defaultValues: ReviewFormValues = {
     author_name: review?.author_name || "",
     author_position: review?.author_position || "",
-    rating: review?.rating ?? 5, // Default to 5 stars for new reviews
+    rating: review?.rating as number, // Required field - must be selected
     case_id: review?.case_id || null,
     is_featured: review?.is_featured ?? false,
     sort_order: review?.sort_order ?? null,
@@ -282,6 +283,7 @@ export function ReviewForm({ review, onSubmit, isSubmitting = false }: ReviewFor
                   onBlur={field.onBlur}
                   options={RATING_OPTIONS}
                   error={errors.rating?.message}
+                  required
                 />
               )}
             />

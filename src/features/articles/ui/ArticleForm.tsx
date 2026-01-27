@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Globe } from "lucide-react";
+import { Globe, Plus, Trash2 } from "lucide-react";
 import {
   Button,
   Input,
@@ -21,10 +21,8 @@ import {
   CardContent,
   RichTextEditor,
   ImageUpload,
-  LocaleManager,
-  ModalBody,
-  ModalFooter,
-  type LocaleFormRenderProps,
+  ConfirmModal,
+  Badge,
 } from "@/shared/ui";
 import { generateSlug } from "@/shared/lib";
 import { useUploadArticleCoverImage, useDeleteArticleCoverImage } from "@/features/images";
@@ -76,147 +74,14 @@ const SUPPORTED_LOCALES = [
   { value: "en", label: "English" },
 ];
 
-// =============================================
-// Article Locale Form Component (for LocaleManager)
-// =============================================
-interface ArticleLocaleFormData extends Omit<CreateArticleLocaleDto, 'locale'> {
-  locale: string;
-}
-
-export function ArticleLocaleForm({
-  locale,
-  selectedLang,
-  onSubmit,
-  onCancel,
-  isLoading,
-  isEditing,
-}: LocaleFormRenderProps<ArticleLocale & { id: string }>) {
-  const [formData, setFormData] = useState<ArticleLocaleFormData>({
-    locale: selectedLang,
-    title: locale?.title || "",
-    slug: locale?.slug || "",
-    excerpt: locale?.excerpt || "",
-    content: locale?.content || "",
-    meta_title: locale?.meta_title || "",
-    meta_description: locale?.meta_description || "",
-  });
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  const handleChange = (field: keyof ArticleLocaleFormData, value: string | null) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: "" }));
-    }
-  };
-
-  const handleTitleChange = (value: string) => {
-    handleChange("title", value);
-    if (!isEditing) {
-      handleChange("slug", generateSlug(value));
-    }
-  };
-
-  const validate = (): boolean => {
-    const newErrors: Record<string, string> = {};
-    if (!formData.title?.trim()) {
-      newErrors.title = "Заголовок обязателен";
-    }
-    if (!formData.slug?.trim()) {
-      newErrors.slug = "Slug обязателен";
-    } else if (!/^[a-z0-9-]+$/.test(formData.slug)) {
-      newErrors.slug = "Только a-z, 0-9 и дефис";
-    }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = () => {
-    if (!validate()) return;
-    onSubmit({
-      locale: selectedLang,
-      title: formData.title,
-      slug: formData.slug,
-      excerpt: formData.excerpt || undefined,
-      content: formData.content || undefined,
-      meta_title: formData.meta_title || undefined,
-      meta_description: formData.meta_description || undefined,
-    } as ArticleLocale & { id: string });
-  };
-
-  return (
-    <>
-      <ModalBody>
-        <div className="space-y-4">
-          <Input
-            label="Заголовок"
-            placeholder="Введите заголовок"
-            value={formData.title}
-            onChange={(e) => handleTitleChange(e.target.value)}
-            error={errors.title}
-            required
-          />
-
-          <Input
-            label="Slug"
-            placeholder="article-slug"
-            value={formData.slug}
-            onChange={(e) => handleChange("slug", e.target.value)}
-            error={errors.slug}
-            required
-          />
-
-          <Textarea
-            label="Краткое описание"
-            placeholder="Краткое описание статьи..."
-            value={formData.excerpt || ""}
-            onChange={(e) => handleChange("excerpt", e.target.value)}
-          />
-
-          <RichTextEditor
-            label="Содержание"
-            value={formData.content || ""}
-            onChange={(val) => handleChange("content", val)}
-            placeholder="Полный текст статьи..."
-          />
-
-          {/* SEO fields */}
-          <div className="border-t border-[var(--color-border)] pt-4">
-            <h4 className="mb-4 text-sm font-medium text-[var(--color-text-secondary)]">
-              SEO настройки
-            </h4>
-            <div className="space-y-4">
-              <Input
-                label="Meta Title"
-                placeholder="SEO заголовок (до 60 символов)"
-                value={formData.meta_title || ""}
-                onChange={(e) => handleChange("meta_title", e.target.value)}
-              />
-              <Textarea
-                label="Meta Description"
-                placeholder="SEO описание (до 160 символов)"
-                value={formData.meta_description || ""}
-                onChange={(e) => handleChange("meta_description", e.target.value)}
-                className="min-h-[80px]"
-              />
-            </div>
-          </div>
-        </div>
-      </ModalBody>
-      <ModalFooter>
-        <Button variant="secondary" onClick={onCancel} disabled={isLoading}>
-          Отмена
-        </Button>
-        <Button onClick={handleSubmit} isLoading={isLoading}>
-          {isEditing ? "Сохранить" : "Добавить"}
-        </Button>
-      </ModalFooter>
-    </>
-  );
-}
-
 export function ArticleForm({ article, topics = [], onSubmit, isSubmitting = false }: ArticleFormProps) {
   const isEditing = !!article;
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(article?.cover_image_url || null);
+  const [activeLocaleTab, setActiveLocaleTab] = useState<string>("ru");
+  const [deletingLocaleId, setDeletingLocaleId] = useState<string | null>(null);
+  
+  // Local state for editing locales inline
+  const [editingLocales, setEditingLocales] = useState<Record<string, Partial<ArticleLocale>>>({});
 
   // Image upload hooks
   const uploadCoverImage = useUploadArticleCoverImage(article?.id || "");
@@ -263,6 +128,25 @@ export function ArticleForm({ article, topics = [], onSubmit, isSubmitting = fal
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const form = (isEditing ? editForm : createForm) as any;
   const locales = isEditing ? [] : createForm.watch("locales");
+  
+  // Get article locales for edit mode
+  const articleLocales = isEditing ? (article?.locales || []) : [];
+
+  // Initialize editing locales state from article data
+  useEffect(() => {
+    if (isEditing && article?.locales) {
+      const initialState: Record<string, Partial<ArticleLocale>> = {};
+      article.locales.forEach((locale) => {
+        initialState[locale.id] = { ...locale };
+      });
+      setEditingLocales(initialState);
+      
+      // Set active tab to first locale
+      if (article.locales.length > 0) {
+        setActiveLocaleTab(article.locales[0].locale);
+      }
+    }
+  }, [isEditing, article?.locales]);
 
   // Sync coverImageUrl when article changes
   useEffect(() => {
@@ -319,37 +203,55 @@ export function ArticleForm({ article, topics = [], onSubmit, isSubmitting = fal
     setCoverImageUrl(null);
   };
 
-  // Locale management handlers
-  const handleCreateLocale = async (data: Omit<ArticleLocale & { id: string }, "id">) => {
-    // Convert null to undefined for API compatibility
-    const apiData: CreateArticleLocaleDto = {
-      locale: data.locale,
-      title: data.title,
-      slug: data.slug,
-      excerpt: data.excerpt ?? undefined,
-      content: data.content ?? undefined,
-      meta_title: data.meta_title ?? undefined,
-      meta_description: data.meta_description ?? undefined,
-    };
-    await createLocale.mutateAsync(apiData);
-  };
+  // Update locale field in local state (for edit mode)
+  const handleLocaleFieldChange = useCallback((localeId: string, field: keyof ArticleLocale, value: string | null) => {
+    setEditingLocales((prev) => ({
+      ...prev,
+      [localeId]: {
+        ...prev[localeId],
+        [field]: value,
+      },
+    }));
+  }, []);
 
-  const handleUpdateLocale = async (localeId: string, data: Partial<ArticleLocale>) => {
+  // Save locale changes to API (for edit mode)
+  const handleSaveLocale = useCallback(async (localeId: string) => {
+    const localeData = editingLocales[localeId];
+    if (!localeData) return;
+
     const apiData: Partial<CreateArticleLocaleDto> = {
-      locale: data.locale,
-      title: data.title,
-      slug: data.slug,
-      excerpt: data.excerpt ?? undefined,
-      content: data.content ?? undefined,
-      meta_title: data.meta_title ?? undefined,
-      meta_description: data.meta_description ?? undefined,
+      title: localeData.title,
+      slug: localeData.slug,
+      excerpt: localeData.excerpt ?? undefined,
+      content: localeData.content ?? undefined,
+      meta_title: localeData.meta_title ?? undefined,
+      meta_description: localeData.meta_description ?? undefined,
     };
     await updateLocale.mutateAsync({ localeId, data: apiData as CreateArticleLocaleDto });
-  };
+  }, [editingLocales, updateLocale]);
 
-  const handleDeleteLocale = async (localeId: string) => {
-    await deleteLocale.mutateAsync(localeId);
-  };
+  // Add new locale (for edit mode)
+  const handleAddLocale = useCallback(async (localeCode: string) => {
+    const apiData: CreateArticleLocaleDto = {
+      locale: localeCode,
+      title: "",
+      slug: "",
+    };
+    await createLocale.mutateAsync(apiData);
+    setActiveLocaleTab(localeCode);
+  }, [createLocale]);
+
+  // Delete locale (for edit mode)
+  const handleDeleteLocale = useCallback(async () => {
+    if (!deletingLocaleId) return;
+    await deleteLocale.mutateAsync(deletingLocaleId);
+    setDeletingLocaleId(null);
+    // Switch to first available locale
+    const remainingLocales = articleLocales.filter((l) => l.id !== deletingLocaleId);
+    if (remainingLocales.length > 0) {
+      setActiveLocaleTab(remainingLocales[0].locale);
+    }
+  }, [deletingLocaleId, deleteLocale, articleLocales]);
 
   // For create mode
   const addLocale = (locale: string) => {
@@ -379,8 +281,13 @@ export function ArticleForm({ article, topics = [], onSubmit, isSubmitting = fal
     }
   };
 
+  // Available locales for adding
+  const existingLocaleCodes = isEditing 
+    ? articleLocales.map((l) => l.locale)
+    : locales.map((l) => l.locale);
+    
   const availableLocales = SUPPORTED_LOCALES.filter(
-    (l) => !locales.map((loc) => loc.locale).includes(l.value),
+    (l) => !existingLocaleCodes.includes(l.value),
   );
 
   // Topic options
@@ -469,47 +376,157 @@ export function ArticleForm({ article, topics = [], onSubmit, isSubmitting = fal
         </CardContent>
       </Card>
 
-      {/* Localizations - different UI for create vs edit */}
-      {isEditing ? (
-        <LocaleManager<ArticleLocale & { id: string }>
-          locales={article.locales as (ArticleLocale & { id: string })[]}
-          supportedLocales={SUPPORTED_LOCALES}
-          isEditing={true}
-          onCreateLocale={handleCreateLocale}
-          onUpdateLocale={handleUpdateLocale}
-          onDeleteLocale={handleDeleteLocale}
-          isCreating={createLocale.isPending}
-          isUpdating={updateLocale.isPending}
-          isDeleting={deleteLocale.isPending}
-          getLocaleDisplayTitle={(locale) => locale.title}
-          renderLocaleForm={(props) => <ArticleLocaleForm {...props} />}
-        />
-      ) : (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-2">
-                <Globe className="h-5 w-5 text-[var(--color-text-muted)]" />
-                <CardTitle>Локализации</CardTitle>
-                <span className="rounded-full bg-[var(--color-bg-secondary)] px-2 py-0.5 text-xs text-[var(--color-text-muted)]">
-                  {locales.length} {locales.length === 1 ? "язык" : "языка"}
-                </span>
-              </div>
-              {availableLocales.length > 0 && (
-                <Select
-                  value=""
-                  onChange={(e) => {
-                    if (e.target.value) {
+      {/* Localizations - Tabs UI for both create and edit modes */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <Globe className="h-5 w-5 text-[var(--color-text-muted)]" />
+              <CardTitle>Локализации</CardTitle>
+              <Badge variant="outline">
+                {isEditing ? articleLocales.length : locales.length} {(isEditing ? articleLocales.length : locales.length) === 1 ? "язык" : "языка"}
+              </Badge>
+            </div>
+            {availableLocales.length > 0 && (
+              <Select
+                value=""
+                onChange={(e) => {
+                  if (e.target.value) {
+                    if (isEditing) {
+                      handleAddLocale(e.target.value);
+                    } else {
                       addLocale(e.target.value);
                     }
-                  }}
-                  options={[{ value: "", label: "Добавить язык" }, ...availableLocales]}
-                  minWidth="180px"
-                />
-              )}
-            </div>
-          </CardHeader>
-          <CardContent>
+                  }
+                }}
+                options={[{ value: "", label: "Добавить язык" }, ...availableLocales]}
+                minWidth="180px"
+              />
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isEditing ? (
+            // Edit mode - inline editing with tabs
+            <Tabs value={activeLocaleTab} onValueChange={setActiveLocaleTab}>
+              <div className="mb-4 flex items-center gap-2">
+                <span className="text-sm text-[var(--color-text-muted)]">Редактирование:</span>
+                <TabsList>
+                  {articleLocales.map((locale) => (
+                    <TabsTrigger key={locale.id} value={locale.locale}>
+                      <span className="font-medium">{locale.locale.toUpperCase()}</span>
+                      <span className="ml-1.5 hidden sm:inline text-[var(--color-text-muted)]">
+                        {SUPPORTED_LOCALES.find((l) => l.value === locale.locale)?.label}
+                      </span>
+                      {articleLocales.length > 1 && (
+                        <span
+                          role="button"
+                          tabIndex={0}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeletingLocaleId(locale.id);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.stopPropagation();
+                              setDeletingLocaleId(locale.id);
+                            }
+                          }}
+                          className="ml-2 text-[var(--color-text-muted)] hover:text-[var(--color-error)] cursor-pointer"
+                          title="Удалить локализацию"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </span>
+                      )}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </div>
+
+              {articleLocales.map((locale) => {
+                const localeData = editingLocales[locale.id] || locale;
+                
+                return (
+                  <TabsContent key={locale.id} value={locale.locale}>
+                    <div className="space-y-4">
+                      <Input
+                        label="Заголовок"
+                        placeholder="Введите заголовок"
+                        value={localeData.title || ""}
+                        onChange={(e) => {
+                          handleLocaleFieldChange(locale.id, "title", e.target.value);
+                          // Auto-generate slug only if slug is empty or matches auto-generated pattern
+                          if (!localeData.slug || localeData.slug === generateSlug(locale.title || "")) {
+                            handleLocaleFieldChange(locale.id, "slug", generateSlug(e.target.value));
+                          }
+                        }}
+                        onBlur={() => handleSaveLocale(locale.id)}
+                        required
+                      />
+
+                      <Input
+                        label="Slug"
+                        placeholder="article-slug"
+                        value={localeData.slug || ""}
+                        onChange={(e) => handleLocaleFieldChange(locale.id, "slug", e.target.value)}
+                        onBlur={() => handleSaveLocale(locale.id)}
+                        required
+                      />
+
+                      <Textarea
+                        label="Краткое описание"
+                        placeholder="Краткое описание статьи..."
+                        value={localeData.excerpt || ""}
+                        onChange={(e) => handleLocaleFieldChange(locale.id, "excerpt", e.target.value)}
+                        onBlur={() => handleSaveLocale(locale.id)}
+                      />
+
+                      <RichTextEditor
+                        label="Содержание"
+                        value={localeData.content || ""}
+                        onChange={(val) => {
+                          handleLocaleFieldChange(locale.id, "content", val);
+                          // Debounce save for rich text
+                          setTimeout(() => handleSaveLocale(locale.id), 1000);
+                        }}
+                        placeholder="Полный текст статьи..."
+                      />
+
+                      {/* SEO fields */}
+                      <div className="border-t border-[var(--color-border)] pt-4">
+                        <h4 className="mb-4 text-sm font-medium text-[var(--color-text-secondary)]">
+                          SEO настройки
+                        </h4>
+                        <div className="space-y-4">
+                          <Input
+                            label="Meta Title"
+                            placeholder="SEO заголовок (до 60 символов)"
+                            value={localeData.meta_title || ""}
+                            onChange={(e) => handleLocaleFieldChange(locale.id, "meta_title", e.target.value)}
+                            onBlur={() => handleSaveLocale(locale.id)}
+                          />
+                          <Textarea
+                            label="Meta Description"
+                            placeholder="SEO описание (до 160 символов)"
+                            value={localeData.meta_description || ""}
+                            onChange={(e) => handleLocaleFieldChange(locale.id, "meta_description", e.target.value)}
+                            onBlur={() => handleSaveLocale(locale.id)}
+                            className="min-h-[80px]"
+                          />
+                        </div>
+                      </div>
+                      
+                      {/* Save indicator */}
+                      {updateLocale.isPending && (
+                        <p className="text-sm text-[var(--color-text-muted)]">Сохранение...</p>
+                      )}
+                    </div>
+                  </TabsContent>
+                );
+              })}
+            </Tabs>
+          ) : (
+            // Create mode - form fields with tabs
             <Tabs defaultValue={locales[0]?.locale || "ru"}>
               <div className="mb-4 flex items-center gap-2">
                 <span className="text-sm text-[var(--color-text-muted)]">Редактирование:</span>
@@ -615,9 +632,21 @@ export function ArticleForm({ article, topics = [], onSubmit, isSubmitting = fal
                 </TabsContent>
               ))}
             </Tabs>
-          </CardContent>
-        </Card>
-      )}
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Delete locale confirmation modal */}
+      <ConfirmModal
+        isOpen={!!deletingLocaleId}
+        onClose={() => setDeletingLocaleId(null)}
+        onConfirm={handleDeleteLocale}
+        title="Удалить локализацию?"
+        description="Вы уверены, что хотите удалить эту локализацию? Это действие нельзя отменить."
+        confirmText="Удалить"
+        variant="danger"
+        isLoading={deleteLocale.isPending}
+      />
 
       {/* Submit button */}
       <div className="flex justify-end gap-4">

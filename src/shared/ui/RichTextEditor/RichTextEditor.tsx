@@ -33,7 +33,7 @@ import {
   Redo,
 } from "lucide-react";
 import { cn } from "@/shared/lib";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 
 // HTML Sanitization config
 const SANITIZE_CONFIG = {
@@ -111,25 +111,57 @@ function MenuBar({ editor }: MenuBarProps) {
   const [linkUrl, setLinkUrl] = useState("");
   const [showLinkInput, setShowLinkInput] = useState(false);
   // Force re-render on selection/transaction changes to update toolbar button states
-  const [, forceUpdate] = useState(0);
+  const [updateKey, setUpdateKey] = useState(0);
 
   // Subscribe to editor events to update toolbar state when selection changes
   useEffect(() => {
     if (!editor) return;
 
     const updateHandler = () => {
-      forceUpdate((prev) => prev + 1);
+      // Use requestAnimationFrame for smoother updates
+      requestAnimationFrame(() => {
+        setUpdateKey((prev) => prev + 1);
+      });
     };
 
-    // Listen to selection and transaction changes
+    // Listen to selection, transaction, and focus changes
     editor.on("selectionUpdate", updateHandler);
     editor.on("transaction", updateHandler);
+    editor.on("focus", updateHandler);
+    editor.on("blur", updateHandler);
 
     return () => {
       editor.off("selectionUpdate", updateHandler);
       editor.off("transaction", updateHandler);
+      editor.off("focus", updateHandler);
+      editor.off("blur", updateHandler);
     };
   }, [editor]);
+
+  // Get current active states - recalculated on every updateKey change
+  const activeStates = useMemo(() => {
+    if (!editor) return {};
+    return {
+      bold: editor.isActive("bold"),
+      italic: editor.isActive("italic"),
+      underline: editor.isActive("underline"),
+      strike: editor.isActive("strike"),
+      code: editor.isActive("code"),
+      highlight: editor.isActive("highlight"),
+      heading1: editor.isActive("heading", { level: 1 }),
+      heading2: editor.isActive("heading", { level: 2 }),
+      heading3: editor.isActive("heading", { level: 3 }),
+      bulletList: editor.isActive("bulletList"),
+      orderedList: editor.isActive("orderedList"),
+      blockquote: editor.isActive("blockquote"),
+      alignLeft: editor.isActive({ textAlign: "left" }),
+      alignCenter: editor.isActive({ textAlign: "center" }),
+      alignRight: editor.isActive({ textAlign: "right" }),
+      alignJustify: editor.isActive({ textAlign: "justify" }),
+      link: editor.isActive("link"),
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editor, updateKey]);
 
   const setLink = useCallback(() => {
     if (!editor) return;
@@ -177,21 +209,21 @@ function MenuBar({ editor }: MenuBarProps) {
       {/* Headings */}
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-        isActive={editor.isActive("heading", { level: 1 })}
+        isActive={activeStates.heading1}
         title="Заголовок 1"
       >
         <Heading1 className="h-4 w-4" />
       </ToolbarButton>
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-        isActive={editor.isActive("heading", { level: 2 })}
+        isActive={activeStates.heading2}
         title="Заголовок 2"
       >
         <Heading2 className="h-4 w-4" />
       </ToolbarButton>
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-        isActive={editor.isActive("heading", { level: 3 })}
+        isActive={activeStates.heading3}
         title="Заголовок 3"
       >
         <Heading3 className="h-4 w-4" />
@@ -202,42 +234,42 @@ function MenuBar({ editor }: MenuBarProps) {
       {/* Text formatting */}
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleBold().run()}
-        isActive={editor.isActive("bold")}
+        isActive={activeStates.bold}
         title="Жирный"
       >
         <Bold className="h-4 w-4" />
       </ToolbarButton>
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleItalic().run()}
-        isActive={editor.isActive("italic")}
+        isActive={activeStates.italic}
         title="Курсив"
       >
         <Italic className="h-4 w-4" />
       </ToolbarButton>
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleUnderline().run()}
-        isActive={editor.isActive("underline")}
+        isActive={activeStates.underline}
         title="Подчёркнутый"
       >
         <UnderlineIcon className="h-4 w-4" />
       </ToolbarButton>
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleStrike().run()}
-        isActive={editor.isActive("strike")}
+        isActive={activeStates.strike}
         title="Зачёркнутый"
       >
         <Strikethrough className="h-4 w-4" />
       </ToolbarButton>
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleHighlight().run()}
-        isActive={editor.isActive("highlight")}
+        isActive={activeStates.highlight}
         title="Выделить"
       >
         <Highlighter className="h-4 w-4" />
       </ToolbarButton>
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleCode().run()}
-        isActive={editor.isActive("code")}
+        isActive={activeStates.code}
         title="Код"
       >
         <Code className="h-4 w-4" />
@@ -248,21 +280,21 @@ function MenuBar({ editor }: MenuBarProps) {
       {/* Lists */}
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleBulletList().run()}
-        isActive={editor.isActive("bulletList")}
+        isActive={activeStates.bulletList}
         title="Маркированный список"
       >
         <List className="h-4 w-4" />
       </ToolbarButton>
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleOrderedList().run()}
-        isActive={editor.isActive("orderedList")}
+        isActive={activeStates.orderedList}
         title="Нумерованный список"
       >
         <ListOrdered className="h-4 w-4" />
       </ToolbarButton>
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleBlockquote().run()}
-        isActive={editor.isActive("blockquote")}
+        isActive={activeStates.blockquote}
         title="Цитата"
       >
         <Quote className="h-4 w-4" />
@@ -279,28 +311,28 @@ function MenuBar({ editor }: MenuBarProps) {
       {/* Alignment */}
       <ToolbarButton
         onClick={() => editor.chain().focus().setTextAlign("left").run()}
-        isActive={editor.isActive({ textAlign: "left" })}
+        isActive={activeStates.alignLeft}
         title="По левому краю"
       >
         <AlignLeft className="h-4 w-4" />
       </ToolbarButton>
       <ToolbarButton
         onClick={() => editor.chain().focus().setTextAlign("center").run()}
-        isActive={editor.isActive({ textAlign: "center" })}
+        isActive={activeStates.alignCenter}
         title="По центру"
       >
         <AlignCenter className="h-4 w-4" />
       </ToolbarButton>
       <ToolbarButton
         onClick={() => editor.chain().focus().setTextAlign("right").run()}
-        isActive={editor.isActive({ textAlign: "right" })}
+        isActive={activeStates.alignRight}
         title="По правому краю"
       >
         <AlignRight className="h-4 w-4" />
       </ToolbarButton>
       <ToolbarButton
         onClick={() => editor.chain().focus().setTextAlign("justify").run()}
-        isActive={editor.isActive({ textAlign: "justify" })}
+        isActive={activeStates.alignJustify}
         title="По ширине"
       >
         <AlignJustify className="h-4 w-4" />
@@ -340,7 +372,7 @@ function MenuBar({ editor }: MenuBarProps) {
       ) : (
         <ToolbarButton
           onClick={() => setShowLinkInput(true)}
-          isActive={editor.isActive("link")}
+          isActive={activeStates.link}
           title="Ссылка"
         >
           <LinkIcon className="h-4 w-4" />
@@ -364,10 +396,9 @@ export function RichTextEditor({
   error,
   className,
 }: RichTextEditorProps) {
-  const editor = useEditor({
-    // Disable immediate render to avoid SSR hydration mismatch
-    immediatelyRender: false,
-    extensions: [
+  // Memoize extensions to prevent recreation on each render
+  const extensions = useMemo(
+    () => [
       StarterKit.configure({
         heading: {
           levels: [1, 2, 3],
@@ -397,6 +428,13 @@ export function RichTextEditor({
         },
       }),
     ],
+    [placeholder]
+  );
+
+  const editor = useEditor({
+    // Disable immediate render to avoid SSR hydration mismatch
+    immediatelyRender: false,
+    extensions,
     content: value,
     editable: !disabled,
     onUpdate: ({ editor }) => {
