@@ -267,9 +267,11 @@ export function ArticleForm({ article, topics = [], onSubmit, isSubmitting = fal
   const handleSaveLocale = useCallback(async (localeId: string) => {
     const localeData = editingLocales[localeId];
     if (!localeData) return;
+    const localeCode = localeData.locale ?? article?.locales?.find((l) => l.id === localeId)?.locale;
+    if (!localeCode) return;
 
     const apiData: UpdateArticleLocaleDto = {
-      locale: localeData.locale,
+      locale: localeCode,
       title: localeData.title,
       slug: localeData.slug,
       excerpt: localeData.excerpt ?? undefined,
@@ -278,7 +280,7 @@ export function ArticleForm({ article, topics = [], onSubmit, isSubmitting = fal
       meta_description: localeData.meta_description ?? undefined,
     };
     await updateLocale.mutateAsync({ localeId, data: apiData });
-  }, [editingLocales, updateLocale]);
+  }, [editingLocales, updateLocale, article?.locales]);
 
   // Add new locale (for edit mode)
   const handleAddLocale = useCallback(async (localeCode: string) => {
