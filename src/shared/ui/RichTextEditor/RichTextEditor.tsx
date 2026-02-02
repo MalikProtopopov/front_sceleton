@@ -33,7 +33,7 @@ import {
   Redo,
 } from "lucide-react";
 import { cn } from "@/shared/lib";
-import { useCallback, useEffect, useState, useMemo, useId } from "react";
+import { useCallback, useEffect, useState, useMemo, useId, useRef } from "react";
 
 // HTML Sanitization config
 const SANITIZE_CONFIG = {
@@ -435,6 +435,9 @@ export function RichTextEditor({
     [placeholder, instanceId]
   );
 
+  // Track last value we sent to parent — skip setContent when value is our own update (keeps cursor)
+  const lastEmittedValueRef = useRef<string | null>(null);
+
   const editor = useEditor({
     // Disable immediate render to avoid SSR hydration mismatch
     immediatelyRender: false,
@@ -442,9 +445,10 @@ export function RichTextEditor({
     content: value,
     editable: !disabled,
     onUpdate: ({ editor }) => {
-      // Sanitize HTML before passing to parent
       const html = editor.getHTML();
-      onChange?.(sanitizeHtml(html));
+      const sanitized = sanitizeHtml(html);
+      lastEmittedValueRef.current = sanitized;
+      onChange?.(sanitized);
     },
     editorProps: {
       attributes: {
@@ -478,10 +482,11 @@ export function RichTextEditor({
     },
   });
 
-  // Update editor content when value prop changes externally
+  // Sync from value prop only when change is external (e.g. switched locale tab), not when it's our own onChange
   useEffect(() => {
-    if (editor && value !== editor.getHTML()) {
-      // Sanitize incoming content
+    if (!editor) return;
+    if (value === lastEmittedValueRef.current) return;
+    if (value !== editor.getHTML()) {
       const sanitized = sanitizeHtml(value);
       editor.commands.setContent(sanitized);
     }
