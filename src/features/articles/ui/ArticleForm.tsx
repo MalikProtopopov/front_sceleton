@@ -99,10 +99,6 @@ export function ArticleForm({ article, topics = [], onSubmit, isSubmitting = fal
   
   // Track if we've initialized editingLocales (prevent overwrite on API refresh)
   const isLocalesInitialized = useRef(false);
-  // Debounce timer for RichTextEditor auto-save
-  const saveTimerRef = useRef<Record<string, NodeJS.Timeout>>({});
-  // Track if save is in progress to prevent loops
-  const isSavingRef = useRef(false);
 
   // Image upload hooks
   const uploadCoverImage = useUploadArticleCoverImage(article?.id || "");
@@ -201,13 +197,6 @@ export function ArticleForm({ article, topics = [], onSubmit, isSubmitting = fal
     }
   }, [isEditing, article?.locales, editingLocales]);
 
-  // Cleanup debounce timers on unmount
-  useEffect(() => {
-    return () => {
-      Object.values(saveTimerRef.current).forEach((timer) => clearTimeout(timer));
-    };
-  }, []);
-
   // Sync coverImageUrl when article changes
   useEffect(() => {
     if (article?.cover_image_url !== coverImageUrl) {
@@ -293,10 +282,9 @@ export function ArticleForm({ article, topics = [], onSubmit, isSubmitting = fal
     }));
   }, []);
 
-  // Save locale changes to API (for edit mode)
+  // Save locale changes to API (for edit mode) - only called on explicit button click
   const handleSaveLocale = useCallback(async (localeId: string) => {
-    // Prevent concurrent saves and loops
-    if (isSavingRef.current || updateLocale.isPending) return;
+    if (updateLocale.isPending) return;
     
     const localeData = editingLocales[localeId];
     if (!localeData) return;
@@ -313,29 +301,8 @@ export function ArticleForm({ article, topics = [], onSubmit, isSubmitting = fal
       meta_description: localeData.meta_description ?? undefined,
     };
     
-    isSavingRef.current = true;
-    try {
-      await updateLocale.mutateAsync({ localeId, data: apiData });
-    } finally {
-      // Small delay before allowing next save to prevent rapid fire
-      setTimeout(() => {
-        isSavingRef.current = false;
-      }, 500);
-    }
+    await updateLocale.mutateAsync({ localeId, data: apiData });
   }, [editingLocales, updateLocale, article?.locales]);
-
-  // Debounced save for RichTextEditor (cancels previous timer)
-  const handleDebouncedSaveLocale = useCallback((localeId: string) => {
-    // Cancel existing timer for this locale
-    if (saveTimerRef.current[localeId]) {
-      clearTimeout(saveTimerRef.current[localeId]);
-    }
-    // Set new timer
-    saveTimerRef.current[localeId] = setTimeout(() => {
-      handleSaveLocale(localeId);
-      delete saveTimerRef.current[localeId];
-    }, 1500);
-  }, [handleSaveLocale]);
 
   // Add new locale (for edit mode)
   const handleAddLocale = useCallback(async (localeCode: string) => {
@@ -568,7 +535,6 @@ export function ArticleForm({ article, topics = [], onSubmit, isSubmitting = fal
                             handleLocaleFieldChange(locale.id, "slug", generateSlug(e.target.value));
                           }
                         }}
-                        onBlur={() => handleSaveLocale(locale.id)}
                         required
                       />
 
@@ -577,7 +543,6 @@ export function ArticleForm({ article, topics = [], onSubmit, isSubmitting = fal
                         placeholder="article-slug"
                         value={localeData.slug || ""}
                         onChange={(e) => handleLocaleFieldChange(locale.id, "slug", e.target.value)}
-                        onBlur={() => handleSaveLocale(locale.id)}
                         required
                       />
 
@@ -586,17 +551,12 @@ export function ArticleForm({ article, topics = [], onSubmit, isSubmitting = fal
                         placeholder="Краткое описание статьи..."
                         value={localeData.excerpt || ""}
                         onChange={(e) => handleLocaleFieldChange(locale.id, "excerpt", e.target.value)}
-                        onBlur={() => handleSaveLocale(locale.id)}
                       />
 
                       <RichTextEditor
                         label="Содержание"
                         value={localeData.content || ""}
-                        onChange={(val) => {
-                          handleLocaleFieldChange(locale.id, "content", val);
-                          // Debounced save for rich text (with proper cancel of previous timer)
-                          handleDebouncedSaveLocale(locale.id);
-                        }}
+                        onChange={(val) => handleLocaleFieldChange(locale.id, "content", val)}
                         placeholder="Полный текст статьи..."
                       />
 
@@ -611,23 +571,27 @@ export function ArticleForm({ article, topics = [], onSubmit, isSubmitting = fal
                             placeholder="SEO заголовок (до 60 символов)"
                             value={localeData.meta_title || ""}
                             onChange={(e) => handleLocaleFieldChange(locale.id, "meta_title", e.target.value)}
-                            onBlur={() => handleSaveLocale(locale.id)}
                           />
                           <Textarea
                             label="Meta Description"
                             placeholder="SEO описание (до 160 символов)"
                             value={localeData.meta_description || ""}
                             onChange={(e) => handleLocaleFieldChange(locale.id, "meta_description", e.target.value)}
-                            onBlur={() => handleSaveLocale(locale.id)}
                             className="min-h-[80px]"
                           />
                         </div>
                       </div>
                       
-                      {/* Save indicator */}
-                      {updateLocale.isPending && (
-                        <p className="text-sm text-[var(--color-text-muted)]">Сохранение...</p>
-                      )}
+                      {/* Save locale button */}
+                      <div className="flex justify-end border-t border-[var(--color-border)] pt-4">
+                        <Button
+                          type="button"
+                          onClick={() => handleSaveLocale(locale.id)}
+                          isLoading={updateLocale.isPending}
+                        >
+                          Сохранить локаль
+                        </Button>
+                      </div>
                     </div>
                   </TabsContent>
                 );
