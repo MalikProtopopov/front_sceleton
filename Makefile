@@ -4,7 +4,7 @@
 .PHONY: help dev build start install lint \
 	compose-dev compose-dev-build compose-dev-down \
 	compose-prod compose-prod-build compose-prod-down compose-prod-logs \
-	deploy deploy-build restart
+	docker-prune deploy deploy-build restart
 
 # По умолчанию — показать справку
 help:
@@ -26,6 +26,7 @@ help:
 	@echo "    make compose-prod-build — поднять prod с пересборкой"
 	@echo "    make compose-prod-down  — остановить prod"
 	@echo "    make compose-prod-logs  — логи prod контейнера"
+	@echo "    make docker-prune       — очистить кэш сборки (если ошибка parent snapshot)"
 	@echo ""
 	@echo "  Деплой и перезапуск:"
 	@echo "    make deploy       — запустить скрипт деплоя"
@@ -61,28 +62,29 @@ compose-dev-build:
 compose-dev-down:
 	npm run compose:dev:down
 
-# Docker — production (без npm, для сервера)
-COMPOSE_PROD = docker compose -f docker-compose.prod.yml
-COMPOSE_PROD_ENV = $(COMPOSE_PROD) --env-file .env.production
-
+# Docker — production
 compose-prod:
-	$(COMPOSE_PROD_ENV) up -d
+	npm run compose:prod
 
 compose-prod-build:
-	$(COMPOSE_PROD_ENV) up -d --build --force-recreate
+	npm run compose:prod:build
 
 compose-prod-down:
-	$(COMPOSE_PROD_ENV) down
+	npm run compose:prod:down
 
 compose-prod-logs:
-	$(COMPOSE_PROD_ENV) logs -f admin
+	npm run compose:prod:logs
 
-# Деплой (требует npm)
+# Очистить кэш Docker BuildKit (при ошибке "parent snapshot does not exist")
+docker-prune:
+	docker builder prune -af
+
+# Деплой
 deploy:
 	npm run deploy
 
 deploy-build:
 	npm run deploy:build-only
 
-# Перезапуск prod: остановить и поднять с пересборкой (без npm)
+# Перезапуск prod: остановить и поднять с пересборкой
 restart: compose-prod-down compose-prod-build
