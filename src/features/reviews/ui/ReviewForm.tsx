@@ -98,6 +98,10 @@ export function ReviewForm({ review, onSubmit, isSubmitting = false }: ReviewFor
     }];
   };
 
+  // input type="date" expects YYYY-MM-DD; backend may return ISO string "2024-02-02T00:00:00"
+  const toDateInputValue = (isoOrEmpty: string | null | undefined): string =>
+    isoOrEmpty ? isoOrEmpty.slice(0, 10) : "";
+
   const defaultValues: ReviewFormValues = {
     author_name: review?.author_name || "",
     author_position: review?.author_position || "",
@@ -105,7 +109,7 @@ export function ReviewForm({ review, onSubmit, isSubmitting = false }: ReviewFor
     case_id: review?.case_id || null,
     is_featured: review?.is_featured ?? false,
     sort_order: review?.sort_order ?? null,
-    review_date: review?.review_date || "",
+    review_date: toDateInputValue(review?.review_date ?? null),
     locales: getLocalesFromReview(review),
   };
 
@@ -134,7 +138,7 @@ export function ReviewForm({ review, onSubmit, isSubmitting = false }: ReviewFor
         case_id: review.case_id || null,
         is_featured: review.is_featured ?? false,
         sort_order: review.sort_order ?? null,
-        review_date: review.review_date || "",
+        review_date: toDateInputValue(review.review_date ?? null),
         locales: getLocalesFromReview(review),
       });
     }
