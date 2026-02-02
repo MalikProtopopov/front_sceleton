@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { Star, User } from "lucide-react";
 import { ReviewForm, useReview, useUpdateReview, useDeleteReview, useApproveReview, useRejectReview, useToggleReviewFeatured } from "@/features/reviews";
 import { Button, Spinner, Badge, ConfirmModal } from "@/shared/ui";
-import { formatDateTime } from "@/shared/lib";
+import { formatDateTime, getMediaUrl } from "@/shared/lib";
 import type { CreateReviewDto, UpdateReviewDto, ReviewStatus } from "@/entities/review";
 
 const STATUS_BADGES: Record<ReviewStatus, { variant: "secondary" | "success" | "warning" | "error"; label: string }> = {
@@ -57,9 +57,9 @@ export default function EditReviewPage({ params }: { params: Promise<{ id: strin
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-4">
-          {review.author_avatar_url ? (
+          {(review.author_avatar_url || review.author_photo_url) ? (
             <img
-              src={review.author_avatar_url}
+              src={getMediaUrl(review.author_avatar_url ?? review.author_photo_url ?? null)}
               alt={review.author_name}
               className="h-16 w-16 rounded-full object-cover"
             />

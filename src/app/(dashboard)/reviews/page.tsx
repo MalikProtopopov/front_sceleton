@@ -111,10 +111,11 @@ export default function ReviewsPage() {
       key: "avatar",
       header: "",
       width: "60px",
-      render: (review) => (
-        review.author_avatar_url ? (
+      render: (review) => {
+        const photoUrl = getMediaUrl(review.author_avatar_url ?? review.author_photo_url ?? null);
+        return photoUrl ? (
           <img
-            src={review.author_avatar_url}
+            src={photoUrl}
             alt={review.author_name}
             className="h-10 w-10 rounded-full object-cover"
           />
@@ -122,8 +123,8 @@ export default function ReviewsPage() {
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-bg-secondary)]">
             <User className="h-5 w-5 text-[var(--color-text-muted)]" />
           </div>
-        )
-      ),
+        );
+      },
     },
     {
       key: "author",
