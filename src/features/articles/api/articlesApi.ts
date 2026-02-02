@@ -84,6 +84,7 @@ export const articlesKeys = {
   list: (params?: ArticleFilterParams) => [...articlesKeys.lists(), params] as const,
   details: () => [...articlesKeys.all, "detail"] as const,
   detail: (id: string) => [...articlesKeys.details(), id] as const,
+  contentBlocks: (articleId: string, locale?: string) => [...articlesKeys.all, "content-blocks", articleId, locale] as const,
 };
 
 export const topicsKeys = {

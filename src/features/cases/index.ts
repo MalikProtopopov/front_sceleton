@@ -10,6 +10,7 @@ export {
   useCreateCaseContact,
   useUpdateCaseContact,
   useDeleteCaseContact,
+  useCaseContentBlocks,
   useCreateCaseContentBlock,
   useUpdateCaseContentBlock,
   useDeleteCaseContentBlock,

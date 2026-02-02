@@ -12,6 +12,7 @@ export {
   useAddServiceTag,
   useUpdateServiceTag,
   useDeleteServiceTag,
+  useServiceContentBlocks,
   useCreateServiceContentBlock,
   useUpdateServiceContentBlock,
   useDeleteServiceContentBlock,

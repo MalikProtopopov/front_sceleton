@@ -272,13 +272,21 @@ export function useDeleteServiceLocale(serviceId: string) {
 // Content Block Hooks
 // =====================
 
+export function useServiceContentBlocks(serviceId: string, locale?: string) {
+  return useQuery({
+    queryKey: servicesKeys.contentBlocks(serviceId, locale),
+    queryFn: () => servicesApi.getContentBlocks(serviceId, locale),
+    enabled: !!serviceId,
+  });
+}
+
 export function useCreateServiceContentBlock(serviceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (data: CreateContentBlockDto) => servicesApi.createContentBlock(serviceId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: servicesKeys.detail(serviceId) });
+      queryClient.invalidateQueries({ queryKey: [...servicesKeys.all, "content-blocks", serviceId] });
       toast.success("Блок добавлен");
     },
     onError: (error) => {
@@ -295,7 +303,7 @@ export function useUpdateServiceContentBlock(serviceId: string) {
     mutationFn: ({ blockId, data }: { blockId: string; data: UpdateContentBlockDto }) =>
       servicesApi.updateContentBlock(serviceId, blockId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: servicesKeys.detail(serviceId) });
+      queryClient.invalidateQueries({ queryKey: [...servicesKeys.all, "content-blocks", serviceId] });
       toast.success("Блок обновлен");
     },
     onError: (error) => {
@@ -311,7 +319,7 @@ export function useDeleteServiceContentBlock(serviceId: string) {
   return useMutation({
     mutationFn: (blockId: string) => servicesApi.deleteContentBlock(serviceId, blockId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: servicesKeys.detail(serviceId) });
+      queryClient.invalidateQueries({ queryKey: [...servicesKeys.all, "content-blocks", serviceId] });
       toast.success("Блок удален");
     },
     onError: (error) => {
@@ -327,7 +335,7 @@ export function useReorderServiceContentBlocks(serviceId: string) {
   return useMutation({
     mutationFn: (data: ReorderContentBlocksDto) => servicesApi.reorderContentBlocks(serviceId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: servicesKeys.detail(serviceId) });
+      queryClient.invalidateQueries({ queryKey: [...servicesKeys.all, "content-blocks", serviceId] });
     },
     onError: (error) => {
       const message = error instanceof Error ? error.message : "Не удалось изменить порядок блоков";

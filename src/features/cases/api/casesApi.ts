@@ -88,5 +88,6 @@ export const casesKeys = {
   list: (params?: CaseFilterParams) => [...casesKeys.lists(), params] as const,
   details: () => [...casesKeys.all, "detail"] as const,
   detail: (id: string) => [...casesKeys.details(), id] as const,
+  contentBlocks: (caseId: string, locale?: string) => [...casesKeys.all, "content-blocks", caseId, locale] as const,
 };
 

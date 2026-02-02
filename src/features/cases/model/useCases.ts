@@ -228,13 +228,22 @@ export function useDeleteCaseContact(caseId: string) {
 // Content Block Hooks
 // =====================
 
+export function useCaseContentBlocks(caseId: string, locale?: string) {
+  return useQuery({
+    queryKey: casesKeys.contentBlocks(caseId, locale),
+    queryFn: () => casesApi.getContentBlocks(caseId, locale),
+    enabled: !!caseId,
+  });
+}
+
 export function useCreateCaseContentBlock(caseId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (data: CreateContentBlockDto) => casesApi.createContentBlock(caseId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: casesKeys.detail(caseId) });
+      // Invalidate all content blocks queries for this case (any locale)
+      queryClient.invalidateQueries({ queryKey: [...casesKeys.all, "content-blocks", caseId] });
       toast.success("Блок добавлен");
     },
     onError: (error) => {
@@ -251,7 +260,7 @@ export function useUpdateCaseContentBlock(caseId: string) {
     mutationFn: ({ blockId, data }: { blockId: string; data: UpdateContentBlockDto }) =>
       casesApi.updateContentBlock(caseId, blockId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: casesKeys.detail(caseId) });
+      queryClient.invalidateQueries({ queryKey: [...casesKeys.all, "content-blocks", caseId] });
       toast.success("Блок обновлен");
     },
     onError: (error) => {
@@ -267,7 +276,7 @@ export function useDeleteCaseContentBlock(caseId: string) {
   return useMutation({
     mutationFn: (blockId: string) => casesApi.deleteContentBlock(caseId, blockId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: casesKeys.detail(caseId) });
+      queryClient.invalidateQueries({ queryKey: [...casesKeys.all, "content-blocks", caseId] });
       toast.success("Блок удален");
     },
     onError: (error) => {
@@ -283,7 +292,7 @@ export function useReorderCaseContentBlocks(caseId: string) {
   return useMutation({
     mutationFn: (data: ReorderContentBlocksDto) => casesApi.reorderContentBlocks(caseId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: casesKeys.detail(caseId) });
+      queryClient.invalidateQueries({ queryKey: [...casesKeys.all, "content-blocks", caseId] });
     },
     onError: (error) => {
       const message = error instanceof Error ? error.message : "Не удалось изменить порядок блоков";

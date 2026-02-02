@@ -45,6 +45,7 @@ import {
   useCreateCaseContact,
   useUpdateCaseContact,
   useDeleteCaseContact,
+  useCaseContentBlocks,
   useCreateCaseContentBlock,
   useUpdateCaseContentBlock,
   useDeleteCaseContentBlock,
@@ -203,13 +204,19 @@ export function CaseForm({ caseItem, services = [], onSubmit, isSubmitting = fal
   const updateContact = useUpdateCaseContact(caseItem?.id || "");
   const deleteContact = useDeleteCaseContact(caseItem?.id || "");
 
+  // Selected locale for content blocks
+  const [selectedBlocksLocale, setSelectedBlocksLocale] = useState("ru");
+
+  // Load content blocks separately
+  const { data: contentBlocks = [], isLoading: isLoadingBlocks } = useCaseContentBlocks(
+    caseItem?.id || "",
+    undefined // Load all locales, filter in UI
+  );
+
   const createContentBlock = useCreateCaseContentBlock(caseItem?.id || "");
   const updateContentBlock = useUpdateCaseContentBlock(caseItem?.id || "");
   const deleteContentBlock = useDeleteCaseContentBlock(caseItem?.id || "");
   const reorderContentBlocks = useReorderCaseContentBlocks(caseItem?.id || "");
-
-  // Selected locale for content blocks
-  const [selectedBlocksLocale, setSelectedBlocksLocale] = useState("ru");
 
   const createForm = useForm<CreateCaseFormValues>({
     resolver: zodResolver(createCaseSchema),
@@ -430,20 +437,24 @@ export function CaseForm({ caseItem, services = [], onSubmit, isSubmitting = fal
               </div>
             </CardHeader>
             <CardContent>
-              <ContentBlocksManager
-                blocks={caseItem.content_blocks || []}
-                locale={selectedBlocksLocale}
-                isEditing={true}
-                onCreateBlock={handleCreateContentBlock}
-                onUpdateBlock={handleUpdateContentBlock}
-                onDeleteBlock={handleDeleteContentBlock}
-                onReorderBlocks={handleReorderContentBlocks}
-              isCreating={createContentBlock.isPending}
-              isUpdating={updateContentBlock.isPending}
-              isDeleting={deleteContentBlock.isPending}
-              renderBlockEditor={renderBlockEditor}
-                title=""
-              />
+              {isLoadingBlocks ? (
+                <div className="py-8 text-center text-sm text-[var(--color-text-muted)]">Загрузка блоков...</div>
+              ) : (
+                <ContentBlocksManager
+                  blocks={contentBlocks}
+                  locale={selectedBlocksLocale}
+                  isEditing={true}
+                  onCreateBlock={handleCreateContentBlock}
+                  onUpdateBlock={handleUpdateContentBlock}
+                  onDeleteBlock={handleDeleteContentBlock}
+                  onReorderBlocks={handleReorderContentBlocks}
+                  isCreating={createContentBlock.isPending}
+                  isUpdating={updateContentBlock.isPending}
+                  isDeleting={deleteContentBlock.isPending}
+                  renderBlockEditor={renderBlockEditor}
+                  title=""
+                />
+              )}
             </CardContent>
           </Card>
         </>

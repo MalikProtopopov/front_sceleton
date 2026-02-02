@@ -184,13 +184,21 @@ export function useDeleteArticleLocale(articleId: string) {
 // Content Block Hooks
 // =====================
 
+export function useArticleContentBlocks(articleId: string, locale?: string) {
+  return useQuery({
+    queryKey: articlesKeys.contentBlocks(articleId, locale),
+    queryFn: () => articlesApi.getContentBlocks(articleId, locale),
+    enabled: !!articleId,
+  });
+}
+
 export function useCreateArticleContentBlock(articleId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (data: CreateContentBlockDto) => articlesApi.createContentBlock(articleId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: articlesKeys.detail(articleId) });
+      queryClient.invalidateQueries({ queryKey: [...articlesKeys.all, "content-blocks", articleId] });
       toast.success("Блок добавлен");
     },
     onError: (error) => {
@@ -207,7 +215,7 @@ export function useUpdateArticleContentBlock(articleId: string) {
     mutationFn: ({ blockId, data }: { blockId: string; data: UpdateContentBlockDto }) =>
       articlesApi.updateContentBlock(articleId, blockId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: articlesKeys.detail(articleId) });
+      queryClient.invalidateQueries({ queryKey: [...articlesKeys.all, "content-blocks", articleId] });
       toast.success("Блок обновлен");
     },
     onError: (error) => {
@@ -223,7 +231,7 @@ export function useDeleteArticleContentBlock(articleId: string) {
   return useMutation({
     mutationFn: (blockId: string) => articlesApi.deleteContentBlock(articleId, blockId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: articlesKeys.detail(articleId) });
+      queryClient.invalidateQueries({ queryKey: [...articlesKeys.all, "content-blocks", articleId] });
       toast.success("Блок удален");
     },
     onError: (error) => {
@@ -239,7 +247,7 @@ export function useReorderArticleContentBlocks(articleId: string) {
   return useMutation({
     mutationFn: (data: ReorderContentBlocksDto) => articlesApi.reorderContentBlocks(articleId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: articlesKeys.detail(articleId) });
+      queryClient.invalidateQueries({ queryKey: [...articlesKeys.all, "content-blocks", articleId] });
     },
     onError: (error) => {
       const message = error instanceof Error ? error.message : "Не удалось изменить порядок блоков";

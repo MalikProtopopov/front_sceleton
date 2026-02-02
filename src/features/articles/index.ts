@@ -9,6 +9,7 @@ export {
   usePublishArticle,
   useUnpublishArticle,
   useTopics,
+  useArticleContentBlocks,
   useCreateArticleContentBlock,
   useUpdateArticleContentBlock,
   useDeleteArticleContentBlock,

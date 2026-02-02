@@ -38,6 +38,7 @@ import {
   useCreateArticleLocale,
   useUpdateArticleLocale,
   useDeleteArticleLocale,
+  useArticleContentBlocks,
   useCreateArticleContentBlock,
   useUpdateArticleContentBlock,
   useDeleteArticleContentBlock,
@@ -105,14 +106,20 @@ export function ArticleForm({ article, topics = [], onSubmit, isSubmitting = fal
   const updateLocale = useUpdateArticleLocale(article?.id || "");
   const deleteLocale = useDeleteArticleLocale(article?.id || "");
 
-  // Content block hooks
+  // Selected locale for content blocks
+  const [selectedBlocksLocale, setSelectedBlocksLocale] = useState("ru");
+
+  // Load content blocks separately
+  const { data: contentBlocks = [], isLoading: isLoadingBlocks } = useArticleContentBlocks(
+    article?.id || "",
+    undefined // Load all locales, filter in UI
+  );
+
+  // Content block mutation hooks
   const createContentBlock = useCreateArticleContentBlock(article?.id || "");
   const updateContentBlock = useUpdateArticleContentBlock(article?.id || "");
   const deleteContentBlock = useDeleteArticleContentBlock(article?.id || "");
   const reorderContentBlocks = useReorderArticleContentBlocks(article?.id || "");
-
-  // Selected locale for content blocks
-  const [selectedBlocksLocale, setSelectedBlocksLocale] = useState("ru");
 
   // Form for creating new article
   const createForm = useForm<CreateArticleFormValues>({
@@ -694,20 +701,24 @@ export function ArticleForm({ article, topics = [], onSubmit, isSubmitting = fal
             </div>
           </CardHeader>
           <CardContent>
-            <ContentBlocksManager
-              blocks={article.content_blocks || []}
-              locale={selectedBlocksLocale}
-              isEditing={true}
-              onCreateBlock={handleCreateContentBlock}
-              onUpdateBlock={handleUpdateContentBlock}
-              onDeleteBlock={handleDeleteContentBlock}
-              onReorderBlocks={handleReorderContentBlocks}
-              isCreating={createContentBlock.isPending}
-              isUpdating={updateContentBlock.isPending}
-              isDeleting={deleteContentBlock.isPending}
-              renderBlockEditor={renderBlockEditor}
-              title=""
-            />
+            {isLoadingBlocks ? (
+              <div className="py-8 text-center text-sm text-[var(--color-text-muted)]">Загрузка блоков...</div>
+            ) : (
+              <ContentBlocksManager
+                blocks={contentBlocks}
+                locale={selectedBlocksLocale}
+                isEditing={true}
+                onCreateBlock={handleCreateContentBlock}
+                onUpdateBlock={handleUpdateContentBlock}
+                onDeleteBlock={handleDeleteContentBlock}
+                onReorderBlocks={handleReorderContentBlocks}
+                isCreating={createContentBlock.isPending}
+                isUpdating={updateContentBlock.isPending}
+                isDeleting={deleteContentBlock.isPending}
+                renderBlockEditor={renderBlockEditor}
+                title=""
+              />
+            )}
           </CardContent>
         </Card>
       )}

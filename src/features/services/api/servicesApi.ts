@@ -95,5 +95,6 @@ export const servicesKeys = {
   list: (params?: ServiceFilterParams) => [...servicesKeys.lists(), params] as const,
   details: () => [...servicesKeys.all, "detail"] as const,
   detail: (id: string) => [...servicesKeys.details(), id] as const,
+  contentBlocks: (serviceId: string, locale?: string) => [...servicesKeys.all, "content-blocks", serviceId, locale] as const,
 };
 
