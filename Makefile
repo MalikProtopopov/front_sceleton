@@ -61,25 +61,28 @@ compose-dev-build:
 compose-dev-down:
 	npm run compose:dev:down
 
-# Docker — production
+# Docker — production (без npm, для сервера)
+COMPOSE_PROD = docker compose -f docker-compose.prod.yml
+COMPOSE_PROD_ENV = $(COMPOSE_PROD) --env-file .env.production
+
 compose-prod:
-	npm run compose:prod
+	$(COMPOSE_PROD_ENV) up -d
 
 compose-prod-build:
-	npm run compose:prod:build
+	$(COMPOSE_PROD_ENV) up -d --build --force-recreate
 
 compose-prod-down:
-	npm run compose:prod:down
+	$(COMPOSE_PROD_ENV) down
 
 compose-prod-logs:
-	npm run compose:prod:logs
+	$(COMPOSE_PROD_ENV) logs -f admin
 
-# Деплой
+# Деплой (требует npm)
 deploy:
 	npm run deploy
 
 deploy-build:
 	npm run deploy:build-only
 
-# Перезапуск prod: остановить и поднять с пересборкой
+# Перезапуск prod: остановить и поднять с пересборкой (без npm)
 restart: compose-prod-down compose-prod-build
