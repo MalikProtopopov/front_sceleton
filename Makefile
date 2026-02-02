@@ -54,26 +54,26 @@ lint:
 
 # Docker — разработка
 compose-dev:
-	npm run compose:dev
+	docker compose -f docker-compose.dev.yml up
 
 compose-dev-build:
-	npm run compose:dev:build
+	docker compose -f docker-compose.dev.yml up --build
 
 compose-dev-down:
-	npm run compose:dev:down
+	docker compose -f docker-compose.dev.yml down
 
-# Docker — production
+# Docker — production (прямые вызовы docker compose, чтобы работало на сервере без npm в PATH)
 compose-prod:
-	npm run compose:prod
+	docker compose -f docker-compose.prod.yml up -d
 
 compose-prod-build:
-	npm run compose:prod:build
+	docker compose -f docker-compose.prod.yml up -d --build
 
 compose-prod-down:
-	npm run compose:prod:down
+	docker compose -f docker-compose.prod.yml down
 
 compose-prod-logs:
-	npm run compose:prod:logs
+	docker compose -f docker-compose.prod.yml logs -f admin
 
 # Очистить кэш Docker BuildKit (при ошибке "parent snapshot does not exist")
 docker-prune:
