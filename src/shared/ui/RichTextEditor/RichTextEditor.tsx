@@ -33,7 +33,7 @@ import {
   Redo,
 } from "lucide-react";
 import { cn } from "@/shared/lib";
-import { useCallback, useEffect, useState, useMemo } from "react";
+import { useCallback, useEffect, useState, useMemo, useId } from "react";
 
 // HTML Sanitization config
 const SANITIZE_CONFIG = {
@@ -105,9 +105,11 @@ function ToolbarDivider({ className }: ToolbarDividerProps) {
 
 interface MenuBarProps {
   editor: Editor | null;
+  linkMarkName: string;
+  underlineMarkName: string;
 }
 
-function MenuBar({ editor }: MenuBarProps) {
+function MenuBar({ editor, linkMarkName, underlineMarkName }: MenuBarProps) {
   const [linkUrl, setLinkUrl] = useState("");
   const [showLinkInput, setShowLinkInput] = useState(false);
   // Force re-render on selection/transaction changes to update toolbar button states
@@ -144,7 +146,7 @@ function MenuBar({ editor }: MenuBarProps) {
     return {
       bold: editor.isActive("bold"),
       italic: editor.isActive("italic"),
-      underline: editor.isActive("underline"),
+      underline: editor.isActive(underlineMarkName),
       strike: editor.isActive("strike"),
       code: editor.isActive("code"),
       highlight: editor.isActive("highlight"),
@@ -158,22 +160,22 @@ function MenuBar({ editor }: MenuBarProps) {
       alignCenter: editor.isActive({ textAlign: "center" }),
       alignRight: editor.isActive({ textAlign: "right" }),
       alignJustify: editor.isActive({ textAlign: "justify" }),
-      link: editor.isActive("link"),
+      link: editor.isActive(linkMarkName),
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editor, updateKey]);
+  }, [editor, updateKey, linkMarkName, underlineMarkName]);
 
   const setLink = useCallback(() => {
     if (!editor) return;
-    
+
     if (linkUrl === "") {
-      editor.chain().focus().extendMarkRange("link").unsetLink().run();
+      editor.chain().focus().extendMarkRange(linkMarkName).unsetLink().run();
     } else {
-      editor.chain().focus().extendMarkRange("link").setLink({ href: linkUrl }).run();
+      editor.chain().focus().extendMarkRange(linkMarkName).setLink({ href: linkUrl }).run();
     }
     setShowLinkInput(false);
     setLinkUrl("");
-  }, [editor, linkUrl]);
+  }, [editor, linkUrl, linkMarkName]);
 
   const addImage = useCallback(() => {
     if (!editor) return;
@@ -396,6 +398,8 @@ export function RichTextEditor({
   error,
   className,
 }: RichTextEditorProps) {
+  // Unique id per instance to avoid duplicate extension names when multiple editors are on the page
+  const instanceId = useId().replace(/:/g, "");
   // Memoize extensions to prevent recreation on each render
   const extensions = useMemo(
     () => [
@@ -404,7 +408,7 @@ export function RichTextEditor({
           levels: [1, 2, 3],
         },
       }),
-      Link.configure({
+      Link.extend({ name: `link-${instanceId}` }).configure({
         openOnClick: false,
         HTMLAttributes: {
           class: "text-[var(--color-accent-primary)] underline",
@@ -421,14 +425,14 @@ export function RichTextEditor({
       TextAlign.configure({
         types: ["heading", "paragraph"],
       }),
-      Underline,
+      Underline.extend({ name: `underline-${instanceId}` }),
       Highlight.configure({
         HTMLAttributes: {
           class: "bg-yellow-200 dark:bg-yellow-800",
         },
       }),
     ],
-    [placeholder]
+    [placeholder, instanceId]
   );
 
   const editor = useEditor({
@@ -497,7 +501,7 @@ export function RichTextEditor({
           disabled && "cursor-not-allowed opacity-50"
         )}
       >
-        <MenuBar editor={editor} />
+        <MenuBar editor={editor} linkMarkName={`link-${instanceId}`} underlineMarkName={`underline-${instanceId}`} />
         <EditorContent editor={editor} />
       </div>
       {error && <p className="text-sm text-[var(--color-error)]">{error}</p>}

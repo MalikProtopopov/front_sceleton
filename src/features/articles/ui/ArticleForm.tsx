@@ -45,7 +45,7 @@ import {
   useReorderArticleContentBlocks,
 } from "../model/useArticles";
 import type { CreateContentBlockDto, UpdateContentBlockDto } from "@/entities/content-block";
-import type { Article, ArticleLocale, CreateArticleDto, UpdateArticleDto, CreateArticleLocaleDto, Topic } from "@/entities/article";
+import type { Article, ArticleLocale, CreateArticleDto, UpdateArticleDto, CreateArticleLocaleDto, UpdateArticleLocaleDto, Topic } from "@/entities/article";
 
 // Validation schema for create form
 const createLocaleSchema = z.object({
@@ -268,7 +268,8 @@ export function ArticleForm({ article, topics = [], onSubmit, isSubmitting = fal
     const localeData = editingLocales[localeId];
     if (!localeData) return;
 
-    const apiData: Partial<CreateArticleLocaleDto> = {
+    const apiData: UpdateArticleLocaleDto = {
+      locale: localeData.locale,
       title: localeData.title,
       slug: localeData.slug,
       excerpt: localeData.excerpt ?? undefined,
@@ -276,7 +277,7 @@ export function ArticleForm({ article, topics = [], onSubmit, isSubmitting = fal
       meta_title: localeData.meta_title ?? undefined,
       meta_description: localeData.meta_description ?? undefined,
     };
-    await updateLocale.mutateAsync({ localeId, data: apiData as CreateArticleLocaleDto });
+    await updateLocale.mutateAsync({ localeId, data: apiData });
   }, [editingLocales, updateLocale]);
 
   // Add new locale (for edit mode)

@@ -15,12 +15,26 @@ interface LocaleApiError {
   type?: string;
   title?: string;
   status?: number;
-  detail?: string;
+  detail?: string | Array<{ type?: string; loc?: unknown[]; msg?: string; input?: unknown }>;
   error_code?: string;
   resource?: string;
   locale?: string;
   field?: string;
   value?: string;
+}
+
+/** Turn API detail (string or Pydantic validation array) into a single string for display */
+function detailToString(detail: LocaleApiError["detail"]): string {
+  if (detail == null) return "Ошибка валидации данных";
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail) && detail.length > 0) {
+    const first = detail[0];
+    if (first && typeof first === "object" && "msg" in first && typeof first.msg === "string") {
+      return first.msg;
+    }
+    return "Ошибка валидации данных";
+  }
+  return "Ошибка валидации данных";
 }
 
 /**
@@ -82,20 +96,20 @@ export function getLocaleErrorMessage(error: unknown): string {
 
   // Locale already exists
   if (apiError.error_code === "locale_already_exists" || 
-      (apiError.status === 409 && apiError.detail?.includes("locale"))) {
+      (apiError.status === 409 && typeof apiError.detail === "string" && apiError.detail.includes("locale"))) {
     const locale = apiError.locale || "этого языка";
     return `Локаль для ${locale.toUpperCase()} уже существует`;
   }
 
   // Minimum locales required
   if (apiError.error_code === "minimum_locales_required" ||
-      (apiError.status === 400 && apiError.detail?.includes("last locale"))) {
+      (apiError.status === 400 && typeof apiError.detail === "string" && apiError.detail.includes("last locale"))) {
     return "Нельзя удалить последнюю локаль. Должна остаться хотя бы одна.";
   }
 
   // Slug already exists
   if (apiError.field === "slug" || 
-      (apiError.status === 409 && apiError.detail?.includes("slug"))) {
+      (apiError.status === 409 && typeof apiError.detail === "string" && apiError.detail.includes("slug"))) {
     const slug = apiError.value || "";
     const locale = apiError.locale || "";
     return slug 
@@ -113,13 +127,13 @@ export function getLocaleErrorMessage(error: unknown): string {
     return "Недостаточно прав для выполнения операции";
   }
 
-  // Validation error
+  // Validation error (422: detail can be string or array of { type, loc, msg, input })
   if (apiError.status === 422) {
-    return apiError.detail || "Ошибка валидации данных";
+    return detailToString(apiError.detail);
   }
 
   // Default error message
-  return apiError.detail || "Произошла ошибка";
+  return detailToString(apiError.detail) || "Произошла ошибка";
 }
 
 /**

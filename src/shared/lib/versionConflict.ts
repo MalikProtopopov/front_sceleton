@@ -43,6 +43,7 @@ export function handleVersionConflict(
 
 /**
  * Get error message from error object
+ * Handles 422 detail as string or Pydantic-style array of { type, loc, msg, input }
  */
 export function getErrorMessage(error: unknown, defaultMessage: string): string {
   if (error instanceof AxiosError) {
@@ -50,9 +51,17 @@ export function getErrorMessage(error: unknown, defaultMessage: string): string 
     if (error.response?.status === 409) {
       return "Конфликт версий. Данные были изменены.";
     }
-    // Check for validation errors
-    if (error.response?.data?.detail) {
-      return error.response.data.detail;
+    // Check for validation errors (detail can be string or array)
+    const detail = error.response?.data?.detail;
+    if (detail != null) {
+      if (typeof detail === "string") return detail;
+      if (Array.isArray(detail) && detail.length > 0) {
+        const first = detail[0];
+        if (first && typeof first === "object" && "msg" in first && typeof first.msg === "string") {
+          return first.msg;
+        }
+      }
+      return defaultMessage;
     }
   }
   if (error instanceof Error) {
