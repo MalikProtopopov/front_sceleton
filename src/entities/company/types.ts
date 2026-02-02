@@ -132,13 +132,23 @@ export interface UpdateAddressDto extends Partial<CreateAddressDto> {
   version: number;
 }
 
-// Contact
-export type ContactType = "phone" | "email" | "social";
+// Contact (API: contact_type; allowed: phone, email, whatsapp, telegram, viber, facebook, instagram, linkedin, youtube, other)
+export type ContactType =
+  | "phone"
+  | "email"
+  | "whatsapp"
+  | "telegram"
+  | "viber"
+  | "facebook"
+  | "instagram"
+  | "linkedin"
+  | "youtube"
+  | "other";
 
 export interface Contact {
   id: string;
   tenant_id: string;
-  type: ContactType;
+  contact_type: ContactType;
   label: string | null;
   value: string;
   icon: string | null;
@@ -150,15 +160,16 @@ export interface Contact {
 }
 
 export interface CreateContactDto {
-  type: ContactType;
-  label?: string;
+  contact_type: ContactType;
   value: string;
+  label?: string;
   icon?: string;
   sort_order?: number;
   is_primary?: boolean;
 }
 
-export interface UpdateContactDto extends Partial<CreateContactDto> {
+export interface UpdateContactDto extends Partial<Omit<CreateContactDto, "contact_type">> {
+  contact_type?: ContactType;
   version: number;
 }
 

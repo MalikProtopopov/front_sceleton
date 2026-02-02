@@ -5,10 +5,31 @@ import { notFound } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import type { ContactType } from "@/entities/company";
 import { useContact, useUpdateContact, useDeleteContact } from "@/features/company";
 import { Button, Input, Select, Card, CardHeader, CardTitle, CardContent, Switch, Spinner, ConfirmModal } from "@/shared/ui";
 
-const formSchema = z.object({ type: z.enum(["phone", "email", "social"]), label: z.string().optional(), value: z.string().min(1), icon: z.string().optional(), sort_order: z.number().min(0), is_primary: z.boolean() });
+const contactTypeOptions: { value: ContactType; label: string }[] = [
+  { value: "phone", label: "Телефон" },
+  { value: "email", label: "Email" },
+  { value: "whatsapp", label: "WhatsApp" },
+  { value: "telegram", label: "Telegram" },
+  { value: "viber", label: "Viber" },
+  { value: "facebook", label: "Facebook" },
+  { value: "instagram", label: "Instagram" },
+  { value: "linkedin", label: "LinkedIn" },
+  { value: "youtube", label: "YouTube" },
+  { value: "other", label: "Другое" },
+];
+
+const formSchema = z.object({
+  contact_type: z.enum(["phone", "email", "whatsapp", "telegram", "viber", "facebook", "instagram", "linkedin", "youtube", "other"]),
+  label: z.string().optional(),
+  value: z.string().min(1),
+  icon: z.string().optional(),
+  sort_order: z.number().min(0),
+  is_primary: z.boolean(),
+});
 type FormValues = z.infer<typeof formSchema>;
 
 export default function EditContactPage({ params }: { params: Promise<{ id: string }> }) {
@@ -19,13 +40,24 @@ export default function EditContactPage({ params }: { params: Promise<{ id: stri
   const { mutate: deleteItem, isPending: isDeleting } = useDeleteContact();
   const { register, control, handleSubmit, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    values: item ? { type: item.type, label: item.label || "", value: item.value, icon: item.icon || "", sort_order: item.sort_order, is_primary: item.is_primary } : undefined,
+    values: item
+      ? { contact_type: item.contact_type, label: item.label || "", value: item.value, icon: item.icon || "", sort_order: item.sort_order, is_primary: item.is_primary }
+      : undefined,
   });
 
   if (isLoading) return <div className="flex min-h-[400px] items-center justify-center"><Spinner size="lg" /></div>;
   if (error || !item) notFound();
 
-  const onSubmit = (data: FormValues) => update({ type: data.type, label: data.label || undefined, value: data.value, icon: data.icon || undefined, sort_order: data.sort_order, is_primary: data.is_primary, version: item.version });
+  const onSubmit = (data: FormValues) =>
+    update({
+      contact_type: data.contact_type,
+      label: data.label || undefined,
+      value: data.value,
+      icon: data.icon || undefined,
+      sort_order: data.sort_order,
+      is_primary: data.is_primary,
+      version: item.version,
+    });
 
   return (
     <div className="space-y-6">
@@ -33,7 +65,7 @@ export default function EditContactPage({ params }: { params: Promise<{ id: stri
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <Card><CardHeader><CardTitle>Контактная информация</CardTitle></CardHeader><CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
-            <Select label="Тип контакта" {...register("type")} options={[{ value: "phone", label: "Телефон" }, { value: "email", label: "Email" }, { value: "social", label: "Соцсети" }]} />
+            <Select label="Тип контакта" {...register("contact_type")} options={contactTypeOptions} />
             <Input label="Метка" {...register("label")} />
           </div>
           <Input label="Значение" {...register("value")} error={errors.value?.message} required />

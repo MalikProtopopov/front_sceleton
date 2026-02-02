@@ -233,7 +233,7 @@ export default function CompanyPage() {
       key: "value",
       header: "Контакт",
       render: (item) => {
-        const icon = item.type === "phone" ? Phone : item.type === "email" ? Mail : Globe;
+        const icon = item.contact_type === "phone" ? Phone : item.contact_type === "email" ? Mail : Globe;
         const IconComponent = icon;
         return (
           <div className="flex items-center gap-2">
@@ -249,12 +249,12 @@ export default function CompanyPage() {
       },
     },
     {
-      key: "type",
+      key: "contact_type",
       header: "Тип",
       width: "120px",
       render: (item) => (
         <Badge variant="secondary">
-          {item.type === "phone" ? "Телефон" : item.type === "email" ? "Email" : "Соцсети"}
+          {item.contact_type === "phone" ? "Телефон" : item.contact_type === "email" ? "Email" : item.contact_type}
         </Badge>
       ),
     },
