@@ -152,10 +152,8 @@ export function ReviewForm({ review, onSubmit, isSubmitting = false }: ReviewFor
     // Get content and company from first locale (backend has them at top level too)
     const firstLocale = data.locales[0];
     const content = firstLocale?.content || "";
-    const authorCompany =
-      firstLocale?.company_name?.trim() !== ""
-        ? firstLocale.company_name?.trim() ?? null
-        : null;
+    const companyName = firstLocale?.company_name?.trim();
+    const authorCompany = companyName && companyName !== "" ? companyName : null;
 
     const payload: CreateReviewDto = {
       author_name: data.author_name,
