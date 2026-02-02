@@ -9,6 +9,9 @@ import type {
   CreateCaseLocaleDto,
   UpdateCaseLocaleDto,
   CaseFilterParams,
+  Contact,
+  CreateContactDto,
+  UpdateContactDto,
 } from "@/entities/case";
 
 export const casesApi = {
@@ -42,6 +45,16 @@ export const casesApi = {
 
   deleteLocale: (caseId: string, localeId: string) =>
     apiClient.delete(API_ENDPOINTS.CASES.LOCALE_BY_ID(caseId, localeId)),
+
+  // Contacts
+  createContact: (caseId: string, data: CreateContactDto) =>
+    apiClient.post<Contact>(API_ENDPOINTS.CASES.CONTACTS(caseId), data),
+
+  updateContact: (caseId: string, contactId: string, data: UpdateContactDto) =>
+    apiClient.patch<Contact>(API_ENDPOINTS.CASES.CONTACT_BY_ID(caseId, contactId), data),
+
+  deleteContact: (caseId: string, contactId: string) =>
+    apiClient.delete(API_ENDPOINTS.CASES.CONTACT_BY_ID(caseId, contactId)),
 };
 
 // Query keys factory

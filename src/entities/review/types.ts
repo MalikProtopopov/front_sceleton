@@ -1,4 +1,5 @@
 // Review entity types
+import type { Contact } from "@/entities/case";
 
 export type ReviewStatus = "pending" | "approved" | "rejected";
 
@@ -41,6 +42,7 @@ export interface Review {
   created_at: string;
   updated_at: string;
   locales?: ReviewLocale[]; // May be undefined if backend returns content at top level
+  author_contacts?: Contact[];
 }
 
 // Request DTOs

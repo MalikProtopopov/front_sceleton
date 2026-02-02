@@ -2,6 +2,7 @@ import { apiClient } from "@/shared/api";
 import { API_ENDPOINTS } from "@/shared/config";
 import type { PaginatedResponse } from "@/shared/types";
 import type { Review, CreateReviewDto, UpdateReviewDto, ReviewFilterParams } from "@/entities/review";
+import type { Contact, CreateContactDto, UpdateContactDto } from "@/entities/case";
 
 export const reviewsApi = {
   getAll: (params?: ReviewFilterParams) =>
@@ -24,6 +25,16 @@ export const reviewsApi = {
 
   reject: (id: string) =>
     apiClient.post<Review>(API_ENDPOINTS.REVIEWS.REJECT(id)),
+
+  // Author Contacts
+  createAuthorContact: (reviewId: string, data: CreateContactDto) =>
+    apiClient.post<Contact>(API_ENDPOINTS.REVIEWS.AUTHOR_CONTACTS(reviewId), data),
+
+  updateAuthorContact: (reviewId: string, contactId: string, data: UpdateContactDto) =>
+    apiClient.patch<Contact>(API_ENDPOINTS.REVIEWS.AUTHOR_CONTACT_BY_ID(reviewId, contactId), data),
+
+  deleteAuthorContact: (reviewId: string, contactId: string) =>
+    apiClient.delete(API_ENDPOINTS.REVIEWS.AUTHOR_CONTACT_BY_ID(reviewId, contactId)),
 };
 
 // Query keys factory

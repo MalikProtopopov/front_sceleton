@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { casesApi, casesKeys } from "../api/casesApi";
 import { ROUTES } from "@/shared/config";
-import type { CaseFilterParams, CreateCaseDto, UpdateCaseDto, CreateCaseLocaleDto, UpdateCaseLocaleDto } from "@/entities/case";
+import type { CaseFilterParams, CreateCaseDto, UpdateCaseDto, CreateCaseLocaleDto, UpdateCaseLocaleDto, CreateContactDto, UpdateContactDto } from "@/entities/case";
 import { handleLocaleError } from "@/shared/lib/localeErrors";
 import { handleVersionConflict, getErrorMessage } from "@/shared/lib/versionConflict";
 
@@ -166,6 +166,59 @@ export function useDeleteCaseLocale(caseId: string) {
     },
     onError: (error) => {
       handleLocaleError(error);
+    },
+  });
+}
+
+// =====================
+// Contact Hooks
+// =====================
+
+export function useCreateCaseContact(caseId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: CreateContactDto) => casesApi.createContact(caseId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: casesKeys.detail(caseId) });
+      toast.success("Контакт добавлен");
+    },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "Не удалось добавить контакт";
+      toast.error(message);
+    },
+  });
+}
+
+export function useUpdateCaseContact(caseId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ contactId, data }: { contactId: string; data: UpdateContactDto }) =>
+      casesApi.updateContact(caseId, contactId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: casesKeys.detail(caseId) });
+      toast.success("Контакт обновлен");
+    },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "Не удалось обновить контакт";
+      toast.error(message);
+    },
+  });
+}
+
+export function useDeleteCaseContact(caseId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (contactId: string) => casesApi.deleteContact(caseId, contactId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: casesKeys.detail(caseId) });
+      toast.success("Контакт удален");
+    },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "Не удалось удалить контакт";
+      toast.error(message);
     },
   });
 }

@@ -2,6 +2,41 @@
 
 export type CaseStatus = "draft" | "published" | "archived";
 
+// Contact types
+export type ContactType =
+  | "website"
+  | "instagram"
+  | "telegram"
+  | "linkedin"
+  | "facebook"
+  | "twitter"
+  | "youtube"
+  | "tiktok"
+  | "email"
+  | "phone"
+  | "whatsapp"
+  | "viber"
+  | "other";
+
+export interface Contact {
+  id: string;
+  contact_type: ContactType;
+  value: string;
+  sort_order: number;
+}
+
+export interface CreateContactDto {
+  contact_type: ContactType;
+  value: string;
+  sort_order?: number;
+}
+
+export interface UpdateContactDto {
+  contact_type?: ContactType;
+  value?: string;
+  sort_order?: number;
+}
+
 export interface CaseLocale {
   id: string;
   case_id: string;
@@ -37,6 +72,7 @@ export interface Case {
   updated_at: string;
   locales: CaseLocale[];
   services: CaseServiceLink[];
+  contacts?: Contact[];
 }
 
 // Request DTOs

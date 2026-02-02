@@ -7,7 +7,10 @@ export {
   useDeleteReview, 
   useApproveReview, 
   useRejectReview,
-  useToggleReviewFeatured 
+  useToggleReviewFeatured,
+  useCreateAuthorContact,
+  useUpdateAuthorContact,
+  useDeleteAuthorContact,
 } from "./model/useReviews";
 export { ReviewForm } from "./ui/ReviewForm";
 export { CaseSelector } from "./ui/CaseSelector";

@@ -82,6 +82,8 @@ export const API_ENDPOINTS = {
     APPROVE: (id: string) => `/admin/reviews/${id}/approve`,
     REJECT: (id: string) => `/admin/reviews/${id}/reject`,
     AUTHOR_PHOTO: (id: string) => `/admin/reviews/${id}/author-photo`,
+    AUTHOR_CONTACTS: (reviewId: string) => `/admin/reviews/${reviewId}/author-contacts`,
+    AUTHOR_CONTACT_BY_ID: (reviewId: string, contactId: string) => `/admin/reviews/${reviewId}/author-contacts/${contactId}`,
   },
   
   // Inquiries
@@ -135,6 +137,8 @@ export const API_ENDPOINTS = {
     COVER_IMAGE: (id: string) => `/admin/cases/${id}/cover-image`,
     LOCALES: (id: string) => `/admin/cases/${id}/locales`,
     LOCALE_BY_ID: (caseId: string, localeId: string) => `/admin/cases/${caseId}/locales/${localeId}`,
+    CONTACTS: (caseId: string) => `/admin/cases/${caseId}/contacts`,
+    CONTACT_BY_ID: (caseId: string, contactId: string) => `/admin/cases/${caseId}/contacts/${contactId}`,
   },
   
   // Documents

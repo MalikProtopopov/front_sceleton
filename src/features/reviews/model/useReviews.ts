@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { reviewsApi, reviewsKeys } from "../api/reviewsApi";
 import { ROUTES } from "@/shared/config";
 import type { ReviewFilterParams, CreateReviewDto, UpdateReviewDto } from "@/entities/review";
+import type { CreateContactDto, UpdateContactDto } from "@/entities/case";
 
 export function useReviewsList(params?: ReviewFilterParams) {
   return useQuery({
@@ -122,6 +123,59 @@ export function useToggleReviewFeatured(id: string) {
     },
     onError: (error) => {
       const message = error instanceof Error ? error.message : "Не удалось изменить статус";
+      toast.error(message);
+    },
+  });
+}
+
+// =====================
+// Author Contact Hooks
+// =====================
+
+export function useCreateAuthorContact(reviewId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: CreateContactDto) => reviewsApi.createAuthorContact(reviewId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: reviewsKeys.detail(reviewId) });
+      toast.success("Контакт автора добавлен");
+    },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "Не удалось добавить контакт";
+      toast.error(message);
+    },
+  });
+}
+
+export function useUpdateAuthorContact(reviewId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ contactId, data }: { contactId: string; data: UpdateContactDto }) =>
+      reviewsApi.updateAuthorContact(reviewId, contactId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: reviewsKeys.detail(reviewId) });
+      toast.success("Контакт автора обновлен");
+    },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "Не удалось обновить контакт";
+      toast.error(message);
+    },
+  });
+}
+
+export function useDeleteAuthorContact(reviewId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (contactId: string) => reviewsApi.deleteAuthorContact(reviewId, contactId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: reviewsKeys.detail(reviewId) });
+      toast.success("Контакт автора удален");
+    },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "Не удалось удалить контакт";
       toast.error(message);
     },
   });

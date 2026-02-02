@@ -23,6 +23,7 @@ import {
   ImageUpload,
   SectionHeader,
   LocaleManager,
+  ContactsManager,
   ModalBody,
   ModalFooter,
   type LocaleFormRenderProps,
@@ -33,8 +34,11 @@ import {
   useCreateCaseLocale,
   useUpdateCaseLocale,
   useDeleteCaseLocale,
+  useCreateCaseContact,
+  useUpdateCaseContact,
+  useDeleteCaseContact,
 } from "../model/useCases";
-import type { Case, CaseLocale, CreateCaseDto, UpdateCaseDto, CreateCaseLocaleDto } from "@/entities/case";
+import type { Case, CaseLocale, CreateCaseDto, UpdateCaseDto, CreateCaseLocaleDto, CreateContactDto, UpdateContactDto } from "@/entities/case";
 import type { Service } from "@/entities/service";
 
 // Validation schemas
@@ -182,6 +186,10 @@ export function CaseForm({ caseItem, services = [], onSubmit, isSubmitting = fal
   const updateLocale = useUpdateCaseLocale(caseItem?.id || "");
   const deleteLocale = useDeleteCaseLocale(caseItem?.id || "");
 
+  const createContact = useCreateCaseContact(caseItem?.id || "");
+  const updateContact = useUpdateCaseContact(caseItem?.id || "");
+  const deleteContact = useDeleteCaseContact(caseItem?.id || "");
+
   const createForm = useForm<CreateCaseFormValues>({
     resolver: zodResolver(createCaseSchema),
     defaultValues: {
@@ -290,6 +298,11 @@ export function CaseForm({ caseItem, services = [], onSubmit, isSubmitting = fal
   };
   const handleDeleteLocale = async (localeId: string) => { await deleteLocale.mutateAsync(localeId); };
 
+  // Contact handlers
+  const handleCreateContact = async (data: CreateContactDto) => { await createContact.mutateAsync(data); };
+  const handleUpdateContact = async (contactId: string, data: UpdateContactDto) => { await updateContact.mutateAsync({ contactId, data }); };
+  const handleDeleteContact = async (contactId: string) => { await deleteContact.mutateAsync(contactId); };
+
   const addLocale = (locale: string) => {
     if (!locales.map((l) => l.locale).includes(locale)) {
       createForm.setValue("locales", [...locales, { locale, title: "", slug: "", excerpt: "", description: "", results: "", meta_title: "", meta_description: "" }]);
@@ -351,7 +364,20 @@ export function CaseForm({ caseItem, services = [], onSubmit, isSubmitting = fal
       </Card>
 
       {isEditing ? (
-        <LocaleManager<CaseLocale & { id: string }> locales={caseItem.locales as (CaseLocale & { id: string })[]} supportedLocales={SUPPORTED_LOCALES} isEditing={true} onCreateLocale={handleCreateLocale} onUpdateLocale={handleUpdateLocale} onDeleteLocale={handleDeleteLocale} isCreating={createLocale.isPending} isUpdating={updateLocale.isPending} isDeleting={deleteLocale.isPending} getLocaleDisplayTitle={(locale) => locale.title} renderLocaleForm={(props) => <CaseLocaleForm {...props} />} />
+        <>
+          <LocaleManager<CaseLocale & { id: string }> locales={caseItem.locales as (CaseLocale & { id: string })[]} supportedLocales={SUPPORTED_LOCALES} isEditing={true} onCreateLocale={handleCreateLocale} onUpdateLocale={handleUpdateLocale} onDeleteLocale={handleDeleteLocale} isCreating={createLocale.isPending} isUpdating={updateLocale.isPending} isDeleting={deleteLocale.isPending} getLocaleDisplayTitle={(locale) => locale.title} renderLocaleForm={(props) => <CaseLocaleForm {...props} />} />
+          <ContactsManager
+            contacts={caseItem.contacts || []}
+            isEditing={true}
+            onCreateContact={handleCreateContact}
+            onUpdateContact={handleUpdateContact}
+            onDeleteContact={handleDeleteContact}
+            isCreating={createContact.isPending}
+            isUpdating={updateContact.isPending}
+            isDeleting={deleteContact.isPending}
+            title="Контакты клиента"
+          />
+        </>
       ) : (
         <Card>
           <CardHeader><SectionHeader title="Локализации" actions={availableLocales.length > 0 ? (<Select value="" onChange={(e) => { if (e.target.value) addLocale(e.target.value); }} options={[{ value: "", label: "Добавить язык" }, ...availableLocales]} minWidth="200px" />) : undefined} /></CardHeader>

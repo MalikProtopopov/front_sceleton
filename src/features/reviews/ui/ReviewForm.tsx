@@ -20,10 +20,17 @@ import {
   CardContent,
   ImageUpload,
   SectionHeader,
+  ContactsManager,
 } from "@/shared/ui";
 import { useUploadReviewAuthorPhoto, useDeleteReviewAuthorPhoto } from "@/features/images";
+import {
+  useCreateAuthorContact,
+  useUpdateAuthorContact,
+  useDeleteAuthorContact,
+} from "../model/useReviews";
 import { CaseSelector } from "./CaseSelector";
 import type { Review, CreateReviewDto, UpdateReviewDto } from "@/entities/review";
+import type { CreateContactDto, UpdateContactDto } from "@/entities/case";
 
 // Validation schema
 const localeSchema = z.object({
@@ -74,6 +81,11 @@ export function ReviewForm({ review, onSubmit, isSubmitting = false }: ReviewFor
   // Image upload hooks
   const uploadAvatar = useUploadReviewAuthorPhoto(review?.id || "");
   const deleteAvatar = useDeleteReviewAuthorPhoto(review?.id || "");
+
+  // Contact hooks
+  const createContact = useCreateAuthorContact(review?.id || "");
+  const updateContact = useUpdateAuthorContact(review?.id || "");
+  const deleteContact = useDeleteAuthorContact(review?.id || "");
 
   // Helper to get locales from review (handles both locales array and top-level content)
   const getLocalesFromReview = (r?: Review) => {
@@ -202,6 +214,11 @@ export function ReviewForm({ review, onSubmit, isSubmitting = false }: ReviewFor
     await deleteAvatar.mutateAsync();
     setAvatarUrl(null);
   };
+
+  // Contact handlers
+  const handleCreateContact = async (data: CreateContactDto) => { await createContact.mutateAsync(data); };
+  const handleUpdateContact = async (contactId: string, data: UpdateContactDto) => { await updateContact.mutateAsync({ contactId, data }); };
+  const handleDeleteContact = async (contactId: string) => { await deleteContact.mutateAsync(contactId); };
 
   const addLocale = (locale: string) => {
     const existingLocales = locales.map((l) => l.locale);
@@ -426,6 +443,21 @@ export function ReviewForm({ review, onSubmit, isSubmitting = false }: ReviewFor
           </Tabs>
         </CardContent>
       </Card>
+
+      {/* Author Contacts - only in edit mode */}
+      {isEditing && (
+        <ContactsManager
+          contacts={review?.author_contacts || []}
+          isEditing={true}
+          onCreateContact={handleCreateContact}
+          onUpdateContact={handleUpdateContact}
+          onDeleteContact={handleDeleteContact}
+          isCreating={createContact.isPending}
+          isUpdating={updateContact.isPending}
+          isDeleting={deleteContact.isPending}
+          title="Контакты автора"
+        />
+      )}
 
       {/* Submit button */}
       <div className="flex justify-end gap-4">
