@@ -9,6 +9,10 @@ export {
   usePublishArticle,
   useUnpublishArticle,
   useTopics,
+  useCreateArticleContentBlock,
+  useUpdateArticleContentBlock,
+  useDeleteArticleContentBlock,
+  useReorderArticleContentBlocks,
 } from "./model/useArticles";
 export { ArticleFilters } from "./ui/ArticleFilters";
 export { ArticleForm } from "./ui/ArticleForm";

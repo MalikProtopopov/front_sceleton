@@ -10,6 +10,10 @@ export {
   useCreateCaseContact,
   useUpdateCaseContact,
   useDeleteCaseContact,
+  useCreateCaseContentBlock,
+  useUpdateCaseContentBlock,
+  useDeleteCaseContentBlock,
+  useReorderCaseContentBlocks,
 } from "./model/useCases";
 export { CaseForm } from "./ui/CaseForm";
 

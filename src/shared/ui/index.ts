@@ -24,3 +24,4 @@ export * from "./SectionHeader";
 export * from "./FilterBar";
 export * from "./LocaleManager";
 export * from "./ContactsManager";
+export * from "./ContentBlocksManager";

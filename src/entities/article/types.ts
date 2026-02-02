@@ -1,4 +1,5 @@
 // Article entity types
+import type { ContentBlock } from "@/entities/content-block";
 
 export type ArticleStatus = "draft" | "published" | "archived";
 
@@ -35,6 +36,7 @@ export interface Article {
   updated_at: string;
   locales: ArticleLocale[];
   topics: ArticleTopic[];
+  content_blocks?: ContentBlock[];
 }
 
 // Request DTOs

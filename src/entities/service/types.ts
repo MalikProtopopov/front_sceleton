@@ -1,4 +1,5 @@
 // Service entity types
+import type { ContentBlock } from "@/entities/content-block";
 
 export interface ServiceLocale {
   id: string;
@@ -49,6 +50,7 @@ export interface Service {
   locales: ServiceLocale[];
   prices: ServicePrice[];
   tags: ServiceTag[];
+  content_blocks?: ContentBlock[];
 }
 
 // Request DTOs

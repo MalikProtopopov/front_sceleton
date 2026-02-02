@@ -35,6 +35,9 @@ export const API_ENDPOINTS = {
     COVER_IMAGE: (id: string) => `/admin/articles/${id}/cover-image`,
     LOCALES: (id: string) => `/admin/articles/${id}/locales`,
     LOCALE_BY_ID: (articleId: string, localeId: string) => `/admin/articles/${articleId}/locales/${localeId}`,
+    CONTENT_BLOCKS: (articleId: string) => `/admin/articles/${articleId}/content-blocks`,
+    CONTENT_BLOCK_BY_ID: (articleId: string, blockId: string) => `/admin/articles/${articleId}/content-blocks/${blockId}`,
+    CONTENT_BLOCKS_REORDER: (articleId: string) => `/admin/articles/${articleId}/content-blocks/reorder`,
   },
   
   // Topics
@@ -64,6 +67,9 @@ export const API_ENDPOINTS = {
     TAG_BY_ID: (serviceId: string, tagId: string) => `/admin/services/${serviceId}/tags/${tagId}`,
     LOCALES: (id: string) => `/admin/services/${id}/locales`,
     LOCALE_BY_ID: (serviceId: string, localeId: string) => `/admin/services/${serviceId}/locales/${localeId}`,
+    CONTENT_BLOCKS: (serviceId: string) => `/admin/services/${serviceId}/content-blocks`,
+    CONTENT_BLOCK_BY_ID: (serviceId: string, blockId: string) => `/admin/services/${serviceId}/content-blocks/${blockId}`,
+    CONTENT_BLOCKS_REORDER: (serviceId: string) => `/admin/services/${serviceId}/content-blocks/reorder`,
   },
   
   // Employees
@@ -139,6 +145,9 @@ export const API_ENDPOINTS = {
     LOCALE_BY_ID: (caseId: string, localeId: string) => `/admin/cases/${caseId}/locales/${localeId}`,
     CONTACTS: (caseId: string) => `/admin/cases/${caseId}/contacts`,
     CONTACT_BY_ID: (caseId: string, contactId: string) => `/admin/cases/${caseId}/contacts/${contactId}`,
+    CONTENT_BLOCKS: (caseId: string) => `/admin/cases/${caseId}/content-blocks`,
+    CONTENT_BLOCK_BY_ID: (caseId: string, blockId: string) => `/admin/cases/${caseId}/content-blocks/${blockId}`,
+    CONTENT_BLOCKS_REORDER: (caseId: string) => `/admin/cases/${caseId}/content-blocks/reorder`,
   },
   
   // Documents

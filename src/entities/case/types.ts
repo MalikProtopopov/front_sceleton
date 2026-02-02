@@ -1,4 +1,5 @@
 // Case entity types
+import type { ContentBlock } from "@/entities/content-block";
 
 export type CaseStatus = "draft" | "published" | "archived";
 
@@ -73,6 +74,7 @@ export interface Case {
   locales: CaseLocale[];
   services: CaseServiceLink[];
   contacts?: Contact[];
+  content_blocks?: ContentBlock[];
 }
 
 // Request DTOs

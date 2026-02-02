@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { casesApi, casesKeys } from "../api/casesApi";
 import { ROUTES } from "@/shared/config";
 import type { CaseFilterParams, CreateCaseDto, UpdateCaseDto, CreateCaseLocaleDto, UpdateCaseLocaleDto, CreateContactDto, UpdateContactDto } from "@/entities/case";
+import type { CreateContentBlockDto, UpdateContentBlockDto, ReorderContentBlocksDto } from "@/entities/content-block";
 import { handleLocaleError } from "@/shared/lib/localeErrors";
 import { handleVersionConflict, getErrorMessage } from "@/shared/lib/versionConflict";
 
@@ -218,6 +219,74 @@ export function useDeleteCaseContact(caseId: string) {
     },
     onError: (error) => {
       const message = error instanceof Error ? error.message : "Не удалось удалить контакт";
+      toast.error(message);
+    },
+  });
+}
+
+// =====================
+// Content Block Hooks
+// =====================
+
+export function useCreateCaseContentBlock(caseId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: CreateContentBlockDto) => casesApi.createContentBlock(caseId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: casesKeys.detail(caseId) });
+      toast.success("Блок добавлен");
+    },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "Не удалось добавить блок";
+      toast.error(message);
+    },
+  });
+}
+
+export function useUpdateCaseContentBlock(caseId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ blockId, data }: { blockId: string; data: UpdateContentBlockDto }) =>
+      casesApi.updateContentBlock(caseId, blockId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: casesKeys.detail(caseId) });
+      toast.success("Блок обновлен");
+    },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "Не удалось обновить блок";
+      toast.error(message);
+    },
+  });
+}
+
+export function useDeleteCaseContentBlock(caseId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (blockId: string) => casesApi.deleteContentBlock(caseId, blockId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: casesKeys.detail(caseId) });
+      toast.success("Блок удален");
+    },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "Не удалось удалить блок";
+      toast.error(message);
+    },
+  });
+}
+
+export function useReorderCaseContentBlocks(caseId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: ReorderContentBlocksDto) => casesApi.reorderContentBlocks(caseId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: casesKeys.detail(caseId) });
+    },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "Не удалось изменить порядок блоков";
       toast.error(message);
     },
   });

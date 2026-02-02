@@ -12,6 +12,10 @@ export {
   useAddServiceTag,
   useUpdateServiceTag,
   useDeleteServiceTag,
+  useCreateServiceContentBlock,
+  useUpdateServiceContentBlock,
+  useDeleteServiceContentBlock,
+  useReorderServiceContentBlocks,
 } from "./model/useServices";
 export { ServiceForm } from "./ui/ServiceForm";
 

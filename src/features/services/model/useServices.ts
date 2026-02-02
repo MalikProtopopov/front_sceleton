@@ -16,6 +16,7 @@ import type {
   CreateServiceTagDto,
   UpdateServiceTagDto,
 } from "@/entities/service";
+import type { CreateContentBlockDto, UpdateContentBlockDto, ReorderContentBlocksDto } from "@/entities/content-block";
 import { handleLocaleError } from "@/shared/lib/localeErrors";
 import { handleVersionConflict, getErrorMessage } from "@/shared/lib/versionConflict";
 
@@ -263,6 +264,74 @@ export function useDeleteServiceLocale(serviceId: string) {
     },
     onError: (error) => {
       handleLocaleError(error);
+    },
+  });
+}
+
+// =====================
+// Content Block Hooks
+// =====================
+
+export function useCreateServiceContentBlock(serviceId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: CreateContentBlockDto) => servicesApi.createContentBlock(serviceId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: servicesKeys.detail(serviceId) });
+      toast.success("Блок добавлен");
+    },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "Не удалось добавить блок";
+      toast.error(message);
+    },
+  });
+}
+
+export function useUpdateServiceContentBlock(serviceId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ blockId, data }: { blockId: string; data: UpdateContentBlockDto }) =>
+      servicesApi.updateContentBlock(serviceId, blockId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: servicesKeys.detail(serviceId) });
+      toast.success("Блок обновлен");
+    },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "Не удалось обновить блок";
+      toast.error(message);
+    },
+  });
+}
+
+export function useDeleteServiceContentBlock(serviceId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (blockId: string) => servicesApi.deleteContentBlock(serviceId, blockId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: servicesKeys.detail(serviceId) });
+      toast.success("Блок удален");
+    },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "Не удалось удалить блок";
+      toast.error(message);
+    },
+  });
+}
+
+export function useReorderServiceContentBlocks(serviceId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: ReorderContentBlocksDto) => servicesApi.reorderContentBlocks(serviceId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: servicesKeys.detail(serviceId) });
+    },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "Не удалось изменить порядок блоков";
+      toast.error(message);
     },
   });
 }

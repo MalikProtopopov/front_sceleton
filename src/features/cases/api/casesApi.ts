@@ -13,6 +13,12 @@ import type {
   CreateContactDto,
   UpdateContactDto,
 } from "@/entities/case";
+import type {
+  ContentBlock,
+  CreateContentBlockDto,
+  UpdateContentBlockDto,
+  ReorderContentBlocksDto,
+} from "@/entities/content-block";
 
 export const casesApi = {
   getAll: (params?: CaseFilterParams) =>
@@ -55,6 +61,24 @@ export const casesApi = {
 
   deleteContact: (caseId: string, contactId: string) =>
     apiClient.delete(API_ENDPOINTS.CASES.CONTACT_BY_ID(caseId, contactId)),
+
+  // Content Blocks
+  getContentBlocks: (caseId: string, locale?: string) =>
+    apiClient.get<ContentBlock[]>(API_ENDPOINTS.CASES.CONTENT_BLOCKS(caseId), {
+      params: locale ? { locale } : undefined,
+    }),
+
+  createContentBlock: (caseId: string, data: CreateContentBlockDto) =>
+    apiClient.post<ContentBlock>(API_ENDPOINTS.CASES.CONTENT_BLOCKS(caseId), data),
+
+  updateContentBlock: (caseId: string, blockId: string, data: UpdateContentBlockDto) =>
+    apiClient.patch<ContentBlock>(API_ENDPOINTS.CASES.CONTENT_BLOCK_BY_ID(caseId, blockId), data),
+
+  deleteContentBlock: (caseId: string, blockId: string) =>
+    apiClient.delete(API_ENDPOINTS.CASES.CONTENT_BLOCK_BY_ID(caseId, blockId)),
+
+  reorderContentBlocks: (caseId: string, data: ReorderContentBlocksDto) =>
+    apiClient.post<ContentBlock[]>(API_ENDPOINTS.CASES.CONTENT_BLOCKS_REORDER(caseId), data),
 };
 
 // Query keys factory

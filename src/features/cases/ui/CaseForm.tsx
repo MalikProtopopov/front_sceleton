@@ -24,9 +24,17 @@ import {
   SectionHeader,
   LocaleManager,
   ContactsManager,
+  ContentBlocksManager,
+  TextBlockEditor,
+  ImageBlockEditor,
+  VideoBlockEditor,
+  GalleryBlockEditor,
+  LinkBlockEditor,
+  ResultBlockEditor,
   ModalBody,
   ModalFooter,
   type LocaleFormRenderProps,
+  type BlockEditorProps,
 } from "@/shared/ui";
 import { generateSlug } from "@/shared/lib";
 import { useUploadCaseCoverImage, useDeleteCaseCoverImage } from "@/features/images";
@@ -37,7 +45,12 @@ import {
   useCreateCaseContact,
   useUpdateCaseContact,
   useDeleteCaseContact,
+  useCreateCaseContentBlock,
+  useUpdateCaseContentBlock,
+  useDeleteCaseContentBlock,
+  useReorderCaseContentBlocks,
 } from "../model/useCases";
+import type { CreateContentBlockDto, UpdateContentBlockDto } from "@/entities/content-block";
 import type { Case, CaseLocale, CreateCaseDto, UpdateCaseDto, CreateCaseLocaleDto, CreateContactDto, UpdateContactDto } from "@/entities/case";
 import type { Service } from "@/entities/service";
 
@@ -190,6 +203,14 @@ export function CaseForm({ caseItem, services = [], onSubmit, isSubmitting = fal
   const updateContact = useUpdateCaseContact(caseItem?.id || "");
   const deleteContact = useDeleteCaseContact(caseItem?.id || "");
 
+  const createContentBlock = useCreateCaseContentBlock(caseItem?.id || "");
+  const updateContentBlock = useUpdateCaseContentBlock(caseItem?.id || "");
+  const deleteContentBlock = useDeleteCaseContentBlock(caseItem?.id || "");
+  const reorderContentBlocks = useReorderCaseContentBlocks(caseItem?.id || "");
+
+  // Selected locale for content blocks
+  const [selectedBlocksLocale, setSelectedBlocksLocale] = useState("ru");
+
   const createForm = useForm<CreateCaseFormValues>({
     resolver: zodResolver(createCaseSchema),
     defaultValues: {
@@ -303,6 +324,25 @@ export function CaseForm({ caseItem, services = [], onSubmit, isSubmitting = fal
   const handleUpdateContact = async (contactId: string, data: UpdateContactDto) => { await updateContact.mutateAsync({ contactId, data }); };
   const handleDeleteContact = async (contactId: string) => { await deleteContact.mutateAsync(contactId); };
 
+  // Content Block handlers
+  const handleCreateContentBlock = async (data: CreateContentBlockDto) => { await createContentBlock.mutateAsync(data); };
+  const handleUpdateContentBlock = async (blockId: string, data: UpdateContentBlockDto) => { await updateContentBlock.mutateAsync({ blockId, data }); };
+  const handleDeleteContentBlock = async (blockId: string) => { await deleteContentBlock.mutateAsync(blockId); };
+  const handleReorderContentBlocks = async (blockIds: string[]) => { await reorderContentBlocks.mutateAsync({ locale: selectedBlocksLocale, block_ids: blockIds }); };
+
+  // Block editor renderer
+  const renderBlockEditor = (props: BlockEditorProps) => {
+    switch (props.blockType) {
+      case "text": return <TextBlockEditor {...props} />;
+      case "image": return <ImageBlockEditor {...props} />;
+      case "video": return <VideoBlockEditor {...props} />;
+      case "gallery": return <GalleryBlockEditor {...props} />;
+      case "link": return <LinkBlockEditor {...props} />;
+      case "result": return <ResultBlockEditor {...props} />;
+      default: return null;
+    }
+  };
+
   const addLocale = (locale: string) => {
     if (!locales.map((l) => l.locale).includes(locale)) {
       createForm.setValue("locales", [...locales, { locale, title: "", slug: "", excerpt: "", description: "", results: "", meta_title: "", meta_description: "" }]);
@@ -377,6 +417,35 @@ export function CaseForm({ caseItem, services = [], onSubmit, isSubmitting = fal
             isDeleting={deleteContact.isPending}
             title="Контакты клиента"
           />
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Контент-блоки</CardTitle>
+                <Select
+                  value={selectedBlocksLocale}
+                  onChange={(e) => setSelectedBlocksLocale(e.target.value)}
+                  options={SUPPORTED_LOCALES}
+                  minWidth="150px"
+                />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <ContentBlocksManager
+                blocks={caseItem.content_blocks || []}
+                locale={selectedBlocksLocale}
+                isEditing={true}
+                onCreateBlock={handleCreateContentBlock}
+                onUpdateBlock={handleUpdateContentBlock}
+                onDeleteBlock={handleDeleteContentBlock}
+                onReorderBlocks={handleReorderContentBlocks}
+              isCreating={createContentBlock.isPending}
+              isUpdating={updateContentBlock.isPending}
+              isDeleting={deleteContentBlock.isPending}
+              renderBlockEditor={renderBlockEditor}
+                title=""
+              />
+            </CardContent>
+          </Card>
         </>
       ) : (
         <Card>

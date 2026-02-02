@@ -11,6 +11,12 @@ import type {
   UpdateArticleLocaleDto,
   ArticleFilterParams,
 } from "@/entities/article";
+import type {
+  ContentBlock,
+  CreateContentBlockDto,
+  UpdateContentBlockDto,
+  ReorderContentBlocksDto,
+} from "@/entities/content-block";
 
 export const articlesApi = {
   // Articles
@@ -51,6 +57,24 @@ export const articlesApi = {
 
   deleteLocale: (articleId: string, localeId: string) =>
     apiClient.delete(API_ENDPOINTS.ARTICLES.LOCALE_BY_ID(articleId, localeId)),
+
+  // Content Blocks
+  getContentBlocks: (articleId: string, locale?: string) =>
+    apiClient.get<ContentBlock[]>(API_ENDPOINTS.ARTICLES.CONTENT_BLOCKS(articleId), {
+      params: locale ? { locale } : undefined,
+    }),
+
+  createContentBlock: (articleId: string, data: CreateContentBlockDto) =>
+    apiClient.post<ContentBlock>(API_ENDPOINTS.ARTICLES.CONTENT_BLOCKS(articleId), data),
+
+  updateContentBlock: (articleId: string, blockId: string, data: UpdateContentBlockDto) =>
+    apiClient.patch<ContentBlock>(API_ENDPOINTS.ARTICLES.CONTENT_BLOCK_BY_ID(articleId, blockId), data),
+
+  deleteContentBlock: (articleId: string, blockId: string) =>
+    apiClient.delete(API_ENDPOINTS.ARTICLES.CONTENT_BLOCK_BY_ID(articleId, blockId)),
+
+  reorderContentBlocks: (articleId: string, data: ReorderContentBlocksDto) =>
+    apiClient.post<ContentBlock[]>(API_ENDPOINTS.ARTICLES.CONTENT_BLOCKS_REORDER(articleId), data),
 };
 
 // Query keys factory

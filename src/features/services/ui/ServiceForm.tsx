@@ -27,7 +27,15 @@ import {
   ModalFooter,
   ConfirmModal,
   LocaleManager,
+  ContentBlocksManager,
+  TextBlockEditor,
+  ImageBlockEditor,
+  VideoBlockEditor,
+  GalleryBlockEditor,
+  LinkBlockEditor,
+  ResultBlockEditor,
   type LocaleFormRenderProps,
+  type BlockEditorProps,
 } from "@/shared/ui";
 import { generateSlug } from "@/shared/lib";
 import { useUploadServiceImage, useDeleteServiceImage } from "@/features/images";
@@ -40,7 +48,12 @@ import {
   useCreateServiceLocale,
   useUpdateServiceLocale,
   useDeleteServiceLocale,
+  useCreateServiceContentBlock,
+  useUpdateServiceContentBlock,
+  useDeleteServiceContentBlock,
+  useReorderServiceContentBlocks,
 } from "../model/useServices";
+import type { CreateContentBlockDto, UpdateContentBlockDto } from "@/entities/content-block";
 import type {
   Service,
   ServiceLocale,
@@ -634,6 +647,15 @@ export function ServiceForm({ service, onSubmit, isSubmitting = false }: Service
   const updateLocale = useUpdateServiceLocale(service?.id || "");
   const deleteLocale = useDeleteServiceLocale(service?.id || "");
 
+  // Content block hooks
+  const createContentBlock = useCreateServiceContentBlock(service?.id || "");
+  const updateContentBlock = useUpdateServiceContentBlock(service?.id || "");
+  const deleteContentBlock = useDeleteServiceContentBlock(service?.id || "");
+  const reorderContentBlocks = useReorderServiceContentBlocks(service?.id || "");
+
+  // Selected locale for content blocks
+  const [selectedBlocksLocale, setSelectedBlocksLocale] = useState("ru");
+
   // Form for creating new service (with initial locale)
   const createForm = useForm<CreateServiceFormValues>({
     resolver: zodResolver(createServiceSchema),
@@ -723,6 +745,25 @@ export function ServiceForm({ service, onSubmit, isSubmitting = false }: Service
   const handleImageDelete = async () => {
     await deleteImage.mutateAsync();
     setImageUrl(null);
+  };
+
+  // Content Block handlers
+  const handleCreateContentBlock = async (data: CreateContentBlockDto) => { await createContentBlock.mutateAsync(data); };
+  const handleUpdateContentBlock = async (blockId: string, data: UpdateContentBlockDto) => { await updateContentBlock.mutateAsync({ blockId, data }); };
+  const handleDeleteContentBlock = async (blockId: string) => { await deleteContentBlock.mutateAsync(blockId); };
+  const handleReorderContentBlocks = async (blockIds: string[]) => { await reorderContentBlocks.mutateAsync({ locale: selectedBlocksLocale, block_ids: blockIds }); };
+
+  // Block editor renderer
+  const renderBlockEditor = (props: BlockEditorProps) => {
+    switch (props.blockType) {
+      case "text": return <TextBlockEditor {...props} />;
+      case "image": return <ImageBlockEditor {...props} />;
+      case "video": return <VideoBlockEditor {...props} />;
+      case "gallery": return <GalleryBlockEditor {...props} />;
+      case "link": return <LinkBlockEditor {...props} />;
+      case "result": return <ResultBlockEditor {...props} />;
+      default: return null;
+    }
   };
 
   // Locale management handlers
@@ -1037,6 +1078,39 @@ export function ServiceForm({ service, onSubmit, isSubmitting = false }: Service
           )}
         </CardContent>
       </Card>
+
+      {/* Content Blocks (only in edit mode) */}
+      {isEditing && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Контент-блоки</CardTitle>
+              <Select
+                value={selectedBlocksLocale}
+                onChange={(e) => setSelectedBlocksLocale(e.target.value)}
+                options={SUPPORTED_LOCALES}
+                minWidth="150px"
+              />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <ContentBlocksManager
+              blocks={service.content_blocks || []}
+              locale={selectedBlocksLocale}
+              isEditing={true}
+              onCreateBlock={handleCreateContentBlock}
+              onUpdateBlock={handleUpdateContentBlock}
+              onDeleteBlock={handleDeleteContentBlock}
+              onReorderBlocks={handleReorderContentBlocks}
+              isCreating={createContentBlock.isPending}
+              isUpdating={updateContentBlock.isPending}
+              isDeleting={deleteContentBlock.isPending}
+              renderBlockEditor={renderBlockEditor}
+              title=""
+            />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Submit button */}
       <div className="flex justify-end gap-4">

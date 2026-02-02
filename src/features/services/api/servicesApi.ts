@@ -16,6 +16,12 @@ import type {
   CreateServiceTagDto,
   UpdateServiceTagDto,
 } from "@/entities/service";
+import type {
+  ContentBlock,
+  CreateContentBlockDto,
+  UpdateContentBlockDto,
+  ReorderContentBlocksDto,
+} from "@/entities/content-block";
 
 export const servicesApi = {
   getAll: (params?: ServiceFilterParams) =>
@@ -62,6 +68,24 @@ export const servicesApi = {
 
   deleteLocale: (serviceId: string, localeId: string) =>
     apiClient.delete(API_ENDPOINTS.SERVICES.LOCALE_BY_ID(serviceId, localeId)),
+
+  // Content Blocks
+  getContentBlocks: (serviceId: string, locale?: string) =>
+    apiClient.get<ContentBlock[]>(API_ENDPOINTS.SERVICES.CONTENT_BLOCKS(serviceId), {
+      params: locale ? { locale } : undefined,
+    }),
+
+  createContentBlock: (serviceId: string, data: CreateContentBlockDto) =>
+    apiClient.post<ContentBlock>(API_ENDPOINTS.SERVICES.CONTENT_BLOCKS(serviceId), data),
+
+  updateContentBlock: (serviceId: string, blockId: string, data: UpdateContentBlockDto) =>
+    apiClient.patch<ContentBlock>(API_ENDPOINTS.SERVICES.CONTENT_BLOCK_BY_ID(serviceId, blockId), data),
+
+  deleteContentBlock: (serviceId: string, blockId: string) =>
+    apiClient.delete(API_ENDPOINTS.SERVICES.CONTENT_BLOCK_BY_ID(serviceId, blockId)),
+
+  reorderContentBlocks: (serviceId: string, data: ReorderContentBlocksDto) =>
+    apiClient.post<ContentBlock[]>(API_ENDPOINTS.SERVICES.CONTENT_BLOCKS_REORDER(serviceId), data),
 };
 
 // Query keys factory

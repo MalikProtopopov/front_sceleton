@@ -23,6 +23,14 @@ import {
   ImageUpload,
   ConfirmModal,
   Badge,
+  ContentBlocksManager,
+  TextBlockEditor,
+  ImageBlockEditor,
+  VideoBlockEditor,
+  GalleryBlockEditor,
+  LinkBlockEditor,
+  ResultBlockEditor,
+  type BlockEditorProps,
 } from "@/shared/ui";
 import { generateSlug } from "@/shared/lib";
 import { useUploadArticleCoverImage, useDeleteArticleCoverImage } from "@/features/images";
@@ -30,7 +38,12 @@ import {
   useCreateArticleLocale,
   useUpdateArticleLocale,
   useDeleteArticleLocale,
+  useCreateArticleContentBlock,
+  useUpdateArticleContentBlock,
+  useDeleteArticleContentBlock,
+  useReorderArticleContentBlocks,
 } from "../model/useArticles";
+import type { CreateContentBlockDto, UpdateContentBlockDto } from "@/entities/content-block";
 import type { Article, ArticleLocale, CreateArticleDto, UpdateArticleDto, CreateArticleLocaleDto, Topic } from "@/entities/article";
 
 // Validation schema for create form
@@ -91,6 +104,15 @@ export function ArticleForm({ article, topics = [], onSubmit, isSubmitting = fal
   const createLocale = useCreateArticleLocale(article?.id || "");
   const updateLocale = useUpdateArticleLocale(article?.id || "");
   const deleteLocale = useDeleteArticleLocale(article?.id || "");
+
+  // Content block hooks
+  const createContentBlock = useCreateArticleContentBlock(article?.id || "");
+  const updateContentBlock = useUpdateArticleContentBlock(article?.id || "");
+  const deleteContentBlock = useDeleteArticleContentBlock(article?.id || "");
+  const reorderContentBlocks = useReorderArticleContentBlocks(article?.id || "");
+
+  // Selected locale for content blocks
+  const [selectedBlocksLocale, setSelectedBlocksLocale] = useState("ru");
 
   // Form for creating new article
   const createForm = useForm<CreateArticleFormValues>({
@@ -202,6 +224,25 @@ export function ArticleForm({ article, topics = [], onSubmit, isSubmitting = fal
   const handleImageDelete = async () => {
     await deleteCoverImage.mutateAsync();
     setCoverImageUrl(null);
+  };
+
+  // Content Block handlers
+  const handleCreateContentBlock = async (data: CreateContentBlockDto) => { await createContentBlock.mutateAsync(data); };
+  const handleUpdateContentBlock = async (blockId: string, data: UpdateContentBlockDto) => { await updateContentBlock.mutateAsync({ blockId, data }); };
+  const handleDeleteContentBlock = async (blockId: string) => { await deleteContentBlock.mutateAsync(blockId); };
+  const handleReorderContentBlocks = async (blockIds: string[]) => { await reorderContentBlocks.mutateAsync({ locale: selectedBlocksLocale, block_ids: blockIds }); };
+
+  // Block editor renderer
+  const renderBlockEditor = (props: BlockEditorProps) => {
+    switch (props.blockType) {
+      case "text": return <TextBlockEditor {...props} />;
+      case "image": return <ImageBlockEditor {...props} />;
+      case "video": return <VideoBlockEditor {...props} />;
+      case "gallery": return <GalleryBlockEditor {...props} />;
+      case "link": return <LinkBlockEditor {...props} />;
+      case "result": return <ResultBlockEditor {...props} />;
+      default: return null;
+    }
   };
 
   // Update locale field in local state (for edit mode)
@@ -637,6 +678,39 @@ export function ArticleForm({ article, topics = [], onSubmit, isSubmitting = fal
           )}
         </CardContent>
       </Card>
+
+      {/* Content Blocks (only in edit mode) */}
+      {isEditing && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Контент-блоки</CardTitle>
+              <Select
+                value={selectedBlocksLocale}
+                onChange={(e) => setSelectedBlocksLocale(e.target.value)}
+                options={SUPPORTED_LOCALES}
+                minWidth="150px"
+              />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <ContentBlocksManager
+              blocks={article.content_blocks || []}
+              locale={selectedBlocksLocale}
+              isEditing={true}
+              onCreateBlock={handleCreateContentBlock}
+              onUpdateBlock={handleUpdateContentBlock}
+              onDeleteBlock={handleDeleteContentBlock}
+              onReorderBlocks={handleReorderContentBlocks}
+              isCreating={createContentBlock.isPending}
+              isUpdating={updateContentBlock.isPending}
+              isDeleting={deleteContentBlock.isPending}
+              renderBlockEditor={renderBlockEditor}
+              title=""
+            />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Delete locale confirmation modal */}
       <ConfirmModal
