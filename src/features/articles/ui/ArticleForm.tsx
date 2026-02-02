@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -96,6 +96,13 @@ export function ArticleForm({ article, topics = [], onSubmit, isSubmitting = fal
   
   // Local state for editing locales inline
   const [editingLocales, setEditingLocales] = useState<Record<string, Partial<ArticleLocale>>>({});
+  
+  // Track if we've initialized editingLocales (prevent overwrite on API refresh)
+  const isLocalesInitialized = useRef(false);
+  // Debounce timer for RichTextEditor auto-save
+  const saveTimerRef = useRef<Record<string, NodeJS.Timeout>>({});
+  // Track if save is in progress to prevent loops
+  const isSavingRef = useRef(false);
 
   // Image upload hooks
   const uploadCoverImage = useUploadArticleCoverImage(article?.id || "");
@@ -161,14 +168,15 @@ export function ArticleForm({ article, topics = [], onSubmit, isSubmitting = fal
   // Get article locales for edit mode
   const articleLocales = isEditing ? (article?.locales || []) : [];
 
-  // Initialize editing locales state from article data
+  // Initialize editing locales state from article data (only once, not on every API refresh)
   useEffect(() => {
-    if (isEditing && article?.locales) {
+    if (isEditing && article?.locales && !isLocalesInitialized.current) {
       const initialState: Record<string, Partial<ArticleLocale>> = {};
       article.locales.forEach((locale) => {
         initialState[locale.id] = { ...locale };
       });
       setEditingLocales(initialState);
+      isLocalesInitialized.current = true;
       
       // Set active tab to first locale
       const firstLocale = article.locales[0];
@@ -177,6 +185,28 @@ export function ArticleForm({ article, topics = [], onSubmit, isSubmitting = fal
       }
     }
   }, [isEditing, article?.locales]);
+
+  // Handle new locales added via API (e.g., createLocale)
+  useEffect(() => {
+    if (isEditing && article?.locales && isLocalesInitialized.current) {
+      article.locales.forEach((locale) => {
+        if (!editingLocales[locale.id]) {
+          // New locale was added, add it to editingLocales
+          setEditingLocales((prev) => ({
+            ...prev,
+            [locale.id]: { ...locale },
+          }));
+        }
+      });
+    }
+  }, [isEditing, article?.locales, editingLocales]);
+
+  // Cleanup debounce timers on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(saveTimerRef.current).forEach((timer) => clearTimeout(timer));
+    };
+  }, []);
 
   // Sync coverImageUrl when article changes
   useEffect(() => {
@@ -265,6 +295,9 @@ export function ArticleForm({ article, topics = [], onSubmit, isSubmitting = fal
 
   // Save locale changes to API (for edit mode)
   const handleSaveLocale = useCallback(async (localeId: string) => {
+    // Prevent concurrent saves and loops
+    if (isSavingRef.current || updateLocale.isPending) return;
+    
     const localeData = editingLocales[localeId];
     if (!localeData) return;
     const localeCode = localeData.locale ?? article?.locales?.find((l) => l.id === localeId)?.locale;
@@ -279,8 +312,30 @@ export function ArticleForm({ article, topics = [], onSubmit, isSubmitting = fal
       meta_title: localeData.meta_title ?? undefined,
       meta_description: localeData.meta_description ?? undefined,
     };
-    await updateLocale.mutateAsync({ localeId, data: apiData });
+    
+    isSavingRef.current = true;
+    try {
+      await updateLocale.mutateAsync({ localeId, data: apiData });
+    } finally {
+      // Small delay before allowing next save to prevent rapid fire
+      setTimeout(() => {
+        isSavingRef.current = false;
+      }, 500);
+    }
   }, [editingLocales, updateLocale, article?.locales]);
+
+  // Debounced save for RichTextEditor (cancels previous timer)
+  const handleDebouncedSaveLocale = useCallback((localeId: string) => {
+    // Cancel existing timer for this locale
+    if (saveTimerRef.current[localeId]) {
+      clearTimeout(saveTimerRef.current[localeId]);
+    }
+    // Set new timer
+    saveTimerRef.current[localeId] = setTimeout(() => {
+      handleSaveLocale(localeId);
+      delete saveTimerRef.current[localeId];
+    }, 1500);
+  }, [handleSaveLocale]);
 
   // Add new locale (for edit mode)
   const handleAddLocale = useCallback(async (localeCode: string) => {
@@ -539,8 +594,8 @@ export function ArticleForm({ article, topics = [], onSubmit, isSubmitting = fal
                         value={localeData.content || ""}
                         onChange={(val) => {
                           handleLocaleFieldChange(locale.id, "content", val);
-                          // Debounce save for rich text
-                          setTimeout(() => handleSaveLocale(locale.id), 1000);
+                          // Debounced save for rich text (with proper cancel of previous timer)
+                          handleDebouncedSaveLocale(locale.id);
                         }}
                         placeholder="Полный текст статьи..."
                       />
