@@ -4,7 +4,7 @@ import { use, useState } from "react";
 import { notFound } from "next/navigation";
 import { EmployeeForm, useEmployee, useUpdateEmployee, useDeleteEmployee, useToggleEmployeePublished } from "@/features/employees";
 import { Button, Spinner, Badge, ConfirmModal } from "@/shared/ui";
-import { formatDateTime } from "@/shared/lib";
+import { formatDateTime, getMediaUrl } from "@/shared/lib";
 import type { CreateEmployeeDto, UpdateEmployeeDto } from "@/entities/employee";
 
 export default function EditEmployeePage({ params }: { params: Promise<{ id: string }> }) {
@@ -55,7 +55,7 @@ export default function EditEmployeePage({ params }: { params: Promise<{ id: str
         <div className="flex items-center gap-4">
           {employee.photo_url && (
             <img
-              src={employee.photo_url}
+              src={getMediaUrl(employee.photo_url)}
               alt={getEmployeeName()}
               className="h-16 w-16 rounded-full object-cover"
             />

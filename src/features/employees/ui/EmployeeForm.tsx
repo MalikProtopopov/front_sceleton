@@ -217,10 +217,36 @@ export function EmployeeForm({ employee, onSubmit, isSubmitting = false }: Emplo
 
   const handleFormSubmit = isEditing
     ? (data: EditEmployeeFormValues) => {
-        onSubmit({ ...data, email: data.email || undefined, phone: data.phone || undefined, version: employee!.version } as UpdateEmployeeDto);
+        const payload: UpdateEmployeeDto = {
+          email: data.email || undefined,
+          phone: data.phone || undefined,
+          is_published: data.is_published,
+          version: employee!.version,
+        };
+        // Only include sort_order if it's a number (not null)
+        if (data.sort_order !== null && data.sort_order !== undefined) {
+          payload.sort_order = data.sort_order;
+        }
+        onSubmit(payload);
       }
     : (data: CreateEmployeeFormValues) => {
-        onSubmit({ ...data, email: data.email || undefined, phone: data.phone || undefined, locales: data.locales.map((l) => ({ ...l, position: l.position || undefined, bio: l.bio || undefined, meta_title: l.meta_title || undefined, meta_description: l.meta_description || undefined })) } as CreateEmployeeDto);
+        const payload: CreateEmployeeDto = {
+          email: data.email || undefined,
+          phone: data.phone || undefined,
+          is_published: data.is_published,
+          locales: data.locales.map((l) => ({
+            ...l,
+            position: l.position || undefined,
+            bio: l.bio || undefined,
+            meta_title: l.meta_title || undefined,
+            meta_description: l.meta_description || undefined,
+          })),
+        };
+        // Only include sort_order if it's a number (not null)
+        if (data.sort_order !== null && data.sort_order !== undefined) {
+          payload.sort_order = data.sort_order;
+        }
+        onSubmit(payload);
       };
 
   const handlePhotoUpload = async (file: File) => { const result = await uploadPhoto.mutateAsync(file); setPhotoUrl(result.photo_url); };

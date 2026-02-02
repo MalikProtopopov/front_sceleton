@@ -6,7 +6,7 @@ import { Plus, Pencil, Trash2, User, Search, Download } from "lucide-react";
 import { useEmployeesList, useDeleteEmployee } from "@/features/employees";
 import { Button, Table, Pagination, Badge, ConfirmModal, Select, Input, FilterBar, type Column } from "@/shared/ui";
 import { ROUTES } from "@/shared/config";
-import { formatDate, downloadExport } from "@/shared/lib";
+import { formatDate, downloadExport, getMediaUrl } from "@/shared/lib";
 import type { Employee, EmployeeFilterParams } from "@/entities/employee";
 
 export default function TeamPage() {
@@ -73,10 +73,11 @@ export default function TeamPage() {
       key: "photo",
       header: "",
       width: "60px",
-      render: (employee) => (
-        employee.photo_url ? (
+      render: (employee) => {
+        const photoUrl = getMediaUrl(employee.photo_url);
+        return photoUrl ? (
           <img
-            src={employee.photo_url}
+            src={photoUrl}
             alt={getEmployeeName(employee)}
             className="h-10 w-10 rounded-full object-cover"
           />
@@ -84,8 +85,8 @@ export default function TeamPage() {
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-bg-secondary)]">
             <User className="h-5 w-5 text-[var(--color-text-muted)]" />
           </div>
-        )
-      ),
+        );
+      },
     },
     {
       key: "name",

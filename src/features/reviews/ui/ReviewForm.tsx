@@ -293,15 +293,21 @@ export function ReviewForm({ review, onSubmit, isSubmitting = false }: ReviewFor
               {...register("review_date")}
               error={errors.review_date?.message}
             />
-            <Select
-              label="Избранный"
-              {...register("is_featured", {
-                setValueAs: (v: string) => v === "true",
-              })}
-              options={[
-                { value: "false", label: "Нет" },
-                { value: "true", label: "Да" },
-              ]}
+            <Controller
+              name="is_featured"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  label="Избранный"
+                  value={field.value ? "true" : "false"}
+                  onChange={(e) => field.onChange(e.target.value === "true")}
+                  onBlur={field.onBlur}
+                  options={[
+                    { value: "false", label: "Нет" },
+                    { value: "true", label: "Да" },
+                  ]}
+                />
+              )}
             />
             <Controller
               name="sort_order"

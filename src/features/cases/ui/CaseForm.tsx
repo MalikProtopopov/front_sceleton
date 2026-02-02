@@ -229,10 +229,43 @@ export function CaseForm({ caseItem, services = [], onSubmit, isSubmitting = fal
 
   const handleFormSubmit = isEditing
     ? (data: EditCaseFormValues) => {
-        onSubmit({ ...data, client_name: data.client_name || undefined, project_year: data.project_year || undefined, project_duration: data.project_duration || undefined, version: caseItem!.version } as UpdateCaseDto);
+        const payload: UpdateCaseDto = {
+          status: data.status,
+          client_name: data.client_name || undefined,
+          project_year: data.project_year || undefined,
+          project_duration: data.project_duration || undefined,
+          is_featured: data.is_featured,
+          service_ids: data.service_ids,
+          version: caseItem!.version,
+        };
+        // Only include sort_order if it's a number (not null)
+        if (data.sort_order !== null && data.sort_order !== undefined) {
+          payload.sort_order = data.sort_order;
+        }
+        onSubmit(payload);
       }
     : (data: CreateCaseFormValues) => {
-        onSubmit({ ...data, client_name: data.client_name || undefined, project_year: data.project_year || undefined, project_duration: data.project_duration || undefined, locales: data.locales.map((l) => ({ ...l, excerpt: l.excerpt || undefined, description: l.description || undefined, results: l.results || undefined, meta_title: l.meta_title || undefined, meta_description: l.meta_description || undefined })) } as CreateCaseDto);
+        const payload: CreateCaseDto = {
+          status: data.status,
+          client_name: data.client_name || undefined,
+          project_year: data.project_year || undefined,
+          project_duration: data.project_duration || undefined,
+          is_featured: data.is_featured,
+          service_ids: data.service_ids,
+          locales: data.locales.map((l) => ({
+            ...l,
+            excerpt: l.excerpt || undefined,
+            description: l.description || undefined,
+            results: l.results || undefined,
+            meta_title: l.meta_title || undefined,
+            meta_description: l.meta_description || undefined,
+          })),
+        };
+        // Only include sort_order if it's a number (not null)
+        if (data.sort_order !== null && data.sort_order !== undefined) {
+          payload.sort_order = data.sort_order;
+        }
+        onSubmit(payload);
       };
 
   const handleImageUpload = async (file: File) => { const result = await uploadCoverImage.mutateAsync(file); setCoverImageUrl(result.cover_image_url); };
