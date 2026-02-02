@@ -149,13 +149,18 @@ export function ReviewForm({ review, onSubmit, isSubmitting = false }: ReviewFor
   }, [review?.author_avatar_url, review?.author_photo_url, avatarUrl]);
 
   const handleFormSubmit = (data: ReviewFormValues) => {
-    // Get content from first locale (backend requires it at top level)
+    // Get content and company from first locale (backend has them at top level too)
     const firstLocale = data.locales[0];
     const content = firstLocale?.content || "";
+    const authorCompany =
+      firstLocale?.company_name?.trim() !== ""
+        ? firstLocale.company_name?.trim() ?? null
+        : null;
 
     const payload: CreateReviewDto = {
       author_name: data.author_name,
       author_position: data.author_position || undefined,
+      author_company: authorCompany,
       rating: data.rating, // Required field (1-5)
       case_id: data.case_id || undefined,
       is_featured: data.is_featured ?? false,
@@ -177,6 +182,7 @@ export function ReviewForm({ review, onSubmit, isSubmitting = false }: ReviewFor
       const updatePayload: UpdateReviewDto = {
         ...payload,
         case_id: data.case_id, // Can be null to unlink from case
+        author_company: authorCompany, // Явно отправляем (в т.ч. null) для PATCH
         version: review.version,
       };
       onSubmit(updatePayload);

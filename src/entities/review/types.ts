@@ -53,6 +53,7 @@ export interface CreateReviewLocaleDto {
 export interface CreateReviewDto {
   author_name: string;
   author_position?: string;
+  author_company?: string | null;
   rating: number; // Required field (1-5)
   is_featured?: boolean;
   sort_order?: number;
@@ -65,6 +66,7 @@ export interface CreateReviewDto {
 export interface UpdateReviewDto {
   author_name?: string;
   author_position?: string;
+  author_company?: string | null; // Название компании; null — сбросить
   rating?: number;
   is_featured?: boolean;
   sort_order?: number;
