@@ -385,6 +385,7 @@ export function ContentBlocksManager({
               )}
             </CardTitle>
             <Button
+              type="button"
               variant="secondary"
               size="sm"
               onClick={() => setShowTypeSelectorModal(true)}
@@ -446,6 +447,7 @@ export function ContentBlocksManager({
         onClose={() => setSelectedBlockType(null)}
         title={`Добавить блок: ${selectedBlockType ? BLOCK_TYPE_INFO[selectedBlockType]?.label : ""}`}
         size="lg"
+        closeOnOverlayClick={false}
       >
         {selectedBlockType &&
           renderBlockEditor({
@@ -464,6 +466,7 @@ export function ContentBlocksManager({
         onClose={() => setEditingBlock(null)}
         title={`Редактировать блок: ${editingBlock ? BLOCK_TYPE_INFO[editingBlock.block_type as ContentBlockType]?.label : ""}`}
         size="lg"
+        closeOnOverlayClick={false}
       >
         {editingBlock &&
           renderBlockEditor({

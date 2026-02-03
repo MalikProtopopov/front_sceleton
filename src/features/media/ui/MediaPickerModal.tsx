@@ -101,6 +101,7 @@ export function MediaPickerModal({
       title={title}
       size="2xl"
       className="z-[60]"
+      closeOnOverlayClick={false}
     >
       <ModalBody className="p-0">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">

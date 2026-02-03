@@ -712,7 +712,7 @@ export function ArticleForm({ article, topics = [], onSubmit, isSubmitting = fal
       {isEditing && (
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-4">
               <CardTitle>Контент-блоки</CardTitle>
               <Select
                 value={selectedBlocksLocale}

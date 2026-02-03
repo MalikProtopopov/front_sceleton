@@ -1090,7 +1090,7 @@ export function ServiceForm({ service, onSubmit, isSubmitting = false }: Service
       {isEditing && (
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-4">
               <CardTitle>Контент-блоки</CardTitle>
               <Select
                 value={selectedBlocksLocale}

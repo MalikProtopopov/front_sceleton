@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ImageIcon } from "lucide-react";
+import { ImageIcon, X } from "lucide-react";
 import { Button } from "../../Button";
 import { Input } from "../../Input";
 import { Select } from "../../Select";
@@ -100,7 +100,15 @@ export function ResultBlockEditor({ block, onSubmit, onCancel, isLoading }: Bloc
           </div>
 
           {mediaUrl && (
-            <div className="rounded-lg border border-[var(--color-border)] p-2">
+            <div className="relative rounded-lg border border-[var(--color-border)] p-2">
+              <button
+                type="button"
+                onClick={() => setMediaUrl("")}
+                className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-[var(--color-bg-secondary)] text-[var(--color-text-muted)] hover:bg-[var(--color-error-bg)] hover:text-[var(--color-error)] transition-colors"
+                title="Удалить изображение"
+              >
+                <X className="h-4 w-4" />
+              </button>
               <img
                 src={getMediaUrl(mediaUrl)}
                 alt="Preview"
