@@ -1,10 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { ImageIcon } from "lucide-react";
 import { Button } from "../../Button";
 import { Input } from "../../Input";
 import { Select } from "../../Select";
 import { ModalBody, ModalFooter } from "../../Modal";
+import { MediaPickerModal } from "@/features/media";
+import { getFileContentUrl, getMediaUrl } from "@/shared/lib";
 import type { BlockEditorProps } from "../ContentBlocksManager";
 import type { DeviceType, ImageBlockMetadata } from "@/entities/content-block";
 
@@ -20,6 +23,7 @@ export function ImageBlockEditor({ block, onSubmit, onCancel, isLoading }: Block
   const [alt, setAlt] = useState((block?.block_metadata as ImageBlockMetadata)?.alt || "");
   const [caption, setCaption] = useState((block?.block_metadata as ImageBlockMetadata)?.caption || "");
   const [deviceType, setDeviceType] = useState<DeviceType>(block?.device_type || "both");
+  const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
 
   useEffect(() => {
     if (block) {
@@ -45,6 +49,14 @@ export function ImageBlockEditor({ block, onSubmit, onCancel, isLoading }: Block
     });
   };
 
+  const handleMediaSelect = (file: import("@/entities/file").FileAsset) => {
+    setMediaUrl(getFileContentUrl(file));
+    if (file.alt_text) {
+      setAlt(file.alt_text);
+    }
+    setMediaPickerOpen(false);
+  };
+
   return (
     <>
       <ModalBody>
@@ -56,18 +68,32 @@ export function ImageBlockEditor({ block, onSubmit, onCancel, isLoading }: Block
             placeholder="Заголовок блока"
           />
 
-          <Input
-            label="URL изображения"
-            value={mediaUrl}
-            onChange={(e) => setMediaUrl(e.target.value)}
-            placeholder="https://... или /media/..."
-            required
-          />
+          <div>
+            <label className="mb-2 block text-sm font-medium text-[var(--color-text-primary)]">
+              Изображение <span className="text-[var(--color-error)]">*</span>
+            </label>
+            <div className="flex gap-2">
+              <Input
+                value={mediaUrl}
+                onChange={(e) => setMediaUrl(e.target.value)}
+                placeholder="https://... или /media/..."
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setMediaPickerOpen(true)}
+              >
+                <ImageIcon className="mr-2 h-4 w-4" />
+                Выбрать
+              </Button>
+            </div>
+          </div>
 
           {mediaUrl && (
             <div className="rounded-lg border border-[var(--color-border)] p-2">
               <img
-                src={mediaUrl.startsWith("/") ? `${process.env.NEXT_PUBLIC_API_URL || ""}${mediaUrl}` : mediaUrl}
+                src={getMediaUrl(mediaUrl)}
                 alt={alt || "Preview"}
                 className="h-32 w-auto object-contain mx-auto"
                 onError={(e) => {
@@ -107,6 +133,14 @@ export function ImageBlockEditor({ block, onSubmit, onCancel, isLoading }: Block
           {isLoading ? "Сохранение..." : block ? "Сохранить" : "Добавить"}
         </Button>
       </ModalFooter>
+
+      <MediaPickerModal
+        isOpen={mediaPickerOpen}
+        onClose={() => setMediaPickerOpen(false)}
+        onSelect={handleMediaSelect}
+        imagesOnly
+        title="Выбрать изображение"
+      />
     </>
   );
 }

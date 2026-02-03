@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Trash2, GripVertical } from "lucide-react";
+import { Plus, Trash2, GripVertical, ImageIcon } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -23,7 +23,8 @@ import { Button } from "../../Button";
 import { Input } from "../../Input";
 import { Select } from "../../Select";
 import { ModalBody, ModalFooter } from "../../Modal";
-import { cn } from "@/shared/lib";
+import { MediaPickerModal } from "@/features/media";
+import { cn, getFileContentUrl, getMediaUrl } from "@/shared/lib";
 import type { BlockEditorProps } from "../ContentBlocksManager";
 import type { DeviceType, GalleryBlockMetadata, GalleryImage } from "@/entities/content-block";
 
@@ -39,9 +40,10 @@ interface SortableImageItemProps {
   index: number;
   onChange: (index: number, field: keyof GalleryImage, value: string) => void;
   onRemove: (index: number) => void;
+  onOpenMediaPicker: (index: number) => void;
 }
 
-function SortableImageItem({ image, index, onChange, onRemove }: SortableImageItemProps) {
+function SortableImageItem({ image, index, onChange, onRemove, onOpenMediaPicker }: SortableImageItemProps) {
   const {
     attributes,
     listeners,
@@ -76,13 +78,28 @@ function SortableImageItem({ image, index, onChange, onRemove }: SortableImageIt
       </button>
 
       <div className="flex-1 space-y-2">
-        <Input
-          label="URL изображения"
-          value={image.url}
-          onChange={(e) => onChange(index, "url", e.target.value)}
-          placeholder="https://... или /media/..."
-          required
-        />
+        <div>
+          <label className="mb-1 block text-sm font-medium text-[var(--color-text-primary)]">
+            URL изображения <span className="text-[var(--color-error)]">*</span>
+          </label>
+          <div className="flex gap-2">
+            <Input
+              value={image.url}
+              onChange={(e) => onChange(index, "url", e.target.value)}
+              placeholder="https://... или /media/..."
+              className="flex-1"
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              size="icon"
+              onClick={() => onOpenMediaPicker(index)}
+              title="Выбрать из медиатеки"
+            >
+              <ImageIcon className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
         <Input
           label="Alt-текст"
           value={image.alt || ""}
@@ -94,7 +111,7 @@ function SortableImageItem({ image, index, onChange, onRemove }: SortableImageIt
       {image.url && (
         <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded border border-[var(--color-border)]">
           <img
-            src={image.url.startsWith("/") ? `${process.env.NEXT_PUBLIC_API_URL || ""}${image.url}` : image.url}
+            src={getMediaUrl(image.url)}
             alt={image.alt || "Preview"}
             className="h-full w-full object-cover"
             onError={(e) => {
@@ -126,6 +143,8 @@ export function GalleryBlockEditor({ block, onSubmit, onCancel, isLoading }: Blo
     );
   });
   const [deviceType, setDeviceType] = useState<DeviceType>(block?.device_type || "both");
+  const [mediaPickerOpenForIndex, setMediaPickerOpenForIndex] = useState<number | null>(null);
+  const [mediaPickerAddNew, setMediaPickerAddNew] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -147,6 +166,10 @@ export function GalleryBlockEditor({ block, onSubmit, onCancel, isLoading }: Blo
     setImages([...images, { id: `img-${Date.now()}`, url: "", alt: "" }]);
   };
 
+  const handleAddFromMedia = () => {
+    setMediaPickerAddNew(true);
+  };
+
   const handleImageChange = (index: number, field: keyof GalleryImage, value: string) => {
     const newImages = [...images];
     (newImages[index] as unknown as Record<string, string>)[field] = value;
@@ -163,6 +186,28 @@ export function GalleryBlockEditor({ block, onSubmit, onCancel, isLoading }: Blo
       const oldIndex = images.findIndex((img) => img.id === active.id);
       const newIndex = images.findIndex((img) => img.id === over.id);
       setImages(arrayMove(images, oldIndex, newIndex));
+    }
+  };
+
+  const handleMediaSelect = (file: import("@/entities/file").FileAsset) => {
+    if (mediaPickerOpenForIndex !== null) {
+      // Update existing image
+      handleImageChange(mediaPickerOpenForIndex, "url", getFileContentUrl(file));
+      if (file.alt_text) {
+        handleImageChange(mediaPickerOpenForIndex, "alt", file.alt_text);
+      }
+      setMediaPickerOpenForIndex(null);
+    } else if (mediaPickerAddNew) {
+      // Add new image from media
+      setImages([
+        ...images,
+        {
+          id: `img-${Date.now()}`,
+          url: getFileContentUrl(file),
+          alt: file.alt_text || "",
+        },
+      ]);
+      setMediaPickerAddNew(false);
     }
   };
 
@@ -201,10 +246,16 @@ export function GalleryBlockEditor({ block, onSubmit, onCancel, isLoading }: Blo
               <label className="text-sm font-medium text-[var(--color-text-primary)]">
                 Изображения ({validImagesCount})
               </label>
-              <Button type="button" variant="secondary" size="sm" onClick={handleAddImage}>
-                <Plus className="mr-1 h-4 w-4" />
-                Добавить
-              </Button>
+              <div className="flex gap-2">
+                <Button type="button" variant="secondary" size="sm" onClick={handleAddFromMedia}>
+                  <ImageIcon className="mr-1 h-4 w-4" />
+                  Из медиатеки
+                </Button>
+                <Button type="button" variant="secondary" size="sm" onClick={handleAddImage}>
+                  <Plus className="mr-1 h-4 w-4" />
+                  Добавить
+                </Button>
+              </div>
             </div>
 
             {images.length === 0 ? (
@@ -231,6 +282,7 @@ export function GalleryBlockEditor({ block, onSubmit, onCancel, isLoading }: Blo
                         index={index}
                         onChange={handleImageChange}
                         onRemove={handleRemoveImage}
+                        onOpenMediaPicker={setMediaPickerOpenForIndex}
                       />
                     ))}
                   </div>
@@ -255,6 +307,17 @@ export function GalleryBlockEditor({ block, onSubmit, onCancel, isLoading }: Blo
           {isLoading ? "Сохранение..." : block ? "Сохранить" : "Добавить"}
         </Button>
       </ModalFooter>
+
+      <MediaPickerModal
+        isOpen={mediaPickerOpenForIndex !== null || mediaPickerAddNew}
+        onClose={() => {
+          setMediaPickerOpenForIndex(null);
+          setMediaPickerAddNew(false);
+        }}
+        onSelect={handleMediaSelect}
+        imagesOnly
+        title="Выбрать изображение"
+      />
     </>
   );
 }

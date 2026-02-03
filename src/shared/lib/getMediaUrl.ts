@@ -1,3 +1,5 @@
+import type { FileAsset } from "@/entities/file";
+
 /**
  * Converts a relative media URL to an absolute URL for Next.js Image component
  * 
@@ -36,5 +38,16 @@ export function getMediaUrl(url: string | null | undefined): string {
   const cleanUrl = url.startsWith("/") ? url : `/${url}`;
   
   return `${backendBaseUrl}${cleanUrl}`;
+}
+
+/**
+ * Gets the canonical URL from a FileAsset for storing in content blocks
+ * Priority: cdn_url > file_url > s3_url
+ * 
+ * @param file - FileAsset object from media library
+ * @returns URL string to store in content block's media_url field
+ */
+export function getFileContentUrl(file: FileAsset): string {
+  return file.cdn_url || file.file_url || file.s3_url || "";
 }
 

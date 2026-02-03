@@ -11,7 +11,7 @@ export {
   extractFirstParagraph,
 } from "./htmlSanitizer";
 export { transliterate, generateSlug } from "./transliterate";
-export { getMediaUrl } from "./getMediaUrl";
+export { getMediaUrl, getFileContentUrl } from "./getMediaUrl";
 export {
   handleLocaleError,
   handleLocaleErrorWithMessage,
