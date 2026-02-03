@@ -1,23 +1,108 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, Pencil, Trash2, ArrowRight, ExternalLink } from "lucide-react";
+import { useState, useMemo, useEffect, useCallback } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { Plus, Pencil, Trash2, ArrowRight, ExternalLink, Search } from "lucide-react";
 import { useRedirects, useDeleteRedirect, useCreateRedirect, useUpdateRedirect, useToggleRedirect } from "@/features/seo";
-import { Button, Table, Pagination, Badge, ConfirmModal, Modal, ModalBody, ModalFooter, Input, Select, FilterBar, type Column } from "@/shared/ui";
+import { Button, Table, Pagination, Badge, ConfirmModal, Modal, ModalBody, ModalFooter, Input, Select, FilterBar, type Column, type SortDirection } from "@/shared/ui";
 import type { SEORedirect, CreateRedirectDto, RedirectFilterParams } from "@/entities/seo";
 import { REDIRECT_TYPE_OPTIONS } from "@/entities/seo";
+import { formatDate } from "@/shared/lib";
 
 export default function RedirectsPage() {
-  const [filters, setFilters] = useState<RedirectFilterParams>({
-    page: 1,
-    pageSize: 20,
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  // Initialize filters from URL params
+  const [filters, setFilters] = useState<RedirectFilterParams>(() => ({
+    page: parseInt(searchParams.get("page") || "1"),
+    pageSize: parseInt(searchParams.get("pageSize") || "20"),
+    isActive: searchParams.get("active") === "true" ? true : 
+              searchParams.get("active") === "false" ? false : undefined,
+    redirect_type: searchParams.get("type") ? parseInt(searchParams.get("type")!) : undefined,
+  }));
+  const [searchTerm, setSearchTerm] = useState(() => searchParams.get("search") || "");
+  
+  // Sorting state
+  const [sortBy, setSortBy] = useState<string | null>(() => searchParams.get("sortBy") || null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>(() => {
+    const dir = searchParams.get("sortDir");
+    return dir === "asc" || dir === "desc" ? dir : null;
   });
+
   const [selectedRedirect, setSelectedRedirect] = useState<SEORedirect | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
 
+  // Sync filters to URL
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (searchTerm) params.set("search", searchTerm);
+    if (filters.page && filters.page > 1) params.set("page", String(filters.page));
+    if (filters.pageSize && filters.pageSize !== 20) params.set("pageSize", String(filters.pageSize));
+    if (filters.isActive !== undefined) params.set("active", String(filters.isActive));
+    if (filters.redirect_type !== undefined) params.set("type", String(filters.redirect_type));
+    if (sortBy) params.set("sortBy", sortBy);
+    if (sortDirection) params.set("sortDir", sortDirection);
+    
+    const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname;
+    router.replace(newUrl, { scroll: false });
+  }, [filters, searchTerm, sortBy, sortDirection, router]);
+
   const { data, isLoading } = useRedirects(filters);
+
+  // Sorting handler
+  const handleSort = useCallback((column: string, direction: SortDirection) => {
+    setSortBy(direction ? column : null);
+    setSortDirection(direction);
+  }, []);
+
+  // Client-side filtering and sorting
+  const filteredRedirects = useMemo(() => {
+    if (!data?.items) return [];
+    
+    let result = data.items.filter((redirect) => {
+      // Search by source_path
+      if (searchTerm && !redirect.source_path.toLowerCase().includes(searchTerm.toLowerCase())) {
+        return false;
+      }
+      // Filter by redirect_type (client-side since API may not support it)
+      if (filters.redirect_type !== undefined && redirect.redirect_type !== filters.redirect_type) {
+        return false;
+      }
+      return true;
+    });
+
+    // Apply sorting
+    if (sortBy && sortDirection) {
+      result = [...result].sort((a, b) => {
+        let aVal: string | number = "";
+        let bVal: string | number = "";
+        
+        if (sortBy === "hit_count") {
+          aVal = a.hit_count;
+          bVal = b.hit_count;
+        } else if (sortBy === "updated_at") {
+          aVal = new Date(a.updated_at).getTime();
+          bVal = new Date(b.updated_at).getTime();
+        }
+        
+        if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
+        if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return result;
+  }, [data?.items, searchTerm, filters.redirect_type, sortBy, sortDirection]);
+
+  const handleResetFilters = () => {
+    setFilters({ page: 1, pageSize: 20 });
+    setSearchTerm("");
+    setSortBy(null);
+    setSortDirection(null);
+  };
   const { mutate: deleteRedirect, isPending: isDeleting } = useDeleteRedirect();
   const { mutate: createRedirect, isPending: isCreating2 } = useCreateRedirect();
   const { mutate: updateRedirect, isPending: isUpdating } = useUpdateRedirect(selectedRedirect?.id || "");
@@ -126,11 +211,21 @@ export default function RedirectsPage() {
       ),
     },
     {
-      key: "hits",
+      key: "hit_count",
       header: "Хиты",
       width: "80px",
+      sortable: true,
       render: (redirect) => (
         <span className="text-[var(--color-text-secondary)]">{redirect.hit_count}</span>
+      ),
+    },
+    {
+      key: "updated_at",
+      header: "Обновлен",
+      width: "110px",
+      sortable: true,
+      render: (redirect) => (
+        <span className="text-[var(--color-text-secondary)]">{formatDate(redirect.updated_at)}</span>
       ),
     },
     {
@@ -204,7 +299,29 @@ export default function RedirectsPage() {
       </div>
 
       {/* Filters */}
-      <FilterBar onReset={() => setFilters({ page: 1, pageSize: 20 })}>
+      <FilterBar onReset={handleResetFilters}>
+        <Input
+          label="Поиск по пути"
+          type="search"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="/old-page..."
+          className="w-48"
+          leftIcon={<Search className="h-4 w-4" />}
+        />
+        <Select
+          label="Тип"
+          value={filters.redirect_type === undefined ? "" : String(filters.redirect_type)}
+          onChange={(e) => 
+            handleFiltersChange({ 
+              redirect_type: e.target.value === "" ? undefined : parseInt(e.target.value) 
+            })
+          }
+          options={[
+            { value: "", label: "Все" },
+            ...REDIRECT_TYPE_OPTIONS.map((o) => ({ value: String(o.value), label: o.label })),
+          ]}
+        />
         <Select
           label="Статус"
           value={filters.isActive === undefined ? "" : String(filters.isActive)}
@@ -218,18 +335,20 @@ export default function RedirectsPage() {
             { value: "true", label: "Активные" },
             { value: "false", label: "Выключенные" },
           ]}
-          className="w-48"
         />
       </FilterBar>
 
       {/* Table */}
       <Table
-        data={data?.items || []}
+        data={filteredRedirects}
         columns={columns}
         keyExtractor={(redirect) => redirect.id}
         isLoading={isLoading}
         emptyMessage="Редиректы не найдены"
         onRowClick={handleEditClick}
+        sortBy={sortBy}
+        sortDirection={sortDirection}
+        onSort={handleSort}
       />
 
       {/* Pagination */}

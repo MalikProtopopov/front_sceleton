@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Download, User } from "lucide-react";
 import { useAuditLogs } from "@/features/audit";
 import { useUsersList } from "@/features/users";
@@ -88,12 +89,35 @@ function ChangesModal({ isOpen, onClose, changes }: ChangesModalProps) {
 }
 
 export default function AuditPage() {
-  const [filters, setFilters] = useState<AuditFilterParams>({
-    page: 1,
-    pageSize: 25,
+  const searchParams = useSearchParams();
+  
+  // Initialize filters from URL params
+  const [filters, setFilters] = useState<AuditFilterParams>(() => {
+    const resourceType = searchParams.get("resourceType") || undefined;
+    const resourceId = searchParams.get("resourceId") || undefined;
+    return {
+      page: 1,
+      pageSize: 25,
+      resourceType,
+      resourceId,
+    };
   });
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+
+  // Update filters when URL params change
+  useEffect(() => {
+    const resourceType = searchParams.get("resourceType") || undefined;
+    const resourceId = searchParams.get("resourceId") || undefined;
+    if (resourceType || resourceId) {
+      setFilters(prev => ({
+        ...prev,
+        resourceType,
+        resourceId,
+        page: 1,
+      }));
+    }
+  }, [searchParams]);
 
   const { data, isLoading } = useAuditLogs(filters);
   const { data: usersData } = useUsersList({ pageSize: 100 });
@@ -236,6 +260,26 @@ export default function AuditPage() {
           Экспорт CSV
         </Button>
       </div>
+
+      {/* Resource ID indicator */}
+      {filters.resourceId && (
+        <div className="rounded-lg border border-[var(--color-accent-primary)]/30 bg-[var(--color-accent-primary)]/5 px-4 py-2 text-sm">
+          <span className="text-[var(--color-text-secondary)]">
+            Фильтрация по конкретному ресурсу: 
+          </span>
+          <span className="ml-1 font-mono text-[var(--color-accent-primary)]">
+            {filters.resourceType || "unknown"}/{filters.resourceId.slice(0, 8)}...
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="ml-2"
+            onClick={() => handleFiltersChange({ resourceId: undefined })}
+          >
+            Показать все
+          </Button>
+        </div>
+      )}
 
       {/* Filters */}
       <FilterBar onReset={handleResetFilters}>

@@ -8,13 +8,14 @@ import type {
   UpdateSEORouteDto,
   CreateRedirectDto,
   UpdateRedirectDto,
-  RedirectFilterParams 
+  RedirectFilterParams,
+  SEORouteFilterParams
 } from "@/entities/seo";
 
 export const seoApi = {
   // SEO Routes
-  getRoutes: () =>
-    apiClient.get<SEORoute[]>(API_ENDPOINTS.SEO.ROUTES),
+  getRoutes: (params?: SEORouteFilterParams) =>
+    apiClient.get<SEORoute[]>(API_ENDPOINTS.SEO.ROUTES, { params }),
 
   getRouteById: (id: string) =>
     apiClient.get<SEORoute>(API_ENDPOINTS.SEO.ROUTE_BY_ID(id)),
@@ -49,6 +50,7 @@ export const seoApi = {
 export const seoKeys = {
   all: ["seo"] as const,
   routes: () => [...seoKeys.all, "routes"] as const,
+  routesList: (params?: SEORouteFilterParams) => [...seoKeys.routes(), "list", params] as const,
   route: (id: string) => [...seoKeys.routes(), id] as const,
   redirects: () => [...seoKeys.all, "redirects"] as const,
   redirectList: (params?: RedirectFilterParams) => [...seoKeys.redirects(), "list", params] as const,

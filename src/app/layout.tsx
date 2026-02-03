@@ -18,6 +18,10 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Admin Panel | Mediann",
   description: "Mediann Admin Panel - Content Management System",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function RootLayout({

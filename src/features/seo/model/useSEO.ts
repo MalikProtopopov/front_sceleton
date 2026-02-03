@@ -8,14 +8,15 @@ import type {
   UpdateSEORouteDto,
   CreateRedirectDto,
   UpdateRedirectDto,
-  RedirectFilterParams 
+  RedirectFilterParams,
+  SEORouteFilterParams
 } from "@/entities/seo";
 
 // SEO Routes hooks
-export function useSEORoutes() {
+export function useSEORoutes(params?: SEORouteFilterParams) {
   return useQuery({
-    queryKey: seoKeys.routes(),
-    queryFn: () => seoApi.getRoutes(),
+    queryKey: seoKeys.routesList(params),
+    queryFn: () => seoApi.getRoutes(params),
   });
 }
 

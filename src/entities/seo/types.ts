@@ -83,10 +83,22 @@ export interface UpdateRedirectDto {
 }
 
 // Filter params
+export interface SEORouteFilterParams {
+  page?: number;
+  pageSize?: number;
+  path?: string;
+  locale?: string;
+  include_in_sitemap?: boolean;
+  robots_index?: boolean;
+  robots_follow?: boolean;
+}
+
 export interface RedirectFilterParams {
   page?: number;
   pageSize?: number;
   isActive?: boolean;
+  source_path?: string;
+  redirect_type?: number;
 }
 
 // Sitemap change frequencies

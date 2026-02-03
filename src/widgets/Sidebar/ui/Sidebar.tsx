@@ -20,6 +20,8 @@ import {
   History,
   Key,
   Files,
+  Globe,
+  ArrowRight,
 } from "lucide-react";
 import { cn } from "@/shared/lib";
 import { ROUTES } from "@/shared/config";
@@ -89,7 +91,15 @@ const navigation: NavSection[] = [
   {
     label: "Администрирование",
     items: [
-      { href: ROUTES.SEO, icon: Search, label: "SEO", feature: "seo_advanced" },
+      {
+        icon: Search,
+        label: "SEO",
+        feature: "seo_advanced",
+        items: [
+          { href: ROUTES.SEO, icon: Globe, label: "Маршруты" },
+          { href: ROUTES.SEO_REDIRECTS, icon: ArrowRight, label: "Редиректы" },
+        ],
+      },
       {
         icon: Shield,
         label: "Пользователи",

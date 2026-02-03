@@ -10,6 +10,18 @@ const nextConfig: NextConfig = {
   // Use standalone output for Docker deployment in production
   output: isProduction ? "standalone" : undefined,
 
+  // Block search engine indexing for admin panel
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+        ],
+      },
+    ];
+  },
+
   // Proxy API requests to backend to avoid CORS issues (development only)
   // In production, API calls go directly to api.domain.com
   async rewrites() {

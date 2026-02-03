@@ -50,4 +50,3 @@ export function getMediaUrl(url: string | null | undefined): string {
 export function getFileContentUrl(file: FileAsset): string {
   return file.cdn_url || file.file_url || file.s3_url || "";
 }
-
