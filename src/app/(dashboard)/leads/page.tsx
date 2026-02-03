@@ -77,8 +77,8 @@ export default function LeadsPage() {
           <div className="flex items-center gap-2">
             <p className="font-medium text-[var(--color-text-primary)]">{lead.name}</p>
             {lead.form_slug && FORM_SLUG_CONFIG[lead.form_slug] && (
-              <Badge variant={FORM_SLUG_CONFIG[lead.form_slug].variant} className="text-[10px] px-1.5 py-0">
-                {FORM_SLUG_CONFIG[lead.form_slug].label}
+              <Badge variant={FORM_SLUG_CONFIG[lead.form_slug]!.variant} className="text-[10px] px-1.5 py-0">
+                {FORM_SLUG_CONFIG[lead.form_slug]!.label}
               </Badge>
             )}
           </div>

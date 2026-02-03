@@ -464,8 +464,8 @@ export default function LeadDetailPage({
             </h1>
             <Badge variant={statusConfig.variant}>{statusConfig.label}</Badge>
             {lead.form_slug && FORM_SLUG_CONFIG[lead.form_slug] && (
-              <Badge variant={FORM_SLUG_CONFIG[lead.form_slug].variant}>
-                {FORM_SLUG_CONFIG[lead.form_slug].label}
+              <Badge variant={FORM_SLUG_CONFIG[lead.form_slug]!.variant}>
+                {FORM_SLUG_CONFIG[lead.form_slug]!.label}
               </Badge>
             )}
           </div>
