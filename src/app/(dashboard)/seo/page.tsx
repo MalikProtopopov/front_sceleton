@@ -134,7 +134,7 @@ export default function SEORoutesPage() {
 
   // Bulk update mutation
   const bulkUpdateMutation = useMutation({
-    mutationFn: async ({ ids, updates }: { ids: string[]; updates: { include_in_sitemap?: boolean; robots_index?: boolean } }) => {
+    mutationFn: async ({ ids, updates }: { ids: string[]; updates: { include_in_sitemap?: boolean; robots_index?: boolean; robots_follow?: boolean } }) => {
       const results = await Promise.allSettled(
         ids.map(id => seoApi.updateRoute(id, updates))
       );
@@ -155,6 +155,57 @@ export default function SEORoutesPage() {
       toast.error("Не удалось выполнить массовое обновление");
     },
   });
+
+  // Client-side filtering and sorting (API returns all routes)
+  const filteredRoutes = useMemo(() => {
+    if (!routes) return [];
+    
+    let result = routes.filter((route) => {
+      // Search by path
+      if (searchTerm && !route.path.toLowerCase().includes(searchTerm.toLowerCase())) {
+        return false;
+      }
+      // Filter by locale
+      if (filters.locale && route.locale !== filters.locale) {
+        return false;
+      }
+      // Filter by include_in_sitemap
+      if (filters.include_in_sitemap !== undefined && route.include_in_sitemap !== filters.include_in_sitemap) {
+        return false;
+      }
+      // Filter by robots_index
+      if (filters.robots_index !== undefined && route.robots_index !== filters.robots_index) {
+        return false;
+      }
+      // Filter by robots_follow
+      if (filters.robots_follow !== undefined && route.robots_follow !== filters.robots_follow) {
+        return false;
+      }
+      return true;
+    });
+
+    // Apply sorting
+    if (sortBy && sortDirection) {
+      result = [...result].sort((a, b) => {
+        let aVal: string | number | boolean = "";
+        let bVal: string | number | boolean = "";
+        
+        if (sortBy === "updated_at") {
+          aVal = new Date(a.updated_at).getTime();
+          bVal = new Date(b.updated_at).getTime();
+        } else if (sortBy === "path") {
+          aVal = a.path.toLowerCase();
+          bVal = b.path.toLowerCase();
+        }
+        
+        if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
+        if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return result;
+  }, [routes, searchTerm, filters, sortBy, sortDirection]);
 
   // Selection handlers
   const handleSelectRow = useCallback((id: string, selected: boolean) => {
@@ -234,57 +285,6 @@ export default function SEORoutesPage() {
     setSortBy(direction ? column : null);
     setSortDirection(direction);
   }, []);
-
-  // Client-side filtering and sorting (API returns all routes)
-  const filteredRoutes = useMemo(() => {
-    if (!routes) return [];
-    
-    let result = routes.filter((route) => {
-      // Search by path
-      if (searchTerm && !route.path.toLowerCase().includes(searchTerm.toLowerCase())) {
-        return false;
-      }
-      // Filter by locale
-      if (filters.locale && route.locale !== filters.locale) {
-        return false;
-      }
-      // Filter by include_in_sitemap
-      if (filters.include_in_sitemap !== undefined && route.include_in_sitemap !== filters.include_in_sitemap) {
-        return false;
-      }
-      // Filter by robots_index
-      if (filters.robots_index !== undefined && route.robots_index !== filters.robots_index) {
-        return false;
-      }
-      // Filter by robots_follow
-      if (filters.robots_follow !== undefined && route.robots_follow !== filters.robots_follow) {
-        return false;
-      }
-      return true;
-    });
-
-    // Apply sorting
-    if (sortBy && sortDirection) {
-      result = [...result].sort((a, b) => {
-        let aVal: string | number | boolean = "";
-        let bVal: string | number | boolean = "";
-        
-        if (sortBy === "updated_at") {
-          aVal = new Date(a.updated_at).getTime();
-          bVal = new Date(b.updated_at).getTime();
-        } else if (sortBy === "path") {
-          aVal = a.path.toLowerCase();
-          bVal = b.path.toLowerCase();
-        }
-        
-        if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
-        if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;
-        return 0;
-      });
-    }
-
-    return result;
-  }, [routes, searchTerm, filters, sortBy, sortDirection]);
 
   const handleResetFilters = () => {
     setFilters({});
