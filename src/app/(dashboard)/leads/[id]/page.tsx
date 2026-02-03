@@ -30,6 +30,15 @@ import {
   FileText,
   CheckCircle2,
   AlertCircle,
+  Lightbulb,
+  DollarSign,
+  Timer,
+  Send,
+  Layers,
+  Target,
+  Users,
+  Cpu,
+  Puzzle,
 } from "lucide-react";
 import { useLead, useUpdateLead, useDeleteLead } from "@/features/leads";
 import {
@@ -45,8 +54,19 @@ import {
   ConfirmModal,
 } from "@/shared/ui";
 import { formatDateTime, cn } from "@/shared/lib";
-import type { InquiryStatus } from "@/entities/inquiry";
-import { INQUIRY_STATUS_CONFIG } from "@/entities/inquiry";
+import type { InquiryStatus, MvpBriefFields } from "@/entities/inquiry";
+import {
+  INQUIRY_STATUS_CONFIG,
+  FORM_SLUG_CONFIG,
+  BRIEF_FIELD_LABELS,
+  MARKET_OPTIONS,
+  AUDIENCE_SIZE_OPTIONS,
+  AI_REQUIRED_OPTIONS,
+  APP_TYPES_OPTIONS,
+  BUDGET_OPTIONS,
+  URGENCY_OPTIONS,
+  SOURCE_OPTIONS,
+} from "@/entities/inquiry";
 
 // Helper function to format relative time
 function formatRelativeTime(dateString: string): string {
@@ -179,6 +199,190 @@ function StatusTimeline({
   );
 }
 
+// Brief data card for MVP Brief form type
+function BriefDataCard({ customFields }: { customFields: Record<string, unknown> }) {
+  const fields = customFields as MvpBriefFields;
+  
+  // Helper function to get label from options
+  const getOptionLabel = (value: string | undefined, options: Record<string, string>) => {
+    if (!value) return null;
+    return options[value] || value;
+  };
+
+  // Check if we have any brief data
+  const hasBriefData = fields.idea || fields.market || fields.audience || 
+    fields.budget || fields.urgency || fields.appTypes?.length;
+
+  if (!hasBriefData) return null;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Lightbulb className="h-5 w-5" />
+          Данные брифа
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Idea - Full width */}
+        {fields.idea && (
+          <div>
+            <h4 className="text-sm font-medium text-[var(--color-text-secondary)] mb-2 flex items-center gap-2">
+              <Lightbulb className="h-4 w-4" />
+              {BRIEF_FIELD_LABELS.idea}
+            </h4>
+            <p className="text-[var(--color-text-primary)] whitespace-pre-wrap leading-relaxed bg-[var(--color-bg-secondary)] p-3 rounded-lg">
+              {fields.idea}
+            </p>
+          </div>
+        )}
+
+        {/* Grid for other fields */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {/* Market */}
+          {fields.market && (
+            <div className="p-3 rounded-lg border border-[var(--color-border)]">
+              <h4 className="text-xs font-medium text-[var(--color-text-muted)] mb-1.5 flex items-center gap-1.5">
+                <Target className="h-3.5 w-3.5" />
+                {BRIEF_FIELD_LABELS.market}
+              </h4>
+              <p className="text-sm font-medium text-[var(--color-text-primary)]">
+                {getOptionLabel(fields.market, MARKET_OPTIONS)}
+              </p>
+            </div>
+          )}
+
+          {/* Audience */}
+          {fields.audience && (
+            <div className="p-3 rounded-lg border border-[var(--color-border)]">
+              <h4 className="text-xs font-medium text-[var(--color-text-muted)] mb-1.5 flex items-center gap-1.5">
+                <Users className="h-3.5 w-3.5" />
+                {BRIEF_FIELD_LABELS.audience}
+              </h4>
+              <p className="text-sm text-[var(--color-text-primary)]">
+                {fields.audience}
+              </p>
+            </div>
+          )}
+
+          {/* Audience Size */}
+          {fields.audienceSize && (
+            <div className="p-3 rounded-lg border border-[var(--color-border)]">
+              <h4 className="text-xs font-medium text-[var(--color-text-muted)] mb-1.5 flex items-center gap-1.5">
+                <Users className="h-3.5 w-3.5" />
+                {BRIEF_FIELD_LABELS.audienceSize}
+              </h4>
+              <p className="text-sm font-medium text-[var(--color-text-primary)]">
+                {getOptionLabel(fields.audienceSize, AUDIENCE_SIZE_OPTIONS)}
+              </p>
+            </div>
+          )}
+
+          {/* AI Required */}
+          {fields.aiRequired && (
+            <div className="p-3 rounded-lg border border-[var(--color-border)]">
+              <h4 className="text-xs font-medium text-[var(--color-text-muted)] mb-1.5 flex items-center gap-1.5">
+                <Cpu className="h-3.5 w-3.5" />
+                {BRIEF_FIELD_LABELS.aiRequired}
+              </h4>
+              <p className="text-sm font-medium text-[var(--color-text-primary)]">
+                {getOptionLabel(fields.aiRequired, AI_REQUIRED_OPTIONS)}
+              </p>
+            </div>
+          )}
+
+          {/* Budget */}
+          {fields.budget && (
+            <div className="p-3 rounded-lg border border-[var(--color-border)]">
+              <h4 className="text-xs font-medium text-[var(--color-text-muted)] mb-1.5 flex items-center gap-1.5">
+                <DollarSign className="h-3.5 w-3.5" />
+                {BRIEF_FIELD_LABELS.budget}
+              </h4>
+              <p className="text-sm font-medium text-[var(--color-text-primary)]">
+                {getOptionLabel(fields.budget, BUDGET_OPTIONS)}
+              </p>
+            </div>
+          )}
+
+          {/* Urgency */}
+          {fields.urgency && (
+            <div className="p-3 rounded-lg border border-[var(--color-border)]">
+              <h4 className="text-xs font-medium text-[var(--color-text-muted)] mb-1.5 flex items-center gap-1.5">
+                <Timer className="h-3.5 w-3.5" />
+                {BRIEF_FIELD_LABELS.urgency}
+              </h4>
+              <p className="text-sm font-medium text-[var(--color-text-primary)]">
+                {getOptionLabel(fields.urgency, URGENCY_OPTIONS)}
+              </p>
+            </div>
+          )}
+
+          {/* Telegram */}
+          {fields.telegram && (
+            <div className="p-3 rounded-lg border border-[var(--color-border)]">
+              <h4 className="text-xs font-medium text-[var(--color-text-muted)] mb-1.5 flex items-center gap-1.5">
+                <Send className="h-3.5 w-3.5" />
+                {BRIEF_FIELD_LABELS.telegram}
+              </h4>
+              <a 
+                href={fields.telegram.startsWith("@") ? `https://t.me/${fields.telegram.slice(1)}` : fields.telegram}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm font-medium text-[var(--color-accent-primary)] hover:underline"
+              >
+                {fields.telegram}
+              </a>
+            </div>
+          )}
+
+          {/* Source */}
+          {fields.source && (
+            <div className="p-3 rounded-lg border border-[var(--color-border)]">
+              <h4 className="text-xs font-medium text-[var(--color-text-muted)] mb-1.5 flex items-center gap-1.5">
+                <Globe className="h-3.5 w-3.5" />
+                {BRIEF_FIELD_LABELS.source}
+              </h4>
+              <p className="text-sm font-medium text-[var(--color-text-primary)]">
+                {getOptionLabel(fields.source, SOURCE_OPTIONS)}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* App Types - as badges */}
+        {fields.appTypes && fields.appTypes.length > 0 && (
+          <div>
+            <h4 className="text-sm font-medium text-[var(--color-text-secondary)] mb-2 flex items-center gap-2">
+              <Layers className="h-4 w-4" />
+              {BRIEF_FIELD_LABELS.appTypes}
+            </h4>
+            <div className="flex flex-wrap gap-2">
+              {fields.appTypes.map((type) => (
+                <Badge key={type} variant="secondary">
+                  {APP_TYPES_OPTIONS[type] || type}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Integrations - Full width if present */}
+        {fields.integrations && (
+          <div>
+            <h4 className="text-sm font-medium text-[var(--color-text-secondary)] mb-2 flex items-center gap-2">
+              <Puzzle className="h-4 w-4" />
+              {BRIEF_FIELD_LABELS.integrations}
+            </h4>
+            <p className="text-[var(--color-text-primary)] bg-[var(--color-bg-secondary)] p-3 rounded-lg">
+              {fields.integrations}
+            </p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function LeadDetailPage({
   params,
 }: {
@@ -259,6 +463,11 @@ export default function LeadDetailPage({
               {lead.name}
             </h1>
             <Badge variant={statusConfig.variant}>{statusConfig.label}</Badge>
+            {lead.form_slug && FORM_SLUG_CONFIG[lead.form_slug] && (
+              <Badge variant={FORM_SLUG_CONFIG[lead.form_slug].variant}>
+                {FORM_SLUG_CONFIG[lead.form_slug].label}
+              </Badge>
+            )}
           </div>
           {lead.company && (
             <p className="mt-1 text-[var(--color-text-secondary)]">{lead.company}</p>
@@ -344,6 +553,11 @@ export default function LeadDetailPage({
             )}
           </CardContent>
         </Card>
+
+        {/* Brief Data - only for mvp-brief form type */}
+        {lead.form_slug === "mvp-brief" && lead.custom_fields && (
+          <BriefDataCard customFields={lead.custom_fields} />
+        )}
 
         {/* Source & Analytics */}
           {hasSourceData && (
@@ -701,7 +915,7 @@ export default function LeadDetailPage({
           {/* Meta Info */}
           <div className="text-xs text-[var(--color-text-muted)] space-y-1 px-1">
             <p>ID: {lead.id}</p>
-            {lead.form_id && <p>Форма: {lead.form_id}</p>}
+            {lead.form_slug && <p>Тип формы: {lead.form_slug}</p>}
             {lead.service_id && <p>Услуга: {lead.service_id}</p>}
           </div>
         </div>

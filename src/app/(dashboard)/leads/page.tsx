@@ -8,7 +8,7 @@ import { Button, Table, Pagination, Badge, ConfirmModal, Select, Input, FilterBa
 import { ROUTES } from "@/shared/config";
 import { formatDateTime, downloadExport } from "@/shared/lib";
 import type { Inquiry, InquiryFilterParams, InquiryStatus } from "@/entities/inquiry";
-import { INQUIRY_STATUS_CONFIG } from "@/entities/inquiry";
+import { INQUIRY_STATUS_CONFIG, FORM_SLUG_CONFIG } from "@/entities/inquiry";
 
 export default function LeadsPage() {
   const router = useRouter();
@@ -74,7 +74,14 @@ export default function LeadsPage() {
       header: "Контакт",
       render: (lead) => (
         <div>
-          <p className="font-medium text-[var(--color-text-primary)]">{lead.name}</p>
+          <div className="flex items-center gap-2">
+            <p className="font-medium text-[var(--color-text-primary)]">{lead.name}</p>
+            {lead.form_slug && FORM_SLUG_CONFIG[lead.form_slug] && (
+              <Badge variant={FORM_SLUG_CONFIG[lead.form_slug].variant} className="text-[10px] px-1.5 py-0">
+                {FORM_SLUG_CONFIG[lead.form_slug].label}
+              </Badge>
+            )}
+          </div>
           {lead.company && (
             <p className="text-sm text-[var(--color-text-muted)]">{lead.company}</p>
           )}
@@ -278,6 +285,16 @@ export default function LeadsPage() {
           ]}
           className="w-48"
         />
+        <Select
+          label="Тип формы"
+          value={filters.formSlug || ""}
+          onChange={(e) => handleFiltersChange({ formSlug: e.target.value || undefined })}
+          options={[
+            { value: "", label: "Все типы" },
+            ...Object.entries(FORM_SLUG_CONFIG).map(([value, { label }]) => ({ value, label })),
+          ]}
+          className="w-48"
+        />
         {forms && forms.length > 0 && (
           <Select
             label="Форма"
@@ -322,6 +339,7 @@ export default function LeadsPage() {
           filters={{
             search: filters.search,
             formId: filters.formId,
+            formSlug: filters.formSlug,
           }}
         />
       )}
