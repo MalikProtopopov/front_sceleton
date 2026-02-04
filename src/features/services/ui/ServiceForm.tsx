@@ -19,7 +19,6 @@ import {
   CardHeader,
   CardTitle,
   CardContent,
-  RichTextEditor,
   ImageUpload,
   SectionHeader,
   Modal,
@@ -67,15 +66,12 @@ import type {
 } from "@/entities/service";
 
 // Validation schema for create form (minimal locale)
+// Note: description, meta_title, meta_description, meta_keywords removed - managed via content blocks and SEO routes
 const createLocaleSchema = z.object({
   locale: z.string().min(1, "Локаль обязательна"),
   title: z.string().min(1, "Название обязательно").max(255, "Максимум 255 символов"),
   slug: z.string().min(1, "Slug обязателен").regex(/^[a-z0-9-]+$/, "Только a-z, 0-9 и дефис"),
   short_description: z.string().max(500, "Максимум 500 символов").optional().nullable(),
-  description: z.string().optional().nullable(),
-  meta_title: z.string().max(70, "Максимум 70 символов").optional().nullable(),
-  meta_description: z.string().max(160, "Максимум 160 символов").optional().nullable(),
-  meta_keywords: z.string().max(255, "Максимум 255 символов").optional().nullable(),
 });
 
 const createServiceSchema = z.object({
@@ -126,15 +122,12 @@ export function ServiceLocaleForm({
   isLoading,
   isEditing,
 }: LocaleFormRenderProps<ServiceLocale & { id: string }>) {
+  // Note: description, meta_title, meta_description, meta_keywords removed - managed via content blocks and SEO routes
   const [formData, setFormData] = useState<ServiceLocaleFormData>({
     locale: selectedLang,
     title: locale?.title || "",
     slug: locale?.slug || "",
     short_description: locale?.short_description || "",
-    description: locale?.description || "",
-    meta_title: locale?.meta_title || "",
-    meta_description: locale?.meta_description || "",
-    meta_keywords: locale?.meta_keywords || "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -173,10 +166,6 @@ export function ServiceLocaleForm({
       title: formData.title,
       slug: formData.slug,
       short_description: formData.short_description || undefined,
-      description: formData.description || undefined,
-      meta_title: formData.meta_title || undefined,
-      meta_description: formData.meta_description || undefined,
-      meta_keywords: formData.meta_keywords || undefined,
     } as ServiceLocale & { id: string });
   };
 
@@ -208,41 +197,6 @@ export function ServiceLocaleForm({
             value={formData.short_description || ""}
             onChange={(e) => handleChange("short_description", e.target.value)}
           />
-
-          <RichTextEditor
-            label="Полное описание"
-            value={formData.description || ""}
-            onChange={(val) => handleChange("description", val)}
-            placeholder="Подробное описание услуги..."
-          />
-
-          {/* SEO fields */}
-          <div className="border-t border-[var(--color-border)] pt-4">
-            <h4 className="mb-4 text-sm font-medium text-[var(--color-text-secondary)]">
-              SEO настройки
-            </h4>
-            <div className="space-y-4">
-              <Input
-                label="Meta Title"
-                placeholder="SEO заголовок (до 70 символов)"
-                value={formData.meta_title || ""}
-                onChange={(e) => handleChange("meta_title", e.target.value)}
-              />
-              <Textarea
-                label="Meta Description"
-                placeholder="SEO описание (до 160 символов)"
-                value={formData.meta_description || ""}
-                onChange={(e) => handleChange("meta_description", e.target.value)}
-                className="min-h-[80px]"
-              />
-              <Input
-                label="Meta Keywords"
-                placeholder="ключевые, слова, через, запятую"
-                value={formData.meta_keywords || ""}
-                onChange={(e) => handleChange("meta_keywords", e.target.value)}
-              />
-            </div>
-          </div>
         </div>
       </ModalBody>
       <ModalFooter>
@@ -676,10 +630,6 @@ export function ServiceForm({ service, onSubmit, isSubmitting = false }: Service
           title: "",
           slug: "",
           short_description: "",
-          description: "",
-          meta_title: "",
-          meta_description: "",
-          meta_keywords: "",
         },
       ],
     },
@@ -733,12 +683,10 @@ export function ServiceForm({ service, onSubmit, isSubmitting = false }: Service
           icon: data.icon || undefined,
           sort_order: data.sort_order ?? undefined,
           locales: data.locales.map((l) => ({
-            ...l,
+            locale: l.locale,
+            title: l.title,
+            slug: l.slug,
             short_description: l.short_description || undefined,
-            description: l.description || undefined,
-            meta_title: l.meta_title || undefined,
-            meta_description: l.meta_description || undefined,
-            meta_keywords: l.meta_keywords || undefined,
           })),
         };
         onSubmit(payload);
@@ -778,9 +726,6 @@ export function ServiceForm({ service, onSubmit, isSubmitting = false }: Service
     const apiData: CreateServiceLocaleDto = {
       locale: data.locale, title: data.title, slug: data.slug,
       short_description: data.short_description ?? undefined,
-      description: data.description ?? undefined,
-      meta_title: data.meta_title ?? undefined, meta_description: data.meta_description ?? undefined,
-      meta_keywords: data.meta_keywords ?? undefined,
     };
     await createLocale.mutateAsync(apiData);
   };
@@ -789,9 +734,6 @@ export function ServiceForm({ service, onSubmit, isSubmitting = false }: Service
     const apiData: Partial<CreateServiceLocaleDto> = {
       locale: data.locale, title: data.title, slug: data.slug,
       short_description: data.short_description ?? undefined,
-      description: data.description ?? undefined,
-      meta_title: data.meta_title ?? undefined, meta_description: data.meta_description ?? undefined,
-      meta_keywords: data.meta_keywords ?? undefined,
     };
     await updateLocale.mutateAsync({ localeId, data: apiData as CreateServiceLocaleDto });
   };
@@ -811,10 +753,6 @@ export function ServiceForm({ service, onSubmit, isSubmitting = false }: Service
           title: "",
           slug: "",
           short_description: "",
-          description: "",
-          meta_title: "",
-          meta_description: "",
-          meta_keywords: "",
         },
       ]);
     }
@@ -997,47 +935,6 @@ export function ServiceForm({ service, onSubmit, isSubmitting = false }: Service
                       {...createForm.register(`locales.${index}.short_description`)}
                       error={createForm.formState.errors.locales?.[index]?.short_description?.message}
                     />
-
-                    <Controller
-                      name={`locales.${index}.description`}
-                      control={createForm.control}
-                      render={({ field }) => (
-                        <RichTextEditor
-                          label="Полное описание"
-                          value={field.value || ""}
-                          onChange={field.onChange}
-                          placeholder="Подробное описание услуги..."
-                        />
-                      )}
-                    />
-
-                    {/* SEO fields */}
-                    <div className="border-t border-[var(--color-border)] pt-4">
-                      <h4 className="mb-4 text-sm font-medium text-[var(--color-text-secondary)]">
-                        SEO настройки
-                      </h4>
-                      <div className="space-y-4">
-                        <Input
-                          label="Meta Title"
-                          placeholder="SEO заголовок (до 70 символов)"
-                          {...createForm.register(`locales.${index}.meta_title`)}
-                          error={createForm.formState.errors.locales?.[index]?.meta_title?.message}
-                        />
-                        <Textarea
-                          label="Meta Description"
-                          placeholder="SEO описание (до 160 символов)"
-                          {...createForm.register(`locales.${index}.meta_description`)}
-                          error={createForm.formState.errors.locales?.[index]?.meta_description?.message}
-                          className="min-h-[80px]"
-                        />
-                        <Input
-                          label="Meta Keywords"
-                          placeholder="ключевые, слова, через, запятую"
-                          {...createForm.register(`locales.${index}.meta_keywords`)}
-                          error={createForm.formState.errors.locales?.[index]?.meta_keywords?.message}
-                        />
-                      </div>
-                    </div>
                   </div>
                 </TabsContent>
               ))}

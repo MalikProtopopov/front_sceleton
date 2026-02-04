@@ -18,7 +18,6 @@ import {
   CardHeader,
   CardTitle,
   CardContent,
-  RichTextEditor,
   Switch,
   ImageUpload,
   SectionHeader,
@@ -56,15 +55,12 @@ import type { Case, CaseLocale, CreateCaseDto, UpdateCaseDto, CreateCaseLocaleDt
 import type { Service } from "@/entities/service";
 
 // Validation schemas
+// Note: description, results, meta_title, meta_description removed - managed via content blocks and SEO routes
 const createLocaleSchema = z.object({
   locale: z.string().min(1, "Локаль обязательна"),
   title: z.string().min(1, "Заголовок обязателен").max(255, "Максимум 255 символов"),
   slug: z.string().min(1, "Slug обязателен").regex(/^[a-z0-9-]+$/, "Только a-z, 0-9 и дефис"),
   excerpt: z.string().max(500, "Максимум 500 символов").optional().nullable(),
-  description: z.string().optional().nullable(),
-  results: z.string().optional().nullable(),
-  meta_title: z.string().max(70, "Максимум 70 символов").optional().nullable(),
-  meta_description: z.string().max(160, "Максимум 160 символов").optional().nullable(),
 });
 
 const createCaseSchema = z.object({
@@ -114,15 +110,12 @@ export function CaseLocaleForm({
   isLoading,
   isEditing,
 }: LocaleFormRenderProps<CaseLocale & { id: string }>) {
+  // Note: description, results, meta_title, meta_description removed - managed via content blocks and SEO routes
   const [formData, setFormData] = useState({
     locale: selectedLang,
     title: locale?.title || "",
     slug: locale?.slug || "",
     excerpt: locale?.excerpt || "",
-    description: locale?.description || "",
-    results: locale?.results || "",
-    meta_title: locale?.meta_title || "",
-    meta_description: locale?.meta_description || "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -156,10 +149,6 @@ export function CaseLocaleForm({
       title: formData.title,
       slug: formData.slug,
       excerpt: formData.excerpt || undefined,
-      description: formData.description || undefined,
-      results: formData.results || undefined,
-      meta_title: formData.meta_title || undefined,
-      meta_description: formData.meta_description || undefined,
     } as CaseLocale & { id: string });
   };
 
@@ -170,15 +159,6 @@ export function CaseLocaleForm({
           <Input label="Заголовок" value={formData.title} onChange={(e) => handleTitleChange(e.target.value)} error={errors.title} required />
           <Input label="Slug" value={formData.slug} onChange={(e) => handleChange("slug", e.target.value)} error={errors.slug} required />
           <Textarea label="Краткое описание" value={formData.excerpt || ""} onChange={(e) => handleChange("excerpt", e.target.value)} />
-          <RichTextEditor label="Описание проекта" value={formData.description || ""} onChange={(val) => handleChange("description", val)} />
-          <RichTextEditor label="Результаты" value={formData.results || ""} onChange={(val) => handleChange("results", val)} />
-          <div className="border-t border-[var(--color-border)] pt-4">
-            <h4 className="mb-4 text-sm font-medium text-[var(--color-text-secondary)]">SEO настройки</h4>
-            <div className="space-y-4">
-              <Input label="Meta Title" value={formData.meta_title || ""} onChange={(e) => handleChange("meta_title", e.target.value)} />
-              <Textarea label="Meta Description" value={formData.meta_description || ""} onChange={(e) => handleChange("meta_description", e.target.value)} className="min-h-[80px]" />
-            </div>
-          </div>
         </div>
       </ModalBody>
       <ModalFooter>
@@ -223,7 +203,7 @@ export function CaseForm({ caseItem, services = [], onSubmit, isSubmitting = fal
     defaultValues: {
       status: "draft", client_name: "", project_year: null, project_duration: "",
       is_featured: false, sort_order: null, service_ids: [],
-      locales: [{ locale: "ru", title: "", slug: "", excerpt: "", description: "", results: "", meta_title: "", meta_description: "" }],
+      locales: [{ locale: "ru", title: "", slug: "", excerpt: "" }],
     },
   });
 
@@ -289,12 +269,10 @@ export function CaseForm({ caseItem, services = [], onSubmit, isSubmitting = fal
           is_featured: data.is_featured,
           service_ids: data.service_ids,
           locales: data.locales.map((l) => ({
-            ...l,
+            locale: l.locale,
+            title: l.title,
+            slug: l.slug,
             excerpt: l.excerpt || undefined,
-            description: l.description || undefined,
-            results: l.results || undefined,
-            meta_title: l.meta_title || undefined,
-            meta_description: l.meta_description || undefined,
           })),
         };
         // Only include sort_order if it's a number (not null)
@@ -309,18 +287,14 @@ export function CaseForm({ caseItem, services = [], onSubmit, isSubmitting = fal
   const handleCreateLocale = async (data: Omit<CaseLocale & { id: string }, "id">) => {
     const apiData: CreateCaseLocaleDto = {
       locale: data.locale, title: data.title, slug: data.slug,
-      excerpt: data.excerpt ?? undefined, description: data.description ?? undefined,
-      results: data.results ?? undefined, meta_title: data.meta_title ?? undefined,
-      meta_description: data.meta_description ?? undefined,
+      excerpt: data.excerpt ?? undefined,
     };
     await createLocale.mutateAsync(apiData);
   };
   const handleUpdateLocale = async (localeId: string, data: Partial<CaseLocale>) => {
     const apiData: Partial<CreateCaseLocaleDto> = {
       locale: data.locale, title: data.title, slug: data.slug,
-      excerpt: data.excerpt ?? undefined, description: data.description ?? undefined,
-      results: data.results ?? undefined, meta_title: data.meta_title ?? undefined,
-      meta_description: data.meta_description ?? undefined,
+      excerpt: data.excerpt ?? undefined,
     };
     await updateLocale.mutateAsync({ localeId, data: apiData as CreateCaseLocaleDto });
   };
@@ -352,7 +326,7 @@ export function CaseForm({ caseItem, services = [], onSubmit, isSubmitting = fal
 
   const addLocale = (locale: string) => {
     if (!locales.map((l) => l.locale).includes(locale)) {
-      createForm.setValue("locales", [...locales, { locale, title: "", slug: "", excerpt: "", description: "", results: "", meta_title: "", meta_description: "" }]);
+      createForm.setValue("locales", [...locales, { locale, title: "", slug: "", excerpt: "" }]);
     }
   };
   const removeLocale = (index: number) => { if (locales.length > 1) createForm.setValue("locales", locales.filter((_, i) => i !== index)); };
@@ -478,15 +452,6 @@ export function CaseForm({ caseItem, services = [], onSubmit, isSubmitting = fal
                     <Input label="Заголовок" placeholder="Введите заголовок" {...createForm.register(`locales.${index}.title`, { onChange: (e) => createForm.setValue(`locales.${index}.slug`, generateSlug(e.target.value)) })} error={createForm.formState.errors.locales?.[index]?.title?.message} required />
                     <Input label="Slug" placeholder="case-slug" {...createForm.register(`locales.${index}.slug`)} error={createForm.formState.errors.locales?.[index]?.slug?.message} required />
                     <Textarea label="Краткое описание" placeholder="Краткое описание кейса..." {...createForm.register(`locales.${index}.excerpt`)} error={createForm.formState.errors.locales?.[index]?.excerpt?.message} />
-                    <Controller name={`locales.${index}.description`} control={createForm.control} render={({ field }) => (<RichTextEditor label="Описание проекта" value={field.value || ""} onChange={field.onChange} placeholder="Полное описание проекта..." />)} />
-                    <Controller name={`locales.${index}.results`} control={createForm.control} render={({ field }) => (<RichTextEditor label="Результаты" value={field.value || ""} onChange={field.onChange} placeholder="Результаты проекта..." />)} />
-                    <div className="border-t border-[var(--color-border)] pt-4">
-                      <h4 className="mb-4 text-sm font-medium text-[var(--color-text-secondary)]">SEO настройки</h4>
-                      <div className="space-y-4">
-                        <Input label="Meta Title" placeholder="SEO заголовок (до 70 символов)" {...createForm.register(`locales.${index}.meta_title`)} error={createForm.formState.errors.locales?.[index]?.meta_title?.message} />
-                        <Textarea label="Meta Description" placeholder="SEO описание (до 160 символов)" {...createForm.register(`locales.${index}.meta_description`)} error={createForm.formState.errors.locales?.[index]?.meta_description?.message} className="min-h-[80px]" />
-                      </div>
-                    </div>
                   </div>
                 </TabsContent>
               ))}

@@ -19,7 +19,6 @@ import {
   CardHeader,
   CardTitle,
   CardContent,
-  RichTextEditor,
   ImageUpload,
   ConfirmModal,
   Badge,
@@ -48,14 +47,12 @@ import type { CreateContentBlockDto, UpdateContentBlockDto } from "@/entities/co
 import type { Article, ArticleLocale, CreateArticleDto, UpdateArticleDto, CreateArticleLocaleDto, UpdateArticleLocaleDto, Topic } from "@/entities/article";
 
 // Validation schema for create form
+// Note: content, meta_title, meta_description removed - managed via content blocks and SEO routes
 const createLocaleSchema = z.object({
   locale: z.string().min(1, "Локаль обязательна"),
   title: z.string().min(1, "Заголовок обязателен").max(200, "Максимум 200 символов"),
   slug: z.string().min(1, "Slug обязателен").regex(/^[a-z0-9-]+$/, "Только a-z, 0-9 и дефис"),
   excerpt: z.string().max(500, "Максимум 500 символов").optional().nullable(),
-  content: z.string().optional().nullable(),
-  meta_title: z.string().max(60, "Максимум 60 символов").optional().nullable(),
-  meta_description: z.string().max(160, "Максимум 160 символов").optional().nullable(),
 });
 
 const createArticleSchema = z.object({
@@ -138,9 +135,6 @@ export function ArticleForm({ article, topics = [], onSubmit, isSubmitting = fal
           title: "",
           slug: "",
           excerpt: "",
-          content: "",
-          meta_title: "",
-          meta_description: "",
         },
       ],
     },
@@ -232,11 +226,10 @@ export function ArticleForm({ article, topics = [], onSubmit, isSubmitting = fal
           reading_time_minutes: data.reading_time_minutes || undefined,
           sort_order: data.sort_order ?? undefined,
           locales: data.locales.map((l) => ({
-            ...l,
+            locale: l.locale,
+            title: l.title,
+            slug: l.slug,
             excerpt: l.excerpt || undefined,
-            content: l.content || undefined,
-            meta_title: l.meta_title || undefined,
-            meta_description: l.meta_description || undefined,
           })),
         };
         onSubmit(payload);
@@ -296,9 +289,6 @@ export function ArticleForm({ article, topics = [], onSubmit, isSubmitting = fal
       title: localeData.title,
       slug: localeData.slug,
       excerpt: localeData.excerpt ?? undefined,
-      content: localeData.content ?? undefined,
-      meta_title: localeData.meta_title ?? undefined,
-      meta_description: localeData.meta_description ?? undefined,
     };
     
     await updateLocale.mutateAsync({ localeId, data: apiData });
@@ -339,9 +329,6 @@ export function ArticleForm({ article, topics = [], onSubmit, isSubmitting = fal
           title: "",
           slug: "",
           excerpt: "",
-          content: "",
-          meta_title: "",
-          meta_description: "",
         },
       ]);
     }
@@ -552,35 +539,6 @@ export function ArticleForm({ article, topics = [], onSubmit, isSubmitting = fal
                         value={localeData.excerpt || ""}
                         onChange={(e) => handleLocaleFieldChange(locale.id, "excerpt", e.target.value)}
                       />
-
-                      <RichTextEditor
-                        label="Содержание"
-                        value={localeData.content || ""}
-                        onChange={(val) => handleLocaleFieldChange(locale.id, "content", val)}
-                        placeholder="Полный текст статьи..."
-                      />
-
-                      {/* SEO fields */}
-                      <div className="border-t border-[var(--color-border)] pt-4">
-                        <h4 className="mb-4 text-sm font-medium text-[var(--color-text-secondary)]">
-                          SEO настройки
-                        </h4>
-                        <div className="space-y-4">
-                          <Input
-                            label="Meta Title"
-                            placeholder="SEO заголовок (до 60 символов)"
-                            value={localeData.meta_title || ""}
-                            onChange={(e) => handleLocaleFieldChange(locale.id, "meta_title", e.target.value)}
-                          />
-                          <Textarea
-                            label="Meta Description"
-                            placeholder="SEO описание (до 160 символов)"
-                            value={localeData.meta_description || ""}
-                            onChange={(e) => handleLocaleFieldChange(locale.id, "meta_description", e.target.value)}
-                            className="min-h-[80px]"
-                          />
-                        </div>
-                      </div>
                       
                       {/* Save locale button */}
                       <div className="flex justify-end border-t border-[var(--color-border)] pt-4">
@@ -665,41 +623,6 @@ export function ArticleForm({ article, topics = [], onSubmit, isSubmitting = fal
                       {...createForm.register(`locales.${index}.excerpt`)}
                       error={createForm.formState.errors.locales?.[index]?.excerpt?.message}
                     />
-
-                    <Controller
-                      name={`locales.${index}.content`}
-                      control={createForm.control}
-                      render={({ field }) => (
-                        <RichTextEditor
-                          label="Содержание"
-                          value={field.value || ""}
-                          onChange={field.onChange}
-                          placeholder="Полный текст статьи..."
-                        />
-                      )}
-                    />
-
-                    {/* SEO fields */}
-                    <div className="border-t border-[var(--color-border)] pt-4">
-                      <h4 className="mb-4 text-sm font-medium text-[var(--color-text-secondary)]">
-                        SEO настройки
-                      </h4>
-                      <div className="space-y-4">
-                        <Input
-                          label="Meta Title"
-                          placeholder="SEO заголовок (до 60 символов)"
-                          {...createForm.register(`locales.${index}.meta_title`)}
-                          error={createForm.formState.errors.locales?.[index]?.meta_title?.message}
-                        />
-                        <Textarea
-                          label="Meta Description"
-                          placeholder="SEO описание (до 160 символов)"
-                          {...createForm.register(`locales.${index}.meta_description`)}
-                          error={createForm.formState.errors.locales?.[index]?.meta_description?.message}
-                          className="min-h-[80px]"
-                        />
-                      </div>
-                    </div>
                   </div>
                 </TabsContent>
               ))}
