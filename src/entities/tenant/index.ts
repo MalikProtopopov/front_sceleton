@@ -1,6 +1,7 @@
 export type {
   Tenant,
   TenantSettings,
+  SitemapStaticPage,
   FeatureFlag,
   FeatureFlagsResponse,
   UpdateTenantDto,

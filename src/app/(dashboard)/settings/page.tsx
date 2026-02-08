@@ -1,16 +1,26 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Settings, Globe, Bell, BarChart3, KeyRound, MessageSquare } from "lucide-react";
+import { Settings, Globe, Bell, BarChart3, KeyRound, MessageSquare, Search, Plus, Trash2 } from "lucide-react";
 import { useTenant, useUpdateTenant, useUpdateTenantSettings, useChangePassword, useUploadTenantLogo, useDeleteTenantLogo } from "@/features/settings";
 import { 
   Button, Input, Select, Card, CardHeader, CardTitle, CardContent, 
-  Tabs, Tab, Spinner, Switch
+  Tabs, Tab, Spinner, Switch, Textarea
 } from "@/shared/ui";
 import { useAuth } from "@/features/auth";
 import { TelegramSettingsTab } from "@/features/telegram";
-import type { UpdateTenantSettingsDto } from "@/entities/tenant";
+import type { UpdateTenantSettingsDto, SitemapStaticPage } from "@/entities/tenant";
 import { AVAILABLE_LOCALES, AVAILABLE_TIMEZONES, DATE_FORMATS, TIME_FORMATS } from "@/entities/tenant";
+
+const CHANGEFREQ_OPTIONS = [
+  { value: "always", label: "Always" },
+  { value: "hourly", label: "Hourly" },
+  { value: "daily", label: "Daily" },
+  { value: "weekly", label: "Weekly" },
+  { value: "monthly", label: "Monthly" },
+  { value: "yearly", label: "Yearly" },
+  { value: "never", label: "Never" },
+];
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -73,6 +83,15 @@ export default function SettingsPage() {
     default_og_image: "",
   });
 
+  // SEO settings state
+  const [seoForm, setSeoForm] = useState({
+    site_url: "",
+    allowed_domains: "" as string, // comma-separated string for input, converted to array on save
+    robots_txt_custom_rules: "",
+  });
+  const [sitemapPages, setSitemapPages] = useState<SitemapStaticPage[]>([]);
+  const [siteUrlError, setSiteUrlError] = useState<string | null>(null);
+
   // Populate forms when tenant data loads
   useEffect(() => {
     if (tenant) {
@@ -102,6 +121,13 @@ export default function SettingsPage() {
           ym_counter_id: tenant.settings.ym_counter_id || "",
           default_og_image: tenant.settings.default_og_image || "",
         });
+
+        setSeoForm({
+          site_url: tenant.settings.site_url || "",
+          allowed_domains: tenant.settings.allowed_domains?.join(", ") || "",
+          robots_txt_custom_rules: tenant.settings.robots_txt_custom_rules || "",
+        });
+        setSitemapPages(tenant.settings.sitemap_static_pages || []);
       }
     }
   }, [tenant]);
@@ -158,6 +184,49 @@ export default function SettingsPage() {
 
   const handleSaveAnalytics = () => {
     updateSettings(analyticsForm);
+  };
+
+  // SEO handlers
+  const handleSaveSeo = () => {
+    setSiteUrlError(null);
+
+    // Validate site_url if provided
+    if (seoForm.site_url && !/^https?:\/\/.+/.test(seoForm.site_url)) {
+      setSiteUrlError("URL должен начинаться с http:// или https://");
+      return;
+    }
+
+    // Parse allowed_domains from comma-separated string
+    const domainsArray = seoForm.allowed_domains
+      .split(",")
+      .map((d) => d.trim())
+      .filter(Boolean);
+
+    // Filter out empty sitemap pages
+    const validSitemapPages = sitemapPages.filter((p) => p.path.trim());
+
+    updateSettings({
+      site_url: seoForm.site_url || null,
+      allowed_domains: domainsArray.length > 0 ? domainsArray : null,
+      sitemap_static_pages: validSitemapPages.length > 0 ? validSitemapPages : null,
+      robots_txt_custom_rules: seoForm.robots_txt_custom_rules || null,
+    });
+  };
+
+  const handleAddSitemapPage = () => {
+    setSitemapPages([...sitemapPages, { path: "/", priority: 0.5, changefreq: "weekly" }]);
+  };
+
+  const handleRemoveSitemapPage = (index: number) => {
+    setSitemapPages(sitemapPages.filter((_, i) => i !== index));
+  };
+
+  const handleUpdateSitemapPage = (index: number, field: keyof SitemapStaticPage, value: string | number) => {
+    setSitemapPages(
+      sitemapPages.map((page, i) =>
+        i === index ? { ...page, [field]: value } : page
+      )
+    );
   };
 
   const handleChangePassword = () => {
@@ -424,6 +493,155 @@ export default function SettingsPage() {
         >
           <div className="mt-6">
             <TelegramSettingsTab />
+          </div>
+        </Tab>
+
+        {/* SEO / Site Settings */}
+        <Tab
+          label={
+            <span className="flex items-center gap-2">
+              <Search className="h-4 w-4" />
+              Сайт и SEO
+            </span>
+          }
+        >
+          <div className="mt-6 space-y-6">
+            {/* Site URL */}
+            <Card>
+              <CardHeader>
+                <CardTitle>URL сайта</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Input
+                  label="Базовый URL клиентского сайта"
+                  value={seoForm.site_url}
+                  onChange={(e) => {
+                    setSeoForm({ ...seoForm, site_url: e.target.value });
+                    setSiteUrlError(null);
+                  }}
+                  placeholder="https://example.com"
+                  error={siteUrlError || undefined}
+                />
+                <p className="text-xs text-[var(--color-text-muted)]">
+                  Используется для генерации sitemap.xml и robots.txt. Укажите полный URL без слэша в конце, например: https://mediann.dev
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Allowed Domains */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Разрешённые домены</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Input
+                  label="Домены (через запятую)"
+                  value={seoForm.allowed_domains}
+                  onChange={(e) => setSeoForm({ ...seoForm, allowed_domains: e.target.value })}
+                  placeholder="example.com, www.example.com"
+                />
+                <p className="text-xs text-[var(--color-text-muted)]">
+                  Список разрешённых доменов для проверки base URL. Например: mediann.dev, www.mediann.dev
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Sitemap Static Pages */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Статические страницы Sitemap</CardTitle>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleAddSitemapPage}
+                    leftIcon={<Plus className="h-4 w-4" />}
+                  >
+                    Добавить
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {sitemapPages.length === 0 ? (
+                  <p className="text-sm text-[var(--color-text-muted)]">
+                    Нет статических страниц. Нажмите «Добавить» чтобы указать страницы для sitemap.
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {sitemapPages.map((page, index) => (
+                      <div
+                        key={index}
+                        className="flex items-start gap-3 rounded-lg border border-[var(--color-border)] p-3"
+                      >
+                        <div className="grid flex-1 gap-3 md:grid-cols-3">
+                          <Input
+                            label="Путь"
+                            value={page.path}
+                            onChange={(e) => handleUpdateSitemapPage(index, "path", e.target.value)}
+                            placeholder="/"
+                          />
+                          <Input
+                            label="Приоритет (0–1)"
+                            type="number"
+                            value={String(page.priority)}
+                            onChange={(e) => {
+                              const val = parseFloat(e.target.value);
+                              if (!isNaN(val) && val >= 0 && val <= 1) {
+                                handleUpdateSitemapPage(index, "priority", val);
+                              }
+                            }}
+                            placeholder="0.5"
+                          />
+                          <Select
+                            label="Частота обновления"
+                            value={page.changefreq}
+                            onChange={(e) => handleUpdateSitemapPage(index, "changefreq", e.target.value)}
+                            options={CHANGEFREQ_OPTIONS}
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveSitemapPage(index)}
+                          className="mt-7 rounded p-1.5 text-[var(--color-error)] transition-colors hover:bg-[var(--color-bg-hover)]"
+                          title="Удалить"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <p className="text-xs text-[var(--color-text-muted)]">
+                  Статические страницы попадут в sitemap.xml с указанным приоритетом и частотой обновления.
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Robots.txt Custom Rules */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Robots.txt — дополнительные правила</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Textarea
+                  label="Пользовательские правила robots.txt"
+                  value={seoForm.robots_txt_custom_rules}
+                  onChange={(e) => setSeoForm({ ...seoForm, robots_txt_custom_rules: e.target.value })}
+                  placeholder={"User-agent: *\nAllow: /"}
+                  rows={6}
+                />
+                <p className="text-xs text-[var(--color-text-muted)]">
+                  Дополнительные строки, которые будут добавлены в конец robots.txt. Максимум 5000 символов.
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Save button */}
+            <div className="flex justify-end">
+              <Button onClick={handleSaveSeo} isLoading={isUpdatingSettings}>
+                Сохранить
+              </Button>
+            </div>
           </div>
         </Tab>
 

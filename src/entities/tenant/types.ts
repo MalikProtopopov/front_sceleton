@@ -1,5 +1,11 @@
 // Tenant entity types
 
+export interface SitemapStaticPage {
+  path: string;
+  priority: number;
+  changefreq: string;
+}
+
 export interface TenantSettings {
   id: string;
   tenant_id: string;
@@ -13,6 +19,11 @@ export interface TenantSettings {
   default_og_image: string | null;
   ga_tracking_id: string | null;
   ym_counter_id: string | null;
+  // SEO fields
+  site_url: string | null;
+  allowed_domains: string[] | null;
+  sitemap_static_pages: SitemapStaticPage[] | null;
+  robots_txt_custom_rules: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -73,6 +84,11 @@ export interface UpdateTenantSettingsDto {
   default_og_image?: string | null;
   ga_tracking_id?: string | null;
   ym_counter_id?: string | null;
+  // SEO fields
+  site_url?: string | null;
+  allowed_domains?: string[] | null;
+  sitemap_static_pages?: SitemapStaticPage[] | null;
+  robots_txt_custom_rules?: string | null;
 }
 
 export interface UpdateFeatureFlagDto {
