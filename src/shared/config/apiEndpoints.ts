@@ -79,6 +79,9 @@ export const API_ENDPOINTS = {
     PHOTO: (id: string) => `/admin/employees/${id}/photo`,
     LOCALES: (id: string) => `/admin/employees/${id}/locales`,
     LOCALE_BY_ID: (employeeId: string, localeId: string) => `/admin/employees/${employeeId}/locales/${localeId}`,
+    CONTENT_BLOCKS: (employeeId: string) => `/admin/employees/${employeeId}/content-blocks`,
+    CONTENT_BLOCK_BY_ID: (employeeId: string, blockId: string) => `/admin/employees/${employeeId}/content-blocks/${blockId}`,
+    CONTENT_BLOCKS_REORDER: (employeeId: string) => `/admin/employees/${employeeId}/content-blocks/reorder`,
   },
   
   // Reviews

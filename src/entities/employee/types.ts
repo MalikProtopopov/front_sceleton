@@ -32,6 +32,7 @@ export interface Employee {
   updated_at: string;
   locales: EmployeeLocale[];
   practice_areas: EmployeePracticeArea[];
+  content_blocks?: import("@/entities/content-block").ContentBlock[];
 }
 
 // Request DTOs

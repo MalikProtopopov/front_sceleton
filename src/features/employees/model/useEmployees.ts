@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { employeesApi, employeesKeys } from "../api/employeesApi";
 import { ROUTES } from "@/shared/config";
 import type { EmployeeFilterParams, CreateEmployeeDto, UpdateEmployeeDto, CreateEmployeeLocaleDto, UpdateEmployeeLocaleDto } from "@/entities/employee";
+import type { CreateContentBlockDto, UpdateContentBlockDto, ReorderContentBlocksDto } from "@/entities/content-block";
 import { handleLocaleError } from "@/shared/lib/localeErrors";
 
 export function useEmployeesList(params?: EmployeeFilterParams) {
@@ -140,6 +141,82 @@ export function useDeleteEmployeeLocale(employeeId: string) {
     },
     onError: (error) => {
       handleLocaleError(error);
+    },
+  });
+}
+
+// =====================
+// Content Block Hooks
+// =====================
+
+export function useEmployeeContentBlocks(employeeId: string, locale?: string) {
+  return useQuery({
+    queryKey: employeesKeys.contentBlocks(employeeId, locale),
+    queryFn: () => employeesApi.getContentBlocks(employeeId, locale),
+    enabled: !!employeeId,
+  });
+}
+
+export function useCreateEmployeeContentBlock(employeeId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: CreateContentBlockDto) => employeesApi.createContentBlock(employeeId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...employeesKeys.all, "content-blocks", employeeId] });
+      toast.success("Блок добавлен");
+    },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "Не удалось добавить блок";
+      toast.error(message);
+    },
+  });
+}
+
+export function useUpdateEmployeeContentBlock(employeeId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ blockId, data }: { blockId: string; data: UpdateContentBlockDto }) =>
+      employeesApi.updateContentBlock(employeeId, blockId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...employeesKeys.all, "content-blocks", employeeId] });
+      toast.success("Блок обновлен");
+    },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "Не удалось обновить блок";
+      toast.error(message);
+    },
+  });
+}
+
+export function useDeleteEmployeeContentBlock(employeeId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (blockId: string) => employeesApi.deleteContentBlock(employeeId, blockId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...employeesKeys.all, "content-blocks", employeeId] });
+      toast.success("Блок удален");
+    },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "Не удалось удалить блок";
+      toast.error(message);
+    },
+  });
+}
+
+export function useReorderEmployeeContentBlocks(employeeId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: ReorderContentBlocksDto) => employeesApi.reorderContentBlocks(employeeId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...employeesKeys.all, "content-blocks", employeeId] });
+    },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "Не удалось изменить порядок блоков";
+      toast.error(message);
     },
   });
 }

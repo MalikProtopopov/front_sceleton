@@ -22,9 +22,17 @@ import {
   ImageUpload,
   SectionHeader,
   LocaleManager,
+  ContentBlocksManager,
+  TextBlockEditor,
+  ImageBlockEditor,
+  VideoBlockEditor,
+  GalleryBlockEditor,
+  LinkBlockEditor,
+  ResultBlockEditor,
   ModalBody,
   ModalFooter,
   type LocaleFormRenderProps,
+  type BlockEditorProps,
 } from "@/shared/ui";
 import { generateSlug } from "@/shared/lib";
 import { useUploadEmployeePhoto, useDeleteEmployeePhoto } from "@/features/images";
@@ -32,6 +40,11 @@ import {
   useCreateEmployeeLocale,
   useUpdateEmployeeLocale,
   useDeleteEmployeeLocale,
+  useEmployeeContentBlocks,
+  useCreateEmployeeContentBlock,
+  useUpdateEmployeeContentBlock,
+  useDeleteEmployeeContentBlock,
+  useReorderEmployeeContentBlocks,
 } from "../model/useEmployees";
 import type { Employee, EmployeeLocale, CreateEmployeeDto, UpdateEmployeeDto, CreateEmployeeLocaleDto } from "@/entities/employee";
 
@@ -176,6 +189,19 @@ export function EmployeeForm({ employee, onSubmit, isSubmitting = false }: Emplo
   const updateLocale = useUpdateEmployeeLocale(employee?.id || "");
   const deleteLocale = useDeleteEmployeeLocale(employee?.id || "");
 
+  // Content blocks
+  const [selectedBlocksLocale, setSelectedBlocksLocale] = useState("ru");
+
+  const { data: contentBlocks = [], isLoading: isLoadingBlocks } = useEmployeeContentBlocks(
+    employee?.id || "",
+    undefined // Load all locales, filter in UI
+  );
+
+  const createContentBlock = useCreateEmployeeContentBlock(employee?.id || "");
+  const updateContentBlock = useUpdateEmployeeContentBlock(employee?.id || "");
+  const deleteContentBlock = useDeleteEmployeeContentBlock(employee?.id || "");
+  const reorderContentBlocks = useReorderEmployeeContentBlocks(employee?.id || "");
+
   const createForm = useForm<CreateEmployeeFormValues>({
     resolver: zodResolver(createEmployeeSchema),
     defaultValues: {
@@ -269,6 +295,25 @@ export function EmployeeForm({ employee, onSubmit, isSubmitting = false }: Emplo
   };
   const handleDeleteLocale = async (localeId: string) => { await deleteLocale.mutateAsync(localeId); };
 
+  // Content Block handlers
+  const handleCreateContentBlock = async (data: import("@/entities/content-block").CreateContentBlockDto) => { await createContentBlock.mutateAsync(data); };
+  const handleUpdateContentBlock = async (blockId: string, data: import("@/entities/content-block").UpdateContentBlockDto) => { await updateContentBlock.mutateAsync({ blockId, data }); };
+  const handleDeleteContentBlock = async (blockId: string) => { await deleteContentBlock.mutateAsync(blockId); };
+  const handleReorderContentBlocks = async (blockIds: string[]) => { await reorderContentBlocks.mutateAsync({ locale: selectedBlocksLocale, block_ids: blockIds }); };
+
+  // Block editor renderer
+  const renderBlockEditor = (props: BlockEditorProps) => {
+    switch (props.blockType) {
+      case "text": return <TextBlockEditor {...props} />;
+      case "image": return <ImageBlockEditor {...props} />;
+      case "video": return <VideoBlockEditor {...props} />;
+      case "gallery": return <GalleryBlockEditor {...props} />;
+      case "link": return <LinkBlockEditor {...props} />;
+      case "result": return <ResultBlockEditor {...props} />;
+      default: return null;
+    }
+  };
+
   const addLocale = (locale: string) => {
     if (!locales.map((l) => l.locale).includes(locale)) {
       createForm.setValue("locales", [...locales, { locale, first_name: "", last_name: "", position: "", slug: "", bio: "", meta_title: "", meta_description: "" }]);
@@ -312,7 +357,42 @@ export function EmployeeForm({ employee, onSubmit, isSubmitting = false }: Emplo
       </Card>
 
       {isEditing ? (
-        <LocaleManager<EmployeeLocale & { id: string }> locales={employee.locales as (EmployeeLocale & { id: string })[]} supportedLocales={SUPPORTED_LOCALES} isEditing={true} onCreateLocale={handleCreateLocale} onUpdateLocale={handleUpdateLocale} onDeleteLocale={handleDeleteLocale} isCreating={createLocale.isPending} isUpdating={updateLocale.isPending} isDeleting={deleteLocale.isPending} getLocaleDisplayTitle={(locale) => `${locale.first_name} ${locale.last_name}`} renderLocaleForm={(props) => <EmployeeLocaleForm {...props} />} />
+        <>
+          <LocaleManager<EmployeeLocale & { id: string }> locales={employee.locales as (EmployeeLocale & { id: string })[]} supportedLocales={SUPPORTED_LOCALES} isEditing={true} onCreateLocale={handleCreateLocale} onUpdateLocale={handleUpdateLocale} onDeleteLocale={handleDeleteLocale} isCreating={createLocale.isPending} isUpdating={updateLocale.isPending} isDeleting={deleteLocale.isPending} getLocaleDisplayTitle={(locale) => `${locale.first_name} ${locale.last_name}`} renderLocaleForm={(props) => <EmployeeLocaleForm {...props} />} />
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between gap-4">
+                <CardTitle>Контент-блоки</CardTitle>
+                <Select
+                  value={selectedBlocksLocale}
+                  onChange={(e) => setSelectedBlocksLocale(e.target.value)}
+                  options={SUPPORTED_LOCALES}
+                  minWidth="150px"
+                />
+              </div>
+            </CardHeader>
+            <CardContent>
+              {isLoadingBlocks ? (
+                <div className="py-8 text-center text-sm text-[var(--color-text-muted)]">Загрузка блоков...</div>
+              ) : (
+                <ContentBlocksManager
+                  blocks={contentBlocks}
+                  locale={selectedBlocksLocale}
+                  isEditing={true}
+                  onCreateBlock={handleCreateContentBlock}
+                  onUpdateBlock={handleUpdateContentBlock}
+                  onDeleteBlock={handleDeleteContentBlock}
+                  onReorderBlocks={handleReorderContentBlocks}
+                  isCreating={createContentBlock.isPending}
+                  isUpdating={updateContentBlock.isPending}
+                  isDeleting={deleteContentBlock.isPending}
+                  renderBlockEditor={renderBlockEditor}
+                  title=""
+                />
+              )}
+            </CardContent>
+          </Card>
+        </>
       ) : (
         <Card>
           <CardHeader>
