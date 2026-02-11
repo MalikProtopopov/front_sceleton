@@ -1,10 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { ImageIcon, X } from "lucide-react";
 import { Button } from "../../Button";
 import { Input } from "../../Input";
 import { Select } from "../../Select";
 import { ModalBody, ModalFooter } from "../../Modal";
+import { MediaPickerModal } from "@/features/media";
+import { getFileContentUrl, getMediaUrl } from "@/shared/lib";
 import type { BlockEditorProps } from "../ContentBlocksManager";
 import type { DeviceType, VideoBlockMetadata, VideoProvider } from "@/entities/content-block";
 
@@ -29,6 +32,7 @@ export function VideoBlockEditor({ block, onSubmit, onCancel, isLoading }: Block
     (block?.block_metadata as VideoBlockMetadata)?.provider || "youtube"
   );
   const [deviceType, setDeviceType] = useState<DeviceType>(block?.device_type || "both");
+  const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
 
   useEffect(() => {
     if (block) {
@@ -90,17 +94,40 @@ export function VideoBlockEditor({ block, onSubmit, onCancel, isLoading }: Block
             options={PROVIDER_OPTIONS}
           />
 
-          <Input
-            label="URL превью (опционально)"
-            value={thumbnailUrl}
-            onChange={(e) => setThumbnailUrl(e.target.value)}
-            placeholder="https://... (если не указано, будет автоматически)"
-          />
+          <div>
+            <label className="mb-2 block text-sm font-medium text-[var(--color-text-primary)]">
+              Обложка видео (опционально)
+            </label>
+            <div className="flex gap-2">
+              <Input
+                value={thumbnailUrl}
+                onChange={(e) => setThumbnailUrl(e.target.value)}
+                placeholder="https://... (если не указано, будет автоматически)"
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setMediaPickerOpen(true)}
+              >
+                <ImageIcon className="mr-2 h-4 w-4" />
+                Выбрать
+              </Button>
+            </div>
+          </div>
 
           {thumbnailUrl && (
-            <div className="rounded-lg border border-[var(--color-border)] p-2">
+            <div className="relative rounded-lg border border-[var(--color-border)] p-2">
+              <button
+                type="button"
+                onClick={() => setThumbnailUrl("")}
+                className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-[var(--color-bg-secondary)] text-[var(--color-text-muted)] hover:bg-[var(--color-error-bg)] hover:text-[var(--color-error)] transition-colors"
+                title="Удалить обложку"
+              >
+                <X className="h-4 w-4" />
+              </button>
               <img
-                src={thumbnailUrl}
+                src={getMediaUrl(thumbnailUrl)}
                 alt="Video thumbnail"
                 className="h-24 w-auto object-contain mx-auto"
                 onError={(e) => {
@@ -126,6 +153,17 @@ export function VideoBlockEditor({ block, onSubmit, onCancel, isLoading }: Block
           {isLoading ? "Сохранение..." : block ? "Сохранить" : "Добавить"}
         </Button>
       </ModalFooter>
+
+      <MediaPickerModal
+        isOpen={mediaPickerOpen}
+        onClose={() => setMediaPickerOpen(false)}
+        onSelect={(file) => {
+          setThumbnailUrl(getFileContentUrl(file));
+          setMediaPickerOpen(false);
+        }}
+        imagesOnly
+        title="Выбрать обложку для видео"
+      />
     </>
   );
 }

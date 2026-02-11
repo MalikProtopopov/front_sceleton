@@ -39,6 +39,8 @@ import {
   Users,
   Cpu,
   Puzzle,
+  Copy,
+  Check,
 } from "lucide-react";
 import { useLead, useUpdateLead, useDeleteLead } from "@/features/leads";
 import {
@@ -199,6 +201,91 @@ function StatusTimeline({
   );
 }
 
+// Build copyable text from lead data
+function buildLeadCopyText(lead: import("@/entities/inquiry").Inquiry): string {
+  const lines: string[] = [];
+
+  // Basic contact info
+  lines.push(`Имя: ${lead.name}`);
+  if (lead.email) lines.push(`Email: ${lead.email}`);
+  if (lead.phone) lines.push(`Телефон: ${lead.phone}`);
+  if (lead.company) lines.push(`Компания: ${lead.company}`);
+
+  // Status
+  const statusLabel = INQUIRY_STATUS_CONFIG[lead.status]?.label || lead.status;
+  lines.push(`Статус: ${statusLabel}`);
+
+  // Form type
+  if (lead.form_slug) {
+    const formLabel = FORM_SLUG_CONFIG[lead.form_slug]?.label || lead.form_slug;
+    lines.push(`Тип заявки: ${formLabel}`);
+  }
+
+  // Message
+  if (lead.message) {
+    lines.push(`Сообщение: ${lead.message}`);
+  }
+
+  // Brief fields (for mvp-brief)
+  if (lead.form_slug === "mvp-brief" && lead.custom_fields) {
+    const fields = lead.custom_fields as MvpBriefFields;
+    lines.push(""); // separator
+    lines.push("--- Данные брифа ---");
+    if (fields.idea) lines.push(`Идея продукта: ${fields.idea}`);
+    if (fields.market) lines.push(`Рынок: ${MARKET_OPTIONS[fields.market] || fields.market}`);
+    if (fields.audience) lines.push(`Целевая аудитория: ${fields.audience}`);
+    if (fields.audienceSize) lines.push(`Размер аудитории: ${AUDIENCE_SIZE_OPTIONS[fields.audienceSize] || fields.audienceSize}`);
+    if (fields.aiRequired) lines.push(`AI/ML: ${AI_REQUIRED_OPTIONS[fields.aiRequired] || fields.aiRequired}`);
+    if (fields.appTypes && fields.appTypes.length > 0) {
+      const appTypeLabels = fields.appTypes.map(t => APP_TYPES_OPTIONS[t] || t).join(", ");
+      lines.push(`Типы приложений: ${appTypeLabels}`);
+    }
+    if (fields.integrations) lines.push(`Интеграции: ${fields.integrations}`);
+    if (fields.budget) lines.push(`Бюджет: ${BUDGET_OPTIONS[fields.budget] || fields.budget}`);
+    if (fields.urgency) lines.push(`Сроки: ${URGENCY_OPTIONS[fields.urgency] || fields.urgency}`);
+    if (fields.telegram) lines.push(`Telegram: ${fields.telegram}`);
+    if (fields.source) lines.push(`Откуда узнали: ${SOURCE_OPTIONS[fields.source] || fields.source}`);
+  }
+
+  // Source / Analytics
+  if (lead.utm_source || lead.utm_medium || lead.utm_campaign || lead.source_url || lead.referrer_url || lead.page_path) {
+    lines.push(""); // separator
+    lines.push("--- Источник ---");
+    if (lead.utm_source) lines.push(`UTM Source: ${lead.utm_source}`);
+    if (lead.utm_medium) lines.push(`UTM Medium: ${lead.utm_medium}`);
+    if (lead.utm_campaign) lines.push(`UTM Campaign: ${lead.utm_campaign}`);
+    if (lead.utm_term) lines.push(`UTM Term: ${lead.utm_term}`);
+    if (lead.utm_content) lines.push(`UTM Content: ${lead.utm_content}`);
+    if (lead.source_url) lines.push(`Страница: ${lead.source_url}`);
+    if (lead.page_path) lines.push(`Путь: ${lead.page_path}`);
+    if (lead.referrer_url) lines.push(`Реферер: ${lead.referrer_url}`);
+  }
+
+  // Technical
+  if (lead.device_type || lead.browser || lead.os || lead.city || lead.country) {
+    lines.push(""); // separator
+    lines.push("--- Техническое ---");
+    if (lead.device_type) lines.push(`Устройство: ${lead.device_type}`);
+    if (lead.browser) lines.push(`Браузер: ${lead.browser}`);
+    if (lead.os) lines.push(`ОС: ${lead.os}`);
+    if (lead.city || lead.country) lines.push(`Локация: ${[lead.city, lead.country].filter(Boolean).join(", ")}`);
+    if (lead.ip_address) lines.push(`IP: ${lead.ip_address}`);
+  }
+
+  // Dates
+  lines.push(""); // separator
+  lines.push(`Дата создания: ${formatDateTime(lead.created_at)}`);
+  if (lead.contacted_at) lines.push(`Дата контакта: ${formatDateTime(lead.contacted_at)}`);
+
+  // Notes
+  if (lead.notes) {
+    lines.push(""); // separator
+    lines.push(`Заметки: ${lead.notes}`);
+  }
+
+  return lines.join("\n");
+}
+
 // Brief data card for MVP Brief form type
 function BriefDataCard({ customFields }: { customFields: Record<string, unknown> }) {
   const fields = customFields as MvpBriefFields;
@@ -224,6 +311,13 @@ function BriefDataCard({ customFields }: { customFields: Record<string, unknown>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Consent status */}
+        {fields.consent !== undefined && (
+          <div className="flex items-center gap-2 text-sm">
+            <CheckCircle2 className="h-4 w-4 text-[var(--color-success)]" />
+            <span className="text-[var(--color-text-secondary)]">Согласие на обработку ПД получено</span>
+          </div>
+        )}
         {/* Idea - Full width */}
         {fields.idea && (
           <div>
@@ -394,6 +488,7 @@ export default function LeadDetailPage({
   const [notes, setNotes] = useState("");
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [showTechnicalData, setShowTechnicalData] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const { data: lead, isLoading, error } = useLead(id);
   const { mutate: updateLead, isPending: isUpdating } = useUpdateLead(id);
@@ -423,6 +518,26 @@ export default function LeadDetailPage({
   const handleDelete = () => {
     deleteLead(id);
     setDeleteModalOpen(false);
+  };
+
+  const handleCopyData = async () => {
+    if (!lead) return;
+    const text = buildLeadCopyText(lead);
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback for older browsers
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   const statusConfig = INQUIRY_STATUS_CONFIG[lead.status];
@@ -479,6 +594,13 @@ export default function LeadDetailPage({
         </div>
 
         <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
+          <Button
+            variant="secondary"
+            onClick={handleCopyData}
+            leftIcon={copied ? <Check className="h-4 w-4 text-[var(--color-success)]" /> : <Copy className="h-4 w-4" />}
+          >
+            {copied ? "Скопировано" : "Скопировать данные"}
+          </Button>
           <Select
             value={lead.status}
             onChange={(e) => handleStatusChange(e.target.value as InquiryStatus)}

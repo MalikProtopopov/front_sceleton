@@ -288,7 +288,8 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(
               error
                 ? "border-[var(--color-error)] focus:border-[var(--color-error)] focus:ring-[var(--color-error)]"
                 : "border-[var(--color-border)]",
-              className?.includes("h-9") && "h-9 px-3 text-sm"
+              className?.includes("h-9") && "h-9 px-3 text-sm",
+              className?.includes("h-8") && "h-8 px-2.5 text-xs"
             )}
           >
             <span

@@ -135,27 +135,28 @@ export default function LeadsPage() {
     {
       key: "status",
       header: "Статус",
-      width: "140px",
+      width: "120px",
+      fixedWidth: false,
       render: (lead) => (
         <div
-          className="w-full max-w-[140px]"
+          className="w-full min-w-0"
           onClick={(e) => {
             // Stop row click when interacting with status select
             e.stopPropagation();
           }}
         >
-        <Select
-          value={lead.status}
+          <Select
+            value={lead.status}
             onChange={(e) => {
               handleStatusChange(lead, e.target.value as InquiryStatus);
             }}
-          options={Object.entries(INQUIRY_STATUS_CONFIG).map(([value, { label }]) => ({
-            value,
-            label,
-          }))}
+            options={Object.entries(INQUIRY_STATUS_CONFIG).map(([value, { label }]) => ({
+              value,
+              label,
+            }))}
             minWidth={undefined}
-            className="h-9 text-sm"
-        />
+            className="h-8 text-xs"
+          />
         </div>
       ),
     },

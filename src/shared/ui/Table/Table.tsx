@@ -13,6 +13,8 @@ export interface Column<T> {
   header: string;
   sortable?: boolean;
   width?: string;
+  /** Set to false to allow column to shrink below declared width on narrow screens */
+  fixedWidth?: boolean;
   render?: (row: T, index: number) => React.ReactNode;
 }
 
@@ -172,7 +174,7 @@ export function Table<T extends object>({
                       <td
                         key={column.key}
                         className="px-4 py-3 text-sm text-[var(--color-text-primary)]"
-                        style={column.width ? { width: column.width, minWidth: column.width } : undefined}
+                        style={column.width ? { width: column.width, ...(column.fixedWidth !== false ? { minWidth: column.width } : {}) } : undefined}
                       >
                         <div className="w-full overflow-visible">
                         {column.render

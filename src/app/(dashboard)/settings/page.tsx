@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Settings, Globe, Bell, BarChart3, KeyRound, MessageSquare, Search, Plus, Trash2 } from "lucide-react";
+import { Settings, Globe, Bell, BarChart3, KeyRound, MessageSquare, Search, Plus, Trash2, ImageIcon, Info } from "lucide-react";
 import { useTenant, useUpdateTenant, useUpdateTenantSettings, useChangePassword, useUploadTenantLogo, useDeleteTenantLogo } from "@/features/settings";
 import { 
   Button, Input, Select, Card, CardHeader, CardTitle, CardContent, 
@@ -9,6 +9,8 @@ import {
 } from "@/shared/ui";
 import { useAuth } from "@/features/auth";
 import { TelegramSettingsTab } from "@/features/telegram";
+import { MediaPickerModal } from "@/features/media";
+import { getFileContentUrl } from "@/shared/lib";
 import type { UpdateTenantSettingsDto, SitemapStaticPage } from "@/entities/tenant";
 import { AVAILABLE_LOCALES, AVAILABLE_TIMEZONES, DATE_FORMATS, TIME_FORMATS } from "@/entities/tenant";
 
@@ -91,6 +93,7 @@ export default function SettingsPage() {
   });
   const [sitemapPages, setSitemapPages] = useState<SitemapStaticPage[]>([]);
   const [siteUrlError, setSiteUrlError] = useState<string | null>(null);
+  const [ogImagePickerOpen, setOgImagePickerOpen] = useState(false);
 
   // Populate forms when tenant data loads
   useEffect(() => {
@@ -671,17 +674,61 @@ export default function SettingsPage() {
                 onChange={(e) => setAnalyticsForm({ ...analyticsForm, ym_counter_id: e.target.value })}
                 placeholder="12345678"
               />
-              <Input
-                label="OG-изображение по умолчанию"
-                value={analyticsForm.default_og_image || ""}
-                onChange={(e) => setAnalyticsForm({ ...analyticsForm, default_og_image: e.target.value })}
-                placeholder="https://..."
-              />
+              <div>
+                <label className="mb-2 block text-sm font-medium text-[var(--color-text-secondary)]">
+                  OG-изображение по умолчанию
+                </label>
+                <div className="flex gap-2">
+                  <Input
+                    value={analyticsForm.default_og_image || ""}
+                    onChange={(e) => setAnalyticsForm({ ...analyticsForm, default_og_image: e.target.value })}
+                    placeholder="https://..."
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => setOgImagePickerOpen(true)}
+                  >
+                    <ImageIcon className="mr-2 h-4 w-4" />
+                    Выбрать
+                  </Button>
+                </div>
+                <p className="mt-2 flex items-start gap-1.5 text-xs text-[var(--color-text-muted)]">
+                  <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                  <span>
+                    Превью-изображение, которое отображается при публикации ссылки на ваш сайт в социальных сетях и мессенджерах (Telegram, Facebook, Twitter и др.). Рекомендуемый размер: 1200x630px.
+                  </span>
+                </p>
+                {analyticsForm.default_og_image && (
+                  <div className="mt-3 rounded-lg border border-[var(--color-border)] p-2">
+                    <img
+                      src={analyticsForm.default_og_image}
+                      alt="OG Preview"
+                      className="h-32 w-auto object-contain mx-auto rounded"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = "none";
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
               <div className="flex justify-end pt-4">
                 <Button onClick={handleSaveAnalytics} isLoading={isUpdatingSettings}>
                   Сохранить
                 </Button>
               </div>
+
+              <MediaPickerModal
+                isOpen={ogImagePickerOpen}
+                onClose={() => setOgImagePickerOpen(false)}
+                onSelect={(file) => {
+                  setAnalyticsForm({ ...analyticsForm, default_og_image: getFileContentUrl(file) });
+                  setOgImagePickerOpen(false);
+                }}
+                imagesOnly
+                title="Выбрать OG-изображение"
+              />
             </CardContent>
           </Card>
         </Tab>
