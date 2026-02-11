@@ -8,6 +8,7 @@ import { useUser, useUpdateUser, useDeleteUser, useRoles, useToggleUserActive } 
 import { Button, Input, Select, Card, CardHeader, CardTitle, CardContent, Spinner, Badge, ConfirmModal } from "@/shared/ui";
 import { formatDateTime } from "@/shared/lib";
 import { ROUTES } from "@/shared/config";
+import { getRoleLabel } from "@/entities/user";
 import type { UpdateUserDto } from "@/entities/user";
 
 export default function EditUserPage({ params }: { params: Promise<{ id: string }> }) {
@@ -172,7 +173,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
                 { value: "", label: "Без роли" },
                 ...(rolesData?.items || []).map((role) => ({
                   value: role.id,
-                  label: `${role.name}${role.description ? ` — ${role.description}` : ""}`,
+                  label: `${getRoleLabel(role.name)}${role.description ? ` — ${role.description}` : ""}`,
                 })),
               ]}
               disabled={user.is_superuser}

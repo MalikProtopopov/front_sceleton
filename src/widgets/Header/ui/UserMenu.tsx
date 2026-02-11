@@ -7,6 +7,7 @@ import { useAuth } from "@/providers";
 import { useLogout } from "@/features/auth";
 import { ROUTES } from "@/shared/config";
 import { cn } from "@/shared/lib";
+import { getRoleLabel } from "@/entities/user";
 
 export function UserMenu() {
   const { user } = useAuth();
@@ -75,7 +76,7 @@ export function UserMenu() {
             <p className="text-sm font-medium text-[var(--color-text-primary)]">{displayName}</p>
             <p className="text-xs text-[var(--color-text-muted)]">{user.email}</p>
             {user.role && (
-              <p className="mt-1 text-xs text-[var(--color-accent-primary)]">{user.role.name}</p>
+              <p className="mt-1 text-xs text-[var(--color-accent-primary)]">{getRoleLabel(user.role.name)}</p>
             )}
           </div>
 

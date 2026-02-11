@@ -7,6 +7,7 @@ import { useUsersList, useDeleteUser } from "@/features/users";
 import { Button, Table, Pagination, Badge, ConfirmModal, Select, Input, FilterBar, type Column } from "@/shared/ui";
 import { ROUTES } from "@/shared/config";
 import { formatDateTime } from "@/shared/lib";
+import { getRoleLabel } from "@/entities/user";
 import type { User, UserFilterParams } from "@/entities/user";
 
 export default function UsersPage() {
@@ -89,7 +90,7 @@ export default function UsersPage() {
       header: "Роль",
       width: "160px",
       render: (user) => (
-        <Badge variant="secondary">{user.role?.name || "Без роли"}</Badge>
+        <Badge variant="secondary">{user.role ? getRoleLabel(user.role.name) : "Без роли"}</Badge>
       ),
     },
     {

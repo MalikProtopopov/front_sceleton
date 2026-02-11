@@ -16,6 +16,7 @@ import {
 } from "@/shared/ui";
 import { formatDateTime } from "@/shared/lib";
 import { ROUTES } from "@/shared/config";
+import { getRoleLabel } from "@/entities/user";
 import type { UserFilterParams, User } from "@/entities/user";
 
 interface TenantUsersTabProps {
@@ -83,7 +84,7 @@ export function TenantUsersTab({ tenantId, tenantName }: TenantUsersTabProps) {
       header: "Роль",
       render: (user: User) => (
         <span className="text-[var(--color-text-secondary)]">
-          {user.role?.name || "—"}
+          {user.role ? getRoleLabel(user.role.name) : "—"}
         </span>
       ),
     },

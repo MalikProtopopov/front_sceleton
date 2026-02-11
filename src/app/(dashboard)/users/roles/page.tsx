@@ -7,6 +7,7 @@ import { useRolesList, useDeleteRole } from "@/features/users";
 import { Button, Table, Badge, ConfirmModal, type Column } from "@/shared/ui";
 import { ROUTES } from "@/shared/config";
 import { formatDate } from "@/shared/lib";
+import { getRoleLabel } from "@/entities/user";
 import type { Role } from "@/entities/user";
 
 export default function RolesPage() {
@@ -40,7 +41,7 @@ export default function RolesPage() {
             <Shield className="h-4 w-4 text-[var(--color-text-muted)]" />
           </div>
           <div>
-            <p className="font-medium text-[var(--color-text-primary)]">{role.name}</p>
+            <p className="font-medium text-[var(--color-text-primary)]">{getRoleLabel(role.name)}</p>
             {role.is_system && (
               <Badge variant="secondary" className="mt-0.5 text-xs">
                 <Lock className="mr-1 h-3 w-3" />

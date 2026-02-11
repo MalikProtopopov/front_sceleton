@@ -14,3 +14,5 @@ export type {
   UpdateRoleDto,
   UserFilterParams,
 } from "./types";
+
+export { getRoleLabel } from "./roleLabels";

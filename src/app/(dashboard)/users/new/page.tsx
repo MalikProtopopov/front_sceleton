@@ -6,6 +6,7 @@ import { Info } from "lucide-react";
 import { useCreateUser, useRoles } from "@/features/users";
 import { Button, Input, Select, Switch, Card, CardHeader, CardTitle, CardContent, Spinner } from "@/shared/ui";
 import { ROUTES } from "@/shared/config";
+import { getRoleLabel } from "@/entities/user";
 import type { CreateUserDto } from "@/entities/user";
 
 export default function NewUserPage() {
@@ -144,7 +145,7 @@ export default function NewUserPage() {
                   { value: "", label: "Без роли" },
                   ...(rolesData?.items || []).map((role) => ({
                     value: role.id,
-                    label: role.name,
+                    label: getRoleLabel(role.name),
                   })),
                 ]}
               />

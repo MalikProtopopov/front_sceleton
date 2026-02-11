@@ -12,6 +12,7 @@ import {
 } from "@/features/users";
 import { Button, Spinner, Badge, ConfirmModal } from "@/shared/ui";
 import { formatDateTime } from "@/shared/lib";
+import { getRoleLabel } from "@/entities/user";
 import type { CreateRoleDto, UpdateRoleDto } from "@/entities/user";
 
 export default function EditRolePage({ params }: { params: Promise<{ id: string }> }) {
@@ -43,7 +44,7 @@ export default function EditRolePage({ params }: { params: Promise<{ id: string 
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">
-                {role.name}
+                {getRoleLabel(role.name)}
               </h1>
               <Badge variant="secondary" className="flex items-center gap-1">
                 <Lock className="h-3 w-3" />
@@ -91,7 +92,7 @@ export default function EditRolePage({ params }: { params: Promise<{ id: string 
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">
-            {role.name}
+            {getRoleLabel(role.name)}
           </h1>
           <p className="mt-1 text-sm text-[var(--color-text-muted)]">
             Создана: {formatDateTime(role.created_at)} · Обновлена:{" "}
@@ -117,7 +118,7 @@ export default function EditRolePage({ params }: { params: Promise<{ id: string 
         onClose={() => setDeleteModalOpen(false)}
         onConfirm={handleDelete}
         title="Удалить роль?"
-        description={`Вы уверены, что хотите удалить роль "${role.name}"? Пользователи с этой ролью потеряют связанные права.`}
+        description={`Вы уверены, что хотите удалить роль "${getRoleLabel(role.name)}"? Пользователи с этой ролью потеряют связанные права.`}
         confirmText="Удалить"
         variant="danger"
         isLoading={isDeleting}
