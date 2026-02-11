@@ -112,11 +112,17 @@ export function getErrorMessage(error: unknown, defaultMessage: string): string 
       return getAlreadyExistsMessage(alreadyExists);
     }
 
-    // Check for system_role_protected
+    // Check for 403 specific error codes
     if (error.response?.status === 403) {
       const errorCode = (error.response.data as ApiError)?.error_code;
       if (errorCode === "system_role_protected") {
         return "Системную роль нельзя изменить или удалить";
+      }
+      if (errorCode === "permission_denied") {
+        return "Недостаточно прав для выполнения действия";
+      }
+      if (errorCode === "insufficient_role") {
+        return "У вас недостаточная роль для выполнения действия";
       }
     }
 

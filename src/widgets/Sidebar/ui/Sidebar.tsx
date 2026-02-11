@@ -68,8 +68,8 @@ const navigation: NavSection[] = [
     items: [
       { href: ROUTES.ARTICLES, icon: FileText, label: "Статьи", feature: "blog_module" },
       { href: ROUTES.CASES, icon: FolderOpen, label: "Кейсы", feature: "cases_module" },
-      { href: ROUTES.FAQ, icon: HelpCircle, label: "FAQ", feature: "faq_module" },
-      { href: ROUTES.SERVICES, icon: Briefcase, label: "Услуги" }, // Always visible
+      { href: ROUTES.FAQ, icon: HelpCircle, label: "Вопросы и ответы", feature: "faq_module" },
+      { href: ROUTES.SERVICES, icon: Briefcase, label: "Услуги", feature: "services_module" },
       { href: ROUTES.DOCUMENTS, icon: Files, label: "Документы" }, // Always visible
     ],
   },

@@ -80,7 +80,8 @@ class ApiClient {
 
         // Handle 403 errors with specific error codes
         if (error.response?.status === 403) {
-          const errorCode = error.response.data?.error_code;
+          const data = error.response.data;
+          const errorCode = data?.error_code;
 
           if (errorCode === "tenant_inactive") {
             useGlobalErrors.getState().setTenantInactive();
@@ -88,17 +89,31 @@ class ApiClient {
           }
 
           if (errorCode === "feature_disabled") {
-            const detail = error.response.data?.detail;
-            // Try to extract feature name from detail or use a generic label
-            const featureName = typeof detail === "string" ? detail : "unknown";
+            // Use the dedicated "feature" field, fall back to detail
+            const featureName = data?.feature || (typeof data?.detail === "string" ? data.detail : "unknown");
             useGlobalErrors.getState().setFeatureDisabled(featureName);
             return Promise.reject(error);
           }
 
-          if (errorCode === "permission_denied") {
-            toast.error("Недостаточно прав для выполнения действия");
+          if (errorCode === "permission_denied" || errorCode === "insufficient_role") {
+            // User-level restriction: their role lacks the permission
+            const detail = typeof data?.detail === "string" ? data.detail : "Недостаточно прав для выполнения действия";
+            toast.error(detail, {
+              description: "Обратитесь к администратору организации для обновления роли.",
+            });
             return Promise.reject(error);
           }
+
+          if (errorCode === "system_role_protected") {
+            toast.error("Системную роль нельзя изменить или удалить");
+            return Promise.reject(error);
+          }
+        }
+
+        // Handle 429 rate limit
+        if (error.response?.status === 429) {
+          toast.error("Слишком много запросов. Подождите немного и попробуйте снова.");
+          return Promise.reject(error);
         }
 
         // Skip refresh token flow for login endpoint (401 is expected for wrong credentials)

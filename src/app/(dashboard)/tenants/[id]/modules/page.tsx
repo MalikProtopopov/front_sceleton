@@ -3,6 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
+  Briefcase,
   FolderOpen,
   Star,
   Search,
@@ -20,26 +21,28 @@ import { ROUTES } from "@/shared/config";
 
 // Map feature names to icons
 const featureIcons: Record<string, React.ComponentType<{ className?: string }>> = {
+  blog_module: FileText,
   cases_module: FolderOpen,
   reviews_module: Star,
+  faq_module: HelpCircle,
+  team_module: Users,
+  services_module: Briefcase,
   seo_advanced: Search,
   multilang: Globe,
   analytics_advanced: BarChart3,
-  blog_module: FileText,
-  faq_module: HelpCircle,
-  team_module: Users,
 };
 
 // Russian translations for feature names
 const featureLabels: Record<string, string> = {
-  cases_module: "Кейсы / портфолио",
-  reviews_module: "Отзывы клиентов",
-  seo_advanced: "Расширённый SEO",
-  multilang: "Многоязычность",
+  blog_module: "Блог / Статьи",
+  cases_module: "Кейсы / Портфолио",
+  reviews_module: "Отзывы",
+  faq_module: "Вопросы и ответы",
+  team_module: "Команда / Сотрудники",
+  services_module: "Услуги",
+  seo_advanced: "Расширенное SEO",
+  multilang: "Мультиязычность",
   analytics_advanced: "Расширенная аналитика",
-  blog_module: "Блог / статьи",
-  faq_module: "FAQ",
-  team_module: "Команда / сотрудники",
 };
 
 export default function TenantModulesPage() {

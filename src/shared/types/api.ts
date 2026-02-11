@@ -22,9 +22,15 @@ export interface ApiError {
   detail: string;
   instance?: string;
   errors?: ValidationError[];
-  error_code?: string; // e.g. "tenant_inactive", "feature_disabled", "already_exists", "version_conflict", "system_role_protected", "permission_denied"
+  error_code?: string; // e.g. "tenant_inactive", "feature_disabled", "already_exists", "version_conflict", "system_role_protected", "permission_denied", "insufficient_role", "rate_limit_exceeded"
   resource?: string;
   field?: string;
+  /** "organization" for feature_disabled, "user" for permission_denied / insufficient_role */
+  restriction_level?: "organization" | "user";
+  /** Feature name when error_code is "feature_disabled" */
+  feature?: string;
+  /** Required permission code when error_code is "permission_denied" */
+  required_permission?: string;
 }
 
 export interface ValidationError {
