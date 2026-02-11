@@ -4,7 +4,7 @@
 .PHONY: help dev build start install lint \
 	compose-dev compose-dev-build compose-dev-down \
 	compose-prod compose-prod-build compose-prod-down compose-prod-logs \
-	docker-prune deploy deploy-build restart
+	docker-prune docker-clean deploy deploy-build restart
 
 # По умолчанию — показать справку
 help:
@@ -26,7 +26,8 @@ help:
 	@echo "    make compose-prod-build — поднять prod с пересборкой"
 	@echo "    make compose-prod-down  — остановить prod"
 	@echo "    make compose-prod-logs  — логи prod контейнера"
-	@echo "    make docker-prune       — очистить кэш сборки (если ошибка parent snapshot)"
+	@echo "    make docker-prune       — очистить весь кэш сборки BuildKit (если ошибка parent snapshot)"
+	@echo "    make docker-clean       — остановить админку, удалить образ и кэш сборки фронта (быстрый чистый пересбор)"
 	@echo ""
 	@echo "  Деплой и перезапуск:"
 	@echo "    make deploy       — запустить скрипт деплоя"
@@ -78,6 +79,13 @@ compose-prod-logs:
 # Очистить кэш Docker BuildKit (при ошибке "parent snapshot does not exist")
 docker-prune:
 	docker builder prune -af
+
+# Остановить админку, удалить образ и кэш сборки фронта — следующий make restart соберёт с нуля
+docker-clean:
+	docker compose -f docker-compose.prod.yml down
+	-docker rmi mediann-admin:latest 2>/dev/null || true
+	docker builder prune -f
+	@echo "Готово. Запустите: make restart"
 
 # Деплой
 deploy:
