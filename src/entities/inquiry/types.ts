@@ -157,9 +157,7 @@ export const AUDIENCE_SIZE_OPTIONS: Record<string, string> = {
   medium: "Средний (1000-10000)",
   large: "Большой (10000+)",
   unknown: "Неизвестно",
-};
-
-// AI required options labels
+};// AI required options labels
 export const AI_REQUIRED_OPTIONS: Record<string, string> = {
   no: "Не требуется",
   nlp: "NLP (обработка текста)",
@@ -185,9 +183,7 @@ export const BUDGET_OPTIONS: Record<string, string> = {
   "40-100k": "$40,000 – $100,000",
   "100k+": "$100,000+",
   undefined: "Не определён",
-};
-
-// Urgency options labels
+};// Urgency options labels
 export const URGENCY_OPTIONS: Record<string, string> = {
   "30days": "В течение 30 дней",
   fast: "Срочно",
@@ -203,4 +199,3 @@ export const SOURCE_OPTIONS: Record<string, string> = {
   portfolio: "Портфолио",
   other: "Другое",
 };
-
