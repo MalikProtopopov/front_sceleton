@@ -22,6 +22,7 @@ import {
   Files,
   Globe,
   ArrowRight,
+  LayoutDashboard,
 } from "lucide-react";
 import { cn } from "@/shared/lib";
 import { ROUTES } from "@/shared/config";
@@ -58,6 +59,7 @@ function isNavGroup(item: NavItemData | NavGroupData): item is NavGroupData {
 const platformNavigation: NavSection = {
   label: "Платформа",
   items: [
+    { href: ROUTES.PLATFORM_DASHBOARD, icon: LayoutDashboard, label: "Дашборд" },
     { href: ROUTES.TENANTS, icon: Building2, label: "Проекты" },
   ],
 };

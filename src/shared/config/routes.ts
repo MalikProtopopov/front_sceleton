@@ -60,6 +60,10 @@ export const ROUTES = {
   // Settings
   SETTINGS: "/settings",
   
+  // Platform Dashboard (Platform Owner only)
+  PLATFORM_DASHBOARD: "/platform",
+  PLATFORM_TENANT_DETAIL: (id: string) => `/platform/tenants/${id}`,
+
   // Tenants (Platform Owner only)
   TENANTS: "/tenants",
   TENANT_NEW: "/tenants/new",

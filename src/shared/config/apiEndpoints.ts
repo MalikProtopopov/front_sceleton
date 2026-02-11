@@ -166,6 +166,15 @@ export const API_ENDPOINTS = {
   
   // Dashboard
   DASHBOARD: "/admin/dashboard",
+
+  // Platform Dashboard (superuser / platform_owner only)
+  PLATFORM: {
+    OVERVIEW: "/admin/platform/overview",
+    TENANTS: "/admin/platform/tenants",
+    TENANT_DETAILS: (id: string) => `/admin/platform/tenants/${id}/details`,
+    TRENDS: "/admin/platform/trends",
+    ALERTS: "/admin/platform/alerts",
+  },
   
   // Audit Log
   AUDIT: {
