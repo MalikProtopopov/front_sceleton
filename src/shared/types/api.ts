@@ -22,6 +22,9 @@ export interface ApiError {
   detail: string;
   instance?: string;
   errors?: ValidationError[];
+  error_code?: string; // e.g. "tenant_inactive", "feature_disabled", "already_exists", "version_conflict", "system_role_protected", "permission_denied"
+  resource?: string;
+  field?: string;
 }
 
 export interface ValidationError {

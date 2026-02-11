@@ -4,8 +4,10 @@ import axios, {
   type AxiosResponse,
   type InternalAxiosRequestConfig,
 } from "axios";
+import { toast } from "sonner";
 import { API_BASE_URL, TENANT_ID } from "@/shared/config";
 import type { ApiError } from "@/shared/types";
+import { useGlobalErrors } from "@/shared/model/useGlobalErrors";
 
 // Token storage functions - imported from auth feature
 let getAccessToken: () => string | null = () => null;
@@ -68,13 +70,36 @@ class ApiClient {
       (error) => Promise.reject(error),
     );
 
-    // Response interceptor - handle 401 and refresh token
+    // Response interceptor - handle 401, 403 and refresh token
     this.instance.interceptors.response.use(
       (response: AxiosResponse) => response,
       async (error: AxiosError<ApiError>) => {
         const originalRequest = error.config as InternalAxiosRequestConfig & {
           _retry?: boolean;
         };
+
+        // Handle 403 errors with specific error codes
+        if (error.response?.status === 403) {
+          const errorCode = error.response.data?.error_code;
+
+          if (errorCode === "tenant_inactive") {
+            useGlobalErrors.getState().setTenantInactive();
+            return Promise.reject(error);
+          }
+
+          if (errorCode === "feature_disabled") {
+            const detail = error.response.data?.detail;
+            // Try to extract feature name from detail or use a generic label
+            const featureName = typeof detail === "string" ? detail : "unknown";
+            useGlobalErrors.getState().setFeatureDisabled(featureName);
+            return Promise.reject(error);
+          }
+
+          if (errorCode === "permission_denied") {
+            toast.error("Недостаточно прав для выполнения действия");
+            return Promise.reject(error);
+          }
+        }
 
         // Skip refresh token flow for login endpoint (401 is expected for wrong credentials)
         if (originalRequest.url?.includes('/auth/login')) {

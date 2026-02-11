@@ -1,16 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Info } from "lucide-react";
 import { useCreateUser, useRoles } from "@/features/users";
-import { Button, Input, Select, Card, CardHeader, CardTitle, CardContent, Spinner } from "@/shared/ui";
+import { Button, Input, Select, Switch, Card, CardHeader, CardTitle, CardContent, Spinner } from "@/shared/ui";
 import { ROUTES } from "@/shared/config";
 import type { CreateUserDto } from "@/entities/user";
 
 export default function NewUserPage() {
   const router = useRouter();
-  const { data: rolesData, isLoading: rolesLoading } = useRoles();
-  const { mutate: createUser, isPending } = useCreateUser();
+  const searchParams = useSearchParams();
+  const tenantId = searchParams.get("tenant_id") || undefined;
+
+  const { data: rolesData, isLoading: rolesLoading } = useRoles(tenantId);
+  const { mutate: createUser, isPending } = useCreateUser(tenantId);
 
   const [formData, setFormData] = useState<CreateUserDto>({
     email: "",
@@ -19,6 +23,7 @@ export default function NewUserPage() {
     last_name: "",
     role_id: "",
     is_active: true,
+    send_credentials: true,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -96,6 +101,7 @@ export default function NewUserPage() {
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               error={errors.password}
               required
+              hint="Минимум 8 символов"
             />
           </CardContent>
         </Card>
@@ -155,6 +161,35 @@ export default function NewUserPage() {
           </CardContent>
         </Card>
 
+        {/* Welcome email / send_credentials */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Приглашение</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Switch
+              checked={formData.send_credentials ?? true}
+              onChange={(checked) => setFormData({ ...formData, send_credentials: checked })}
+              label="Отправить приглашение по email"
+              description="Пользователь получит email с уведомлением о создании учетной записи"
+            />
+            {formData.send_credentials && (
+              <div className="flex items-start gap-3 rounded-lg border border-[var(--color-info)]/20 bg-[var(--color-info)]/5 p-4">
+                <Info className="mt-0.5 h-5 w-5 shrink-0 text-[var(--color-info)]" />
+                <div className="space-y-1 text-sm text-[var(--color-text-secondary)]">
+                  <p>
+                    <strong>Пароль не будет отправлен по email.</strong> Вам необходимо передать
+                    пароль пользователю по другому каналу связи.
+                  </p>
+                  <p>
+                    При первом входе пользователь будет обязан сменить пароль.
+                  </p>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         <div className="flex justify-end gap-4">
           <Button type="button" variant="secondary" onClick={() => router.push(ROUTES.USERS)}>
             Отмена
@@ -167,4 +202,3 @@ export default function NewUserPage() {
     </div>
   );
 }
-

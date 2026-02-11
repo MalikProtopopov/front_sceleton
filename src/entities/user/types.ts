@@ -42,6 +42,7 @@ export interface User {
   is_superuser: boolean;
   avatar_url: string | null;
   last_login_at: string | null;
+  force_password_change?: boolean;
   role: Role | null;
   created_at: string;
   updated_at: string;
@@ -57,6 +58,7 @@ export interface CreateUserDto {
   role_id?: string;
   is_active?: boolean;
   avatar_url?: string;
+  send_credentials?: boolean;
 }
 
 export interface UpdateUserDto {
@@ -75,6 +77,7 @@ export interface UserFilterParams {
   pageSize?: number;
   is_active?: boolean;
   search?: string;
+  tenant_id?: string;
 }
 
 // Auth types
@@ -101,6 +104,7 @@ export type TokensResponse = AuthTokens;
 // Extended user with permissions for /auth/me endpoint
 export interface UserWithPermissions extends User {
   permissions: string[]; // List of permission codes like ["articles.read", "articles.write"]
+  force_password_change?: boolean;
 }
 
 // Change password request

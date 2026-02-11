@@ -1,6 +1,6 @@
 "use client";
 
-import { Building2, Globe, Mail, Phone, CheckCircle, XCircle } from "lucide-react";
+import { Building2, Globe, Mail, Phone, CheckCircle, XCircle, Users } from "lucide-react";
 import { cn } from "@/shared/lib";
 import type { Tenant } from "@/entities/tenant";
 
@@ -81,18 +81,26 @@ export function TenantCard({ tenant, onClick }: TenantCardProps) {
         )}
       </div>
 
-      {/* Color indicator */}
-      {tenant.primary_color && (
-        <div className="mt-4 flex items-center gap-2">
-          <div
-            className="h-4 w-4 rounded-full border border-[var(--color-border)]"
-            style={{ backgroundColor: tenant.primary_color }}
-          />
-          <span className="text-xs text-[var(--color-text-muted)]">
-            {tenant.primary_color}
-          </span>
-        </div>
-      )}
+      {/* Footer: users count and color */}
+      <div className="mt-4 flex items-center justify-between">
+        {tenant.users_count !== undefined && (
+          <div className="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
+            <Users className="h-3.5 w-3.5" />
+            <span>{tenant.users_count} {tenant.users_count === 1 ? "пользователь" : "пользователей"}</span>
+          </div>
+        )}
+        {tenant.primary_color && (
+          <div className="flex items-center gap-2">
+            <div
+              className="h-4 w-4 rounded-full border border-[var(--color-border)]"
+              style={{ backgroundColor: tenant.primary_color }}
+            />
+            <span className="text-xs text-[var(--color-text-muted)]">
+              {tenant.primary_color}
+            </span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

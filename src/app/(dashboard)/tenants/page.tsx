@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Building2 } from "lucide-react";
+import { Plus, Building2, Search, ArrowUpDown } from "lucide-react";
 import { useTenantsList, TenantCard } from "@/features/tenants";
-import { Button, Pagination, Select, FilterBar, Spinner } from "@/shared/ui";
+import { Button, Pagination, Select, FilterBar, Spinner, Input } from "@/shared/ui";
 import { ROUTES } from "@/shared/config";
 import type { TenantListParams } from "@/entities/tenant";
 
@@ -13,7 +13,11 @@ export default function TenantsPage() {
   const [filters, setFilters] = useState<TenantListParams>({
     page: 1,
     pageSize: 12,
+    sort_by: "created_at",
+    sort_order: "desc",
   });
+  const [searchInput, setSearchInput] = useState("");
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { data, isLoading } = useTenantsList(filters);
 
@@ -25,8 +29,24 @@ export default function TenantsPage() {
     }));
   };
 
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchInput(value);
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = setTimeout(() => {
+      handleFiltersChange({ search: value || undefined });
+    }, 300);
+  };
+
   const handleResetFilters = () => {
-    setFilters({ page: 1, pageSize: 12 });
+    setFilters({ page: 1, pageSize: 12, sort_by: "created_at", sort_order: "desc" });
+    setSearchInput("");
+  };
+
+  const toggleSortOrder = () => {
+    handleFiltersChange({
+      sort_order: filters.sort_order === "asc" ? "desc" : "asc",
+    });
   };
 
   return (
@@ -49,12 +69,19 @@ export default function TenantsPage() {
 
       {/* Filters */}
       <FilterBar onReset={handleResetFilters}>
+        <Input
+          placeholder="Поиск по названию..."
+          value={searchInput}
+          onChange={handleSearchChange}
+          leftIcon={<Search className="h-4 w-4" />}
+          className="w-64"
+        />
         <Select
           label="Статус"
           value={filters.is_active === undefined ? "" : String(filters.is_active)}
-          onChange={(e) => 
-            handleFiltersChange({ 
-              is_active: e.target.value === "" ? undefined : e.target.value === "true" 
+          onChange={(e) =>
+            handleFiltersChange({
+              is_active: e.target.value === "" ? undefined : e.target.value === "true",
             })
           }
           options={[
@@ -64,6 +91,30 @@ export default function TenantsPage() {
           ]}
           className="w-48"
         />
+        <Select
+          label="Сортировка"
+          value={filters.sort_by || "created_at"}
+          onChange={(e) =>
+            handleFiltersChange({
+              sort_by: e.target.value as "name" | "created_at",
+            })
+          }
+          options={[
+            { value: "created_at", label: "По дате создания" },
+            { value: "name", label: "По названию" },
+          ]}
+          className="w-52"
+        />
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={toggleSortOrder}
+          className="mt-6 shrink-0"
+          title={filters.sort_order === "asc" ? "По возрастанию" : "По убыванию"}
+        >
+          <ArrowUpDown className="h-4 w-4" />
+          {filters.sort_order === "asc" ? "А→Я" : "Я→А"}
+        </Button>
       </FilterBar>
 
       {/* Content */}
@@ -78,12 +129,16 @@ export default function TenantsPage() {
             Проекты не найдены
           </h3>
           <p className="mb-4 text-[var(--color-text-muted)]">
-            Создайте первый проект для начала работы
+            {searchInput
+              ? "Попробуйте изменить параметры поиска"
+              : "Создайте первый проект для начала работы"}
           </p>
-          <Button onClick={() => router.push(ROUTES.TENANT_NEW)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Создать проект
-          </Button>
+          {!searchInput && (
+            <Button onClick={() => router.push(ROUTES.TENANT_NEW)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Создать проект
+            </Button>
+          )}
         </div>
       ) : (
         <>

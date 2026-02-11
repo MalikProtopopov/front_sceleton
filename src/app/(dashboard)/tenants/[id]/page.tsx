@@ -1,12 +1,26 @@
 "use client";
 
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Building2, Globe, Mail, Phone, Calendar, Pencil, Trash2, ToggleLeft } from "lucide-react";
 import { useTenantDetail, useDeleteTenant } from "@/features/tenants";
-import { Button, Badge, Spinner, Card, CardHeader, CardTitle, CardContent, ConfirmModal } from "@/shared/ui";
+import { TenantUsersTab } from "@/features/tenants/ui/TenantUsersTab";
+import {
+  Button,
+  Badge,
+  Spinner,
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  ConfirmModal,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from "@/shared/ui";
 import { ROUTES } from "@/shared/config";
 import { formatDateTime } from "@/shared/lib";
-import { useState } from "react";
 
 export default function TenantDetailPage() {
   const params = useParams<{ id: string }>();
@@ -17,6 +31,7 @@ export default function TenantDetailPage() {
   const { mutate: deleteTenant, isPending: isDeleting } = useDeleteTenant();
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("details");
 
   const handleDelete = () => {
     deleteTenant(tenantId, {
@@ -107,138 +122,151 @@ export default function TenantDetailPage() {
         </div>
       </div>
 
-      {/* Info Cards */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* General Info */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Общая информация</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {tenant.domain && (
-              <div className="flex items-center gap-3">
-                <Globe className="h-5 w-5 text-[var(--color-text-muted)]" />
-                <div>
-                  <p className="text-sm text-[var(--color-text-muted)]">Домен</p>
-                  <p className="font-medium text-[var(--color-text-primary)]">
-                    {tenant.domain}
-                  </p>
-                </div>
-              </div>
-            )}
-            {tenant.contact_email && (
-              <div className="flex items-center gap-3">
-                <Mail className="h-5 w-5 text-[var(--color-text-muted)]" />
-                <div>
-                  <p className="text-sm text-[var(--color-text-muted)]">Email</p>
-                  <p className="font-medium text-[var(--color-text-primary)]">
-                    {tenant.contact_email}
-                  </p>
-                </div>
-              </div>
-            )}
-            {tenant.contact_phone && (
-              <div className="flex items-center gap-3">
-                <Phone className="h-5 w-5 text-[var(--color-text-muted)]" />
-                <div>
-                  <p className="text-sm text-[var(--color-text-muted)]">Телефон</p>
-                  <p className="font-medium text-[var(--color-text-primary)]">
-                    {tenant.contact_phone}
-                  </p>
-                </div>
-              </div>
-            )}
-            {tenant.primary_color && (
-              <div className="flex items-center gap-3">
-                <div
-                  className="h-5 w-5 rounded-full border border-[var(--color-border)]"
-                  style={{ backgroundColor: tenant.primary_color }}
-                />
-                <div>
-                  <p className="text-sm text-[var(--color-text-muted)]">Основной цвет</p>
-                  <p className="font-medium text-[var(--color-text-primary)]">
-                    {tenant.primary_color}
-                  </p>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="details">Информация</TabsTrigger>
+          <TabsTrigger value="users">Пользователи</TabsTrigger>
+        </TabsList>
 
-        {/* Settings Info */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Настройки</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {tenant.settings && (
-              <>
-                <div className="flex items-center justify-between">
-                  <span className="text-[var(--color-text-muted)]">Язык по умолчанию</span>
-                  <span className="font-medium text-[var(--color-text-primary)]">
-                    {tenant.settings.default_locale}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[var(--color-text-muted)]">Часовой пояс</span>
-                  <span className="font-medium text-[var(--color-text-primary)]">
-                    {tenant.settings.timezone}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[var(--color-text-muted)]">Формат даты</span>
-                  <span className="font-medium text-[var(--color-text-primary)]">
-                    {tenant.settings.date_format}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[var(--color-text-muted)]">Уведомления о заявках</span>
-                  <Badge variant={tenant.settings.notify_on_inquiry ? "success" : "secondary"}>
-                    {tenant.settings.notify_on_inquiry ? "Включены" : "Выключены"}
-                  </Badge>
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
+        <TabsContent value="details">
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* General Info */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Общая информация</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {tenant.domain && (
+                  <div className="flex items-center gap-3">
+                    <Globe className="h-5 w-5 text-[var(--color-text-muted)]" />
+                    <div>
+                      <p className="text-sm text-[var(--color-text-muted)]">Домен</p>
+                      <p className="font-medium text-[var(--color-text-primary)]">
+                        {tenant.domain}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {tenant.contact_email && (
+                  <div className="flex items-center gap-3">
+                    <Mail className="h-5 w-5 text-[var(--color-text-muted)]" />
+                    <div>
+                      <p className="text-sm text-[var(--color-text-muted)]">Email</p>
+                      <p className="font-medium text-[var(--color-text-primary)]">
+                        {tenant.contact_email}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {tenant.contact_phone && (
+                  <div className="flex items-center gap-3">
+                    <Phone className="h-5 w-5 text-[var(--color-text-muted)]" />
+                    <div>
+                      <p className="text-sm text-[var(--color-text-muted)]">Телефон</p>
+                      <p className="font-medium text-[var(--color-text-primary)]">
+                        {tenant.contact_phone}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {tenant.primary_color && (
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="h-5 w-5 rounded-full border border-[var(--color-border)]"
+                      style={{ backgroundColor: tenant.primary_color }}
+                    />
+                    <div>
+                      <p className="text-sm text-[var(--color-text-muted)]">Основной цвет</p>
+                      <p className="font-medium text-[var(--color-text-primary)]">
+                        {tenant.primary_color}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
-        {/* Metadata */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Метаданные</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="flex items-center gap-3">
-                <Calendar className="h-5 w-5 text-[var(--color-text-muted)]" />
-                <div>
-                  <p className="text-sm text-[var(--color-text-muted)]">Создан</p>
-                  <p className="font-medium text-[var(--color-text-primary)]">
-                    {formatDateTime(tenant.created_at)}
-                  </p>
+            {/* Settings Info */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Настройки</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {tenant.settings && (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[var(--color-text-muted)]">Язык по умолчанию</span>
+                      <span className="font-medium text-[var(--color-text-primary)]">
+                        {tenant.settings.default_locale}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[var(--color-text-muted)]">Часовой пояс</span>
+                      <span className="font-medium text-[var(--color-text-primary)]">
+                        {tenant.settings.timezone}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[var(--color-text-muted)]">Формат даты</span>
+                      <span className="font-medium text-[var(--color-text-primary)]">
+                        {tenant.settings.date_format}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[var(--color-text-muted)]">Уведомления о заявках</span>
+                      <Badge variant={tenant.settings.notify_on_inquiry ? "success" : "secondary"}>
+                        {tenant.settings.notify_on_inquiry ? "Включены" : "Выключены"}
+                      </Badge>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Metadata */}
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Метаданные</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="flex items-center gap-3">
+                    <Calendar className="h-5 w-5 text-[var(--color-text-muted)]" />
+                    <div>
+                      <p className="text-sm text-[var(--color-text-muted)]">Создан</p>
+                      <p className="font-medium text-[var(--color-text-primary)]">
+                        {formatDateTime(tenant.created_at)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Calendar className="h-5 w-5 text-[var(--color-text-muted)]" />
+                    <div>
+                      <p className="text-sm text-[var(--color-text-muted)]">Обновлен</p>
+                      <p className="font-medium text-[var(--color-text-primary)]">
+                        {formatDateTime(tenant.updated_at)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div>
+                      <p className="text-sm text-[var(--color-text-muted)]">Версия</p>
+                      <p className="font-medium text-[var(--color-text-primary)]">
+                        {tenant.version}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <Calendar className="h-5 w-5 text-[var(--color-text-muted)]" />
-                <div>
-                  <p className="text-sm text-[var(--color-text-muted)]">Обновлен</p>
-                  <p className="font-medium text-[var(--color-text-primary)]">
-                    {formatDateTime(tenant.updated_at)}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div>
-                  <p className="text-sm text-[var(--color-text-muted)]">Версия</p>
-                  <p className="font-medium text-[var(--color-text-primary)]">
-                    {tenant.version}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="users">
+          <TenantUsersTab tenantId={tenantId} tenantName={tenant.name} />
+        </TabsContent>
+      </Tabs>
 
       {/* Delete Modal */}
       <ConfirmModal

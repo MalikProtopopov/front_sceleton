@@ -1,0 +1,1 @@
+export { TenantInactivePage } from "./TenantInactivePage";

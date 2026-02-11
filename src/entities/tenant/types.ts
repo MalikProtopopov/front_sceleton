@@ -39,6 +39,7 @@ export interface Tenant {
   logo_url: string | null;
   primary_color: string | null;
   extra_data: Record<string, unknown> | null;
+  users_count?: number;
   version: number;
   created_at: string;
   updated_at: string;
@@ -111,6 +112,9 @@ export interface TenantListParams {
   page?: number;
   pageSize?: number;
   is_active?: boolean;
+  search?: string;
+  sort_by?: "name" | "created_at";
+  sort_order?: "asc" | "desc";
 }
 
 // Response types

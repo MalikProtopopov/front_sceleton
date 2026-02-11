@@ -15,3 +15,5 @@ export {
 
 // UI
 export { TenantCard } from "./ui/TenantCard";
+export { TenantForm } from "./ui/TenantForm";
+export { TenantUsersTab } from "./ui/TenantUsersTab";

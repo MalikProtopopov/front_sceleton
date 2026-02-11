@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { rolesApi, rolesKeys } from "../api/rolesApi";
 import { ROUTES } from "@/shared/config";
+import { getErrorMessage } from "@/shared/lib/versionConflict";
 import type { CreateRoleDto, UpdateRoleDto } from "@/entities/user";
 
 export function useRolesList() {
@@ -42,7 +43,7 @@ export function useCreateRole() {
       router.push(ROUTES.ROLE_EDIT(role.id));
     },
     onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось создать роль";
+      const message = getErrorMessage(error, "Не удалось создать роль");
       toast.error(message);
     },
   });
@@ -59,7 +60,7 @@ export function useUpdateRole(id: string) {
       toast.success("Роль обновлена");
     },
     onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось обновить роль";
+      const message = getErrorMessage(error, "Не удалось обновить роль");
       toast.error(message);
     },
   });
@@ -77,7 +78,7 @@ export function useDeleteRole() {
       router.push(ROUTES.USERS);
     },
     onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось удалить роль";
+      const message = getErrorMessage(error, "Не удалось удалить роль");
       toast.error(message);
     },
   });

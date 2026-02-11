@@ -31,8 +31,15 @@ export function useLogin() {
     onSuccess: (response) => {
       setTokens(response.tokens);
       queryClient.setQueryData(authKeys.me(), response.user);
-      toast.success("Вы успешно вошли в систему");
-      router.push(ROUTES.ARTICLES);
+
+      // Check if user must change their password on first login
+      if (response.user.force_password_change) {
+        toast.warning("Необходимо сменить пароль перед началом работы");
+        router.push(ROUTES.SETTINGS);
+      } else {
+        toast.success("Вы успешно вошли в систему");
+        router.push(ROUTES.ARTICLES);
+      }
     },
     onError: (error: unknown) => {
       // Extract error message from various error formats

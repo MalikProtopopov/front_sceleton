@@ -25,3 +25,5 @@ export * from "./FilterBar";
 export * from "./LocaleManager";
 export * from "./ContactsManager";
 export * from "./ContentBlocksManager";
+export * from "./TenantInactivePage";
+export * from "./FeatureDisabledNotice";

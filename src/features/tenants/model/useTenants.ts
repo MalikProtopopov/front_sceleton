@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { tenantsApi, tenantsKeys } from "../api/tenantsApi";
+import { getErrorMessage, handleVersionConflict } from "@/shared/lib/versionConflict";
 import type {
   TenantListParams,
   CreateTenantDto,
@@ -37,7 +38,7 @@ export function useCreateTenant() {
       toast.success("Проект создан");
     },
     onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось создать проект";
+      const message = getErrorMessage(error, "Не удалось создать проект");
       toast.error(message);
     },
   });
@@ -55,7 +56,10 @@ export function useUpdateTenant(tenantId: string) {
       toast.success("Проект обновлен");
     },
     onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось обновить проект";
+      if (handleVersionConflict(error, queryClient, tenantsKeys.detail(tenantId))) {
+        return;
+      }
+      const message = getErrorMessage(error, "Не удалось обновить проект");
       toast.error(message);
     },
   });
@@ -72,7 +76,7 @@ export function useDeleteTenant() {
       toast.success("Проект удален");
     },
     onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось удалить проект";
+      const message = getErrorMessage(error, "Не удалось удалить проект");
       toast.error(message);
     },
   });

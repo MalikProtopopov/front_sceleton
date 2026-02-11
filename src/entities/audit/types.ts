@@ -31,6 +31,7 @@ export interface AuditFilterParams {
 }
 
 export const AUDIT_RESOURCE_TYPES = [
+  { value: "auth", label: "Авторизация" },
   { value: "article", label: "Статьи" },
   { value: "case", label: "Кейсы" },
   { value: "employee", label: "Сотрудники" },
@@ -42,7 +43,8 @@ export const AUDIT_RESOURCE_TYPES = [
   { value: "redirect", label: "Редиректы" },
   { value: "user", label: "Пользователи" },
   { value: "role", label: "Роли" },
-  { value: "tenant", label: "Тенант" },
+  { value: "tenant", label: "Организации" },
+  { value: "feature_flag", label: "Модули" },
 ];
 
 export const AUDIT_ACTIONS = [
