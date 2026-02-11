@@ -5,6 +5,8 @@ import type {
   LoginResponse,
   UserWithPermissions,
   ChangePasswordRequest,
+  ForgotPasswordRequest,
+  ResetPasswordRequest,
   User,
 } from "@/entities/user";
 import type { PaginatedResponse, ListParams } from "@/shared/types";
@@ -22,6 +24,12 @@ export const authApi = {
 
   changePassword: (data: ChangePasswordRequest) =>
     apiClient.post<void>(API_ENDPOINTS.AUTH.CHANGE_PASSWORD, data),
+
+  forgotPassword: (data: ForgotPasswordRequest) =>
+    apiClient.post<void>(API_ENDPOINTS.AUTH.FORGOT_PASSWORD, data),
+
+  resetPassword: (data: ResetPasswordRequest) =>
+    apiClient.post<void>(API_ENDPOINTS.AUTH.RESET_PASSWORD, data),
 
   // User management
   getUsers: (params?: ListParams) =>

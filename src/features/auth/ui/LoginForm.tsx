@@ -3,8 +3,10 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import Link from "next/link";
 import { AlertCircle } from "lucide-react";
 import { Button, Input } from "@/shared/ui";
+import { ROUTES } from "@/shared/config";
 import { useLogin } from "../model/useAuth";
 
 const loginSchema = z.object({
@@ -93,6 +95,15 @@ export function LoginForm() {
         error={errors.password?.message}
         {...register("password")}
       />
+
+      <div className="flex items-center justify-between">
+        <Link
+          href={ROUTES.FORGOT_PASSWORD}
+          className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors"
+        >
+          Забыли пароль?
+        </Link>
+      </div>
 
       <Button type="submit" className="w-full" isLoading={isPending}>
         Войти

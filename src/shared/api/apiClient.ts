@@ -84,6 +84,8 @@ class ApiClient {
           const errorCode = data?.error_code;
 
           if (errorCode === "tenant_inactive") {
+            // Clear tokens — they won't work while tenant is suspended
+            clearTokens();
             useGlobalErrors.getState().setTenantInactive();
             return Promise.reject(error);
           }
@@ -112,8 +114,23 @@ class ApiClient {
 
         // Handle 429 rate limit
         if (error.response?.status === 429) {
-          toast.error("Слишком много запросов. Подождите немного и попробуйте снова.");
+          const retryAfter = error.response.headers?.["retry-after"];
+          const seconds = retryAfter ? parseInt(retryAfter, 10) : null;
+          const message = seconds && !isNaN(seconds)
+            ? `Слишком много запросов. Повторите через ${seconds} сек.`
+            : "Слишком много запросов. Подождите немного и попробуйте снова.";
+          toast.error(message);
           return Promise.reject(error);
+        }
+
+        // Handle 404 feature_not_available (public API returns 404 for disabled features)
+        if (error.response?.status === 404) {
+          const errorCode = error.response.data?.error_code;
+          if (errorCode === "feature_not_available") {
+            const featureName = error.response.data?.feature || "unknown";
+            useGlobalErrors.getState().setFeatureDisabled(featureName);
+            return Promise.reject(error);
+          }
         }
 
         // Skip refresh token flow for login endpoint (401 is expected for wrong credentials)

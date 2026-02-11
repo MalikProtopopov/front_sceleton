@@ -17,6 +17,8 @@ export const API_ENDPOINTS = {
     ME: "/auth/me",
     ME_FEATURES: "/auth/me/features",
     CHANGE_PASSWORD: "/auth/me/password",
+    FORGOT_PASSWORD: "/auth/forgot-password",
+    RESET_PASSWORD: "/auth/reset-password",
     ME_AVATAR: "/auth/me/avatar",
     USERS: "/auth/users",
     USER_BY_ID: (id: string) => `/auth/users/${id}`,

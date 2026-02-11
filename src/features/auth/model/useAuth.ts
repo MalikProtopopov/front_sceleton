@@ -9,7 +9,7 @@ import {
   setTokens,
   clearTokens,
 } from "../lib/tokenStorage";
-import type { LoginRequest } from "@/entities/user";
+import type { LoginRequest, ForgotPasswordRequest, ResetPasswordRequest } from "@/entities/user";
 import { ROUTES } from "@/shared/config";
 
 export function useCurrentUser() {
@@ -97,6 +97,42 @@ export function useChangePassword() {
     onError: (error) => {
       const message =
         error instanceof Error ? error.message : "Не удалось изменить пароль";
+      toast.error(message);
+    },
+  });
+}
+
+export function useForgotPassword() {
+  return useMutation({
+    mutationFn: (data: ForgotPasswordRequest) => authApi.forgotPassword(data),
+    onSuccess: () => {
+      // Always show success to prevent email enumeration
+      toast.success("Если указанный email зарегистрирован, вы получите письмо с инструкциями по сбросу пароля.");
+    },
+    onError: () => {
+      // Still show "success" to prevent email enumeration (backend returns 204 anyway)
+      toast.success("Если указанный email зарегистрирован, вы получите письмо с инструкциями по сбросу пароля.");
+    },
+  });
+}
+
+export function useResetPassword() {
+  const router = useRouter();
+
+  return useMutation({
+    mutationFn: (data: ResetPasswordRequest) => authApi.resetPassword(data),
+    onSuccess: () => {
+      toast.success("Пароль успешно изменён. Войдите с новым паролем.");
+      router.push(ROUTES.LOGIN);
+    },
+    onError: (error: unknown) => {
+      let message = "Не удалось сбросить пароль. Ссылка могла устареть.";
+      if (error && typeof error === "object") {
+        const axiosError = error as { response?: { data?: { detail?: string } } };
+        if (axiosError.response?.data?.detail) {
+          message = axiosError.response.data.detail;
+        }
+      }
       toast.error(message);
     },
   });

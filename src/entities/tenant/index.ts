@@ -4,6 +4,8 @@ export type {
   SitemapStaticPage,
   FeatureFlag,
   FeatureFlagsResponse,
+  FeatureCatalogItem,
+  FeatureCatalogResponse,
   UpdateTenantDto,
   UpdateTenantSettingsDto,
   UpdateFeatureFlagDto,

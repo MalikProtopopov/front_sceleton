@@ -7,6 +7,7 @@ import type {
   CreateTenantDto,
   UpdateTenantDto,
   EnabledFeaturesResponse,
+  FeatureCatalogResponse,
 } from "@/entities/tenant";
 
 export const tenantsApi = {
@@ -38,9 +39,25 @@ export const tenantsApi = {
   deleteLogo: (tenantId: string) =>
     apiClient.delete(API_ENDPOINTS.TENANTS.LOGO(tenantId)),
 
-  // Get enabled features for current user (for sidebar filtering)
-  getEnabledFeatures: () =>
-    apiClient.get<EnabledFeaturesResponse>(API_ENDPOINTS.AUTH.ME_FEATURES),
+  // Get feature catalog for current user (for sidebar filtering)
+  // Accepts V2 response with full feature objects, maps to backward-compatible format
+  getEnabledFeatures: async (): Promise<EnabledFeaturesResponse> => {
+    const data = await apiClient.get<FeatureCatalogResponse | EnabledFeaturesResponse>(
+      API_ENDPOINTS.AUTH.ME_FEATURES,
+      { params: { locale: "ru" } },
+    );
+    // V2 response contains "features" array
+    if ("features" in data && Array.isArray(data.features)) {
+      const catalog = data as FeatureCatalogResponse;
+      return {
+        enabled_features: catalog.features.filter((f) => f.enabled).map((f) => f.name),
+        all_features_enabled: catalog.all_features_enabled,
+        features: catalog.features,
+      };
+    }
+    // Backward-compatible V1 response
+    return data as EnabledFeaturesResponse;
+  },
 };
 
 // Query keys factory

@@ -8,6 +8,8 @@ export type {
   LoginResponse,
   UserWithPermissions,
   ChangePasswordRequest,
+  ForgotPasswordRequest,
+  ResetPasswordRequest,
   CreateUserDto,
   UpdateUserDto,
   CreateRoleDto,

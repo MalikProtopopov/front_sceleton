@@ -125,9 +125,29 @@ export interface TenantsListResponse {
   page_size: number;
 }
 
+/** Feature item from /auth/me/features?locale=ru */
+export interface FeatureCatalogItem {
+  name: string;
+  title: string;
+  description: string;
+  category: string;
+  enabled: boolean;
+  can_request: boolean;
+}
+
+/** V2 response from /auth/me/features */
+export interface FeatureCatalogResponse {
+  features: FeatureCatalogItem[];
+  all_features_enabled: boolean;
+  tenant_id: string;
+}
+
+/** Backward-compatible helper derived from the catalog */
 export interface EnabledFeaturesResponse {
   enabled_features: string[];
   all_features_enabled: boolean;
+  /** Full catalog items for sidebar "available on request" badges */
+  features?: FeatureCatalogItem[];
 }
 
 // Constants

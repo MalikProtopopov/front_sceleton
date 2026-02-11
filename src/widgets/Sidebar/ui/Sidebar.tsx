@@ -27,6 +27,7 @@ import { cn } from "@/shared/lib";
 import { ROUTES } from "@/shared/config";
 import { useAuth } from "@/features/auth";
 import { useEnabledFeatures } from "@/features/tenants";
+import type { FeatureCatalogItem } from "@/entities/tenant";
 import { NavItem } from "./NavItem";
 import { NavGroup } from "./NavGroup";
 
@@ -125,44 +126,61 @@ export function Sidebar() {
   // Get enabled features
   const enabledFeatures = featuresData?.enabled_features ?? [];
   const allFeaturesEnabled = featuresData?.all_features_enabled ?? false;
+  const featuresCatalog: FeatureCatalogItem[] = featuresData?.features ?? [];
 
-  // Filter function for nav items based on feature flags
-  const isFeatureEnabled = (feature?: string): boolean => {
-    // If no feature required, always show
-    if (!feature) return true;
-    // Superusers see everything
-    if (isSuperuser || allFeaturesEnabled) return true;
-    // Check if feature is in enabled list
-    return enabledFeatures.includes(feature);
+  // Build a map from feature name to catalog item
+  const catalogMap = useMemo(() => {
+    const map = new Map<string, FeatureCatalogItem>();
+    featuresCatalog.forEach((f) => map.set(f.name, f));
+    return map;
+  }, [featuresCatalog]);
+
+  // Determine feature visibility: "show" | "disabled" (can_request) | "hidden"
+  type FeatureVisibility = "show" | "disabled" | "hidden";
+  const getFeatureVisibility = (feature?: string): FeatureVisibility => {
+    if (!feature) return "show";
+    if (isSuperuser || allFeaturesEnabled) return "show";
+    if (enabledFeatures.includes(feature)) return "show";
+    // Check catalog for can_request
+    const catalogItem = catalogMap.get(feature);
+    if (catalogItem && !catalogItem.enabled && catalogItem.can_request) return "disabled";
+    return "hidden";
   };
 
-  // Filter navigation based on feature flags
+  // Filter navigation based on feature flags — include "disabled" items grayed out
   const filteredNavigation = useMemo(() => {
     return navigation.map((section) => ({
       ...section,
       items: section.items
         .filter((item) => {
           if (isNavGroup(item)) {
-            // Filter group items and only show group if it has visible items
-            const visibleItems = item.items.filter((subItem) => 
-              isFeatureEnabled(subItem.feature)
+            const vis = getFeatureVisibility(item.feature);
+            if (vis === "hidden") return false;
+            const visibleItems = item.items.filter((subItem) =>
+              getFeatureVisibility(subItem.feature) !== "hidden"
             );
-            return visibleItems.length > 0 && isFeatureEnabled(item.feature);
+            return visibleItems.length > 0;
           }
-          return isFeatureEnabled(item.feature);
+          return getFeatureVisibility(item.feature) !== "hidden";
         })
         .map((item) => {
           if (isNavGroup(item)) {
-            // Return group with filtered items
             return {
               ...item,
-              items: item.items.filter((subItem) => isFeatureEnabled(subItem.feature)),
+              items: item.items.filter((subItem) =>
+                getFeatureVisibility(subItem.feature) !== "hidden"
+              ),
+              _disabled: getFeatureVisibility(item.feature) === "disabled",
             };
           }
-          return item;
+          return {
+            ...item,
+            _disabled: getFeatureVisibility(item.feature) === "disabled",
+          };
         }),
-    })).filter((section) => section.items.length > 0); // Remove empty sections
-  }, [enabledFeatures, allFeaturesEnabled, isSuperuser]);
+    })).filter((section) => section.items.length > 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabledFeatures, allFeaturesEnabled, isSuperuser, catalogMap]);
 
   // Build navigation with conditional platform section
   const fullNavigation = isSuperuser 
@@ -203,6 +221,7 @@ export function Sidebar() {
             )}
             <div className="space-y-1">
               {section.items.map((item, index) => {
+                const isDisabled = "_disabled" in item && item._disabled;
                 if (isNavGroup(item)) {
                   return (
                     <NavGroup
@@ -221,6 +240,8 @@ export function Sidebar() {
                     icon={item.icon}
                     label={item.label}
                     collapsed={collapsed}
+                    disabled={!!isDisabled}
+                    badge={isDisabled ? "По запросу" : undefined}
                   />
                 );
               })}
