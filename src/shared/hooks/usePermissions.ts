@@ -85,6 +85,12 @@ export const PERMISSIONS = {
   EMPLOYEES_UPDATE: "employees:update",
   EMPLOYEES_DELETE: "employees:delete",
 
+  // Cases
+  CASES_CREATE: "cases:create",
+  CASES_READ: "cases:read",
+  CASES_UPDATE: "cases:update",
+  CASES_DELETE: "cases:delete",
+
   // Reviews
   REVIEWS_CREATE: "reviews:create",
   REVIEWS_READ: "reviews:read",
@@ -107,14 +113,29 @@ export const PERMISSIONS = {
   SEO_READ: "seo:read",
   SEO_UPDATE: "seo:update",
 
+  // Settings
+  SETTINGS_READ: "settings:read",
+  SETTINGS_UPDATE: "settings:update",
+
   // Users
   USERS_CREATE: "users:create",
   USERS_READ: "users:read",
   USERS_UPDATE: "users:update",
   USERS_DELETE: "users:delete",
 
-  // Roles (admin only)
+  // Roles
   ROLES_READ: "roles:read",
   ROLES_UPDATE: "roles:update",
+
+  // Platform (platform_owner only)
+  PLATFORM_READ: "platform:read",
+  PLATFORM_UPDATE: "platform:update",
+
+  // Feature flags (platform_owner only)
+  FEATURES_READ: "features:read",
+  FEATURES_UPDATE: "features:update",
+
+  // Audit
+  AUDIT_READ: "audit:read",
 } as const;
 

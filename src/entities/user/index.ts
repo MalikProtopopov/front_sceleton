@@ -16,3 +16,8 @@ export type {
 } from "./types";
 
 export { getRoleLabel } from "./roleLabels";
+export {
+  RESOURCE_LABELS,
+  ACTION_LABELS,
+  getPermissionLabel,
+} from "./permissionLabels";

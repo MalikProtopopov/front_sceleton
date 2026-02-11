@@ -12,7 +12,7 @@ import {
 } from "@/features/users";
 import { Button, Spinner, Badge, ConfirmModal } from "@/shared/ui";
 import { formatDateTime } from "@/shared/lib";
-import { getRoleLabel } from "@/entities/user";
+import { getRoleLabel, getPermissionLabel } from "@/entities/user";
 import type { CreateRoleDto, UpdateRoleDto } from "@/entities/user";
 
 export default function EditRolePage({ params }: { params: Promise<{ id: string }> }) {
@@ -68,7 +68,7 @@ export default function EditRolePage({ params }: { params: Promise<{ id: string 
           <div className="flex flex-wrap gap-2">
             {role.permissions.map((permission) => (
               <Badge key={permission.id} variant="secondary">
-                {permission.name || permission.code}
+                {getPermissionLabel(permission.code)}
               </Badge>
             ))}
           </div>

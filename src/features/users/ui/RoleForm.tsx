@@ -12,6 +12,7 @@ import {
   CardTitle,
   CardContent,
 } from "@/shared/ui";
+import { RESOURCE_LABELS, ACTION_LABELS } from "@/entities/user";
 import type { Role, Permission, CreateRoleDto, UpdateRoleDto } from "@/entities/user";
 
 // Validation schema
@@ -41,32 +42,6 @@ function groupPermissions(permissions: Permission[]): Record<string, Permission[
     return acc;
   }, {} as Record<string, Permission[]>);
 }
-
-// Resource labels
-const RESOURCE_LABELS: Record<string, string> = {
-  articles: "Статьи",
-  cases: "Кейсы",
-  faq: "FAQ",
-  services: "Услуги",
-  employees: "Сотрудники",
-  reviews: "Отзывы",
-  inquiries: "Заявки",
-  media: "Медиатека",
-  seo: "SEO",
-  users: "Пользователи",
-  roles: "Роли",
-  settings: "Настройки",
-  other: "Прочее",
-};
-
-// Action labels
-const ACTION_LABELS: Record<string, string> = {
-  read: "Просмотр",
-  write: "Редактирование",
-  delete: "Удаление",
-  publish: "Публикация",
-  manage: "Управление",
-};
 
 export function RoleForm({ role, permissions, onSubmit, isSubmitting = false }: RoleFormProps) {
   const isEditing = !!role;
