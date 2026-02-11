@@ -201,6 +201,33 @@ function StatusTimeline({
   );
 }
 
+// All known option maps for value interpretation
+const ALL_VALUE_MAPS: Record<string, Record<string, string>> = {
+  market: MARKET_OPTIONS,
+  audienceSize: AUDIENCE_SIZE_OPTIONS,
+  aiRequired: AI_REQUIRED_OPTIONS,
+  budget: BUDGET_OPTIONS,
+  urgency: URGENCY_OPTIONS,
+  source: SOURCE_OPTIONS,
+};
+
+// Interpret a custom field value to a human-readable string
+function interpretFieldValue(key: string, value: unknown): string {
+  // Boolean fields
+  if (key === "consent") {
+    return value ? "Да" : "Нет";
+  }
+  // Array fields (e.g. appTypes)
+  if (key === "appTypes" && Array.isArray(value)) {
+    return value.map((v) => APP_TYPES_OPTIONS[v] || v).join(", ");
+  }
+  // Select fields with known maps
+  if (typeof value === "string" && ALL_VALUE_MAPS[key]) {
+    return ALL_VALUE_MAPS[key][value] || value;
+  }
+  return String(value);
+}
+
 // Build copyable text from lead data
 function buildLeadCopyText(lead: import("@/entities/inquiry").Inquiry): string {
   const lines: string[] = [];
@@ -277,6 +304,25 @@ function buildLeadCopyText(lead: import("@/entities/inquiry").Inquiry): string {
   lines.push(`Дата создания: ${formatDateTime(lead.created_at)}`);
   if (lead.contacted_at) lines.push(`Дата контакта: ${formatDateTime(lead.contacted_at)}`);
 
+  // Non-brief custom fields (for any form type, or extra fields not covered above)
+  if (lead.custom_fields) {
+    const briefKeys = new Set(["idea", "market", "audience", "audienceSize", "aiRequired", "appTypes", "integrations", "budget", "urgency", "telegram", "source", "consent"]);
+    const extraFields = Object.entries(lead.custom_fields).filter(([key, value]) => {
+      if (value === null || value === undefined || value === "") return false;
+      // For mvp-brief, these are already shown above
+      if (lead.form_slug === "mvp-brief" && briefKeys.has(key)) return false;
+      return true;
+    });
+    if (extraFields.length > 0) {
+      lines.push(""); // separator
+      lines.push("--- Дополнительные поля ---");
+      for (const [key, value] of extraFields) {
+        const label = BRIEF_FIELD_LABELS[key] || key;
+        lines.push(`${label}: ${interpretFieldValue(key, value)}`);
+      }
+    }
+  }
+
   // Notes
   if (lead.notes) {
     lines.push(""); // separator
@@ -284,6 +330,54 @@ function buildLeadCopyText(lead: import("@/entities/inquiry").Inquiry): string {
   }
 
   return lines.join("\n");
+}
+
+// Custom fields card with proper labels and interpreted values
+function CustomFieldsCard({ customFields, formSlug }: { customFields: Record<string, unknown>; formSlug: string | null }) {
+  // Fields that are already displayed in contact info or BriefDataCard for mvp-brief
+  const briefDisplayedInCard = new Set(["idea", "market", "audience", "audienceSize", "aiRequired", "appTypes", "integrations", "budget", "urgency", "telegram", "source", "consent"]);
+  
+  // For mvp-brief, check if BriefDataCard will render (it shows these fields)
+  const isMvpBrief = formSlug === "mvp-brief";
+  
+  // Filter entries: for mvp-brief, only show fields NOT covered by BriefDataCard
+  const entries = Object.entries(customFields).filter(([key, value]) => {
+    // Skip null/undefined/empty
+    if (value === null || value === undefined || value === "") return false;
+    // For mvp-brief, skip fields already shown in BriefDataCard
+    if (isMvpBrief && briefDisplayedInCard.has(key)) return false;
+    return true;
+  });
+
+  if (entries.length === 0) return null;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Hash className="h-5 w-5" />
+          Дополнительные поля
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {entries.map(([key, value]) => (
+            <div
+              key={key}
+              className="p-2.5 rounded-lg bg-[var(--color-bg-secondary)]"
+            >
+              <p className="text-xs text-[var(--color-text-muted)]">
+                {BRIEF_FIELD_LABELS[key] || key.replace(/_/g, " ")}
+              </p>
+              <p className="text-sm font-medium text-[var(--color-text-primary)] break-words">
+                {interpretFieldValue(key, value)}
+              </p>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
 
 // Brief data card for MVP Brief form type
@@ -870,33 +964,9 @@ export default function LeadDetailPage({
             </Card>
           )}
 
-          {/* Custom Fields */}
+          {/* Custom Fields - with interpreted labels/values for known fields */}
           {lead.custom_fields && Object.keys(lead.custom_fields).length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Hash className="h-5 w-5" />
-                  Дополнительные поля
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {Object.entries(lead.custom_fields).map(([key, value]) => (
-                    <div
-                      key={key}
-                      className="p-2.5 rounded-lg bg-[var(--color-bg-secondary)]"
-                    >
-                      <p className="text-xs text-[var(--color-text-muted)] capitalize">
-                        {key.replace(/_/g, " ")}
-                      </p>
-                      <p className="text-sm font-medium text-[var(--color-text-primary)]">
-                        {String(value)}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+            <CustomFieldsCard customFields={lead.custom_fields} formSlug={lead.form_slug} />
           )}
         </div>
 
