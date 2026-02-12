@@ -5,10 +5,18 @@ export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || 
   "/api/v1";
 
-// Tenant ID - needed ONLY for login endpoint
-export const TENANT_ID = process.env.NEXT_PUBLIC_TENANT_ID || "f8f8a58e-6e2b-4779-a5fc-75a104cc10e7";
+// NOTE: TENANT_ID is no longer static. It is resolved at runtime from the
+// domain via useTenantStore / TenantProvider. For local development set
+// NEXT_PUBLIC_TENANT_ID in .env (consumed by tenantResolver.ts).
 
 export const API_ENDPOINTS = {
+  // Public (no auth required)
+  PUBLIC: {
+    TENANT_BY_DOMAIN: (domain: string) => `/public/tenants/by-domain/${domain}`,
+    TENANT_BY_ID: (id: string) => `/public/tenants/${id}`,
+    TENANT_ANALYTICS: (id: string) => `/public/tenants/${id}/analytics`,
+  },
+
   // Auth
   AUTH: {
     LOGIN: "/auth/login",
@@ -16,6 +24,8 @@ export const API_ENDPOINTS = {
     REFRESH: "/auth/refresh",
     ME: "/auth/me",
     ME_FEATURES: "/auth/me/features",
+    ME_TENANTS: "/auth/me/tenants",
+    SWITCH_TENANT: "/auth/switch-tenant",
     CHANGE_PASSWORD: "/auth/me/password",
     FORGOT_PASSWORD: "/auth/forgot-password",
     RESET_PASSWORD: "/auth/reset-password",
@@ -131,6 +141,9 @@ export const API_ENDPOINTS = {
     BY_ID: (id: string) => `/tenants/${id}`,
     SETTINGS: (id: string) => `/tenants/${id}/settings`,
     LOGO: (id: string) => `/tenants/${id}/logo`,
+    DOMAINS: (id: string) => `/tenants/${id}/domains`,
+    DOMAIN_BY_ID: (tenantId: string, domainId: string) =>
+      `/tenants/${tenantId}/domains/${domainId}`,
   },
   
   // Feature Flags

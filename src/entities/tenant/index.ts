@@ -13,6 +13,12 @@ export type {
   TenantListParams,
   TenantsListResponse,
   EnabledFeaturesResponse,
+  TenantByDomainResponse,
+  TenantAccessInfo,
+  MyTenantsResponse,
+  SwitchTenantRequest,
+  TokenPair,
+  TenantDomainResponse,
 } from "./types";
 
 export {

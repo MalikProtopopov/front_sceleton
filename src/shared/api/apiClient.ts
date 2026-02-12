@@ -5,9 +5,10 @@ import axios, {
   type InternalAxiosRequestConfig,
 } from "axios";
 import { toast } from "sonner";
-import { API_BASE_URL, TENANT_ID } from "@/shared/config";
+import { API_BASE_URL } from "@/shared/config";
 import type { ApiError } from "@/shared/types";
 import { useGlobalErrors } from "@/shared/model/useGlobalErrors";
+import { useTenantStore } from "@/shared/model/useTenantStore";
 
 // Token storage functions - imported from auth feature
 let getAccessToken: () => string | null = () => null;
@@ -52,7 +53,7 @@ class ApiClient {
   }
 
   private setupInterceptors() {
-    // Request interceptor - add auth token
+    // Request interceptor - add auth token and tenant ID
     this.instance.interceptors.request.use(
       (config: InternalAxiosRequestConfig) => {
         const token = getAccessToken();
@@ -60,9 +61,10 @@ class ApiClient {
           config.headers.Authorization = `Bearer ${token}`;
         }
 
-        // Add tenant ID for login endpoint
-        if (config.url?.includes("/auth/login") && TENANT_ID) {
-          config.headers["X-Tenant-ID"] = TENANT_ID;
+        // Add X-Tenant-ID to every request (resolved from domain at startup)
+        const tenantId = useTenantStore.getState().tenantId;
+        if (tenantId) {
+          config.headers["X-Tenant-ID"] = tenantId;
         }
 
         return config;

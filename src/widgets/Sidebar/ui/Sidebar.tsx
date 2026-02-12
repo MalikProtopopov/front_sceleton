@@ -28,9 +28,11 @@ import { cn } from "@/shared/lib";
 import { ROUTES } from "@/shared/config";
 import { useAuth } from "@/features/auth";
 import { useEnabledFeatures } from "@/features/tenants";
+import { useTenantStore } from "@/shared/model/useTenantStore";
 import type { FeatureCatalogItem } from "@/entities/tenant";
 import { NavItem } from "./NavItem";
 import { NavGroup } from "./NavGroup";
+import { TenantSwitcher } from "./TenantSwitcher";
 
 interface NavItemData {
   href: string;
@@ -121,6 +123,7 @@ export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const { user } = useAuth();
   const { data: featuresData } = useEnabledFeatures();
+  const { name: tenantName, logoUrl } = useTenantStore();
 
   // Check if user is superuser (platform owner)
   const isSuperuser = user?.is_superuser || false;
@@ -203,14 +206,30 @@ export function Sidebar() {
           collapsed && "justify-center px-2",
         )}
       >
-        {collapsed ? (
-          <span className="text-xl font-bold text-[var(--color-accent-primary)]">M</span>
+        {logoUrl ? (
+          <img
+            src={logoUrl}
+            alt={tenantName || "Logo"}
+            className={cn(
+              "object-contain",
+              collapsed ? "h-7 w-7" : "h-8 max-w-[160px]",
+            )}
+          />
+        ) : collapsed ? (
+          <span className="text-xl font-bold text-[var(--color-accent-primary)]">
+            {tenantName ? tenantName.charAt(0).toUpperCase() : "M"}
+          </span>
         ) : (
           <span className="text-xl font-bold text-[var(--color-text-primary)]">
-            Media<span className="text-[var(--color-accent-primary)]">nn</span>
+            {tenantName || (
+              <>Media<span className="text-[var(--color-accent-primary)]">nn</span></>
+            )}
           </span>
         )}
       </div>
+
+      {/* Tenant Switcher (only visible when user belongs to multiple orgs) */}
+      <TenantSwitcher collapsed={collapsed} />
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto p-3">

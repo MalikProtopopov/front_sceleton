@@ -160,6 +160,58 @@ export interface EnabledFeaturesResponse {
   features?: FeatureCatalogItem[];
 }
 
+// --- Multi-domain tenant resolution types ---
+
+/** Response from GET /public/tenants/by-domain/{domain} */
+export interface TenantByDomainResponse {
+  tenant_id: string; // UUID
+  slug: string;
+  name: string;
+  logo_url: string | null;
+  primary_color: string | null; // "#RRGGBB"
+  site_url: string | null;
+}
+
+/** Item inside MyTenantsResponse.tenants[] */
+export interface TenantAccessInfo {
+  tenant_id: string;
+  name: string;
+  slug: string;
+  logo_url: string | null;
+  primary_color: string | null;
+  admin_domain: string | null; // primary domain, e.g. "admin.client1.com"
+}
+
+/** Response from GET /auth/me/tenants */
+export interface MyTenantsResponse {
+  current_tenant_id: string;
+  tenants: TenantAccessInfo[];
+}
+
+/** Request body for POST /auth/switch-tenant */
+export interface SwitchTenantRequest {
+  tenant_id: string;
+}
+
+/** Response from POST /auth/switch-tenant (same as login tokens) */
+export interface TokenPair {
+  access_token: string;
+  refresh_token: string;
+  token_type: "bearer";
+  expires_in: number;
+}
+
+/** Response from GET /tenants/{id}/domains */
+export interface TenantDomainResponse {
+  id: string;
+  tenant_id: string;
+  domain: string; // "admin.client1.com"
+  is_primary: boolean;
+  ssl_status: "pending" | "active" | "error";
+  created_at: string; // ISO 8601
+  updated_at: string;
+}
+
 // Constants
 export const AVAILABLE_LOCALES = [
   { code: "ru", name: "Русский" },

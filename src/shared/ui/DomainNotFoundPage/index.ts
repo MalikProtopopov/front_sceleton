@@ -1,0 +1,1 @@
+export { DomainNotFoundPage } from "./DomainNotFoundPage";

@@ -27,3 +27,5 @@ export * from "./ContactsManager";
 export * from "./ContentBlocksManager";
 export * from "./TenantInactivePage";
 export * from "./FeatureDisabledNotice";
+export * from "./DomainNotFoundPage";
+export * from "./NoAccessPage";

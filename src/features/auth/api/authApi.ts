@@ -9,6 +9,7 @@ import type {
   ResetPasswordRequest,
   User,
 } from "@/entities/user";
+import type { MyTenantsResponse, TokenPair } from "@/entities/tenant";
 import type { PaginatedResponse, ListParams } from "@/shared/types";
 
 export const authApi = {
@@ -31,6 +32,17 @@ export const authApi = {
   resetPassword: (data: ResetPasswordRequest) =>
     apiClient.post<void>(API_ENDPOINTS.AUTH.RESET_PASSWORD, data),
 
+  // Multi-tenant
+  /** List all organisations the current user belongs to (for tenant switcher) */
+  myTenants: () =>
+    apiClient.get<MyTenantsResponse>(API_ENDPOINTS.AUTH.ME_TENANTS),
+
+  /** Switch to another organisation — returns a fresh token pair */
+  switchTenant: (tenantId: string) =>
+    apiClient.post<TokenPair>(API_ENDPOINTS.AUTH.SWITCH_TENANT, {
+      tenant_id: tenantId,
+    }),
+
   // User management
   getUsers: (params?: ListParams) =>
     apiClient.get<PaginatedResponse<User>>(API_ENDPOINTS.AUTH.USERS, { params }),
@@ -52,6 +64,7 @@ export const authApi = {
 export const authKeys = {
   all: ["auth"] as const,
   me: () => [...authKeys.all, "me"] as const,
+  myTenants: () => [...authKeys.all, "myTenants"] as const,
   users: () => [...authKeys.all, "users"] as const,
   usersList: (params?: ListParams) => [...authKeys.users(), "list", params] as const,
   userDetail: (id: string) => [...authKeys.users(), "detail", id] as const,
