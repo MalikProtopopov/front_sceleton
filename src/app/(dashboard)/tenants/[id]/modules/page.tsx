@@ -127,6 +127,14 @@ export default function TenantModulesPage() {
             const Icon = featureIcons[featureName] || ToggleLeft;
             const isEnabled = enabledFeatures.get(featureName) ?? false;
             const label = featureLabels[featureName] || featureName;
+            const descriptionText =
+              typeof description === "string"
+                ? description
+                : description?.description_ru ||
+                  description?.description ||
+                  description?.title_ru ||
+                  description?.title ||
+                  "";
 
             return (
               <Card key={featureName} className="relative">
@@ -147,7 +155,7 @@ export default function TenantModulesPage() {
                           {label}
                         </h3>
                         <p className="mt-1 text-sm text-[var(--color-text-muted)] line-clamp-2">
-                          {description}
+                          {descriptionText}
                         </p>
                       </div>
                     </div>

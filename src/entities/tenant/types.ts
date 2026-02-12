@@ -59,7 +59,17 @@ export interface FeatureFlag {
 
 export interface FeatureFlagsResponse {
   items: FeatureFlag[];
-  available_features: Record<string, string>;
+  available_features: Record<
+    string,
+    | string
+    | {
+        title?: string;
+        title_ru?: string;
+        description?: string;
+        description_ru?: string;
+        category?: string;
+      }
+  >;
 }
 
 // Request DTOs
