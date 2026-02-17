@@ -19,6 +19,10 @@ export interface TenantSettings {
   default_og_image: string | null;
   ga_tracking_id: string | null;
   ym_counter_id: string | null;
+  // Webmaster verification fields
+  yandex_verification_code: string | null;
+  google_verification_code: string | null;
+  google_verification_meta: string | null;
   // SEO fields
   site_url: string | null;
   allowed_domains: string[] | null;
@@ -95,6 +99,10 @@ export interface UpdateTenantSettingsDto {
   default_og_image?: string | null;
   ga_tracking_id?: string | null;
   ym_counter_id?: string | null;
+  // Webmaster verification fields
+  yandex_verification_code?: string | null;
+  google_verification_code?: string | null;
+  google_verification_meta?: string | null;
   // SEO fields
   site_url?: string | null;
   allowed_domains?: string[] | null;
