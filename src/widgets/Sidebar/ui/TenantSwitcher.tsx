@@ -18,13 +18,13 @@ interface TenantSwitcherProps {
 export function TenantSwitcher({ collapsed = false }: TenantSwitcherProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const { tenantId: currentTenantId } = useTenantStore();
+  const { tenantId: currentTenantId, name: storeName, logoUrl: storeLogo, primaryColor: storeColor } = useTenantStore();
   const { data } = useMyTenants();
   const { mutate: switchInPlace, isPending } = useSwitchTenant();
 
   const tenants = data?.tenants ?? [];
+  const hasMultiple = tenants.length > 1;
 
-  // Close dropdown on outside click
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) {
@@ -37,10 +37,12 @@ export function TenantSwitcher({ collapsed = false }: TenantSwitcherProps) {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open]);
 
-  // Don't render if user only belongs to one (or zero) tenants
-  if (tenants.length <= 1) return null;
-
   const currentTenant = tenants.find((t) => t.tenant_id === currentTenantId);
+
+  // Fall back to tenant store values when API data hasn't loaded yet
+  const displayName = currentTenant?.name || storeName || "Организация";
+  const displayLogo = currentTenant?.logo_url || storeLogo;
+  const displayColor = currentTenant?.primary_color || storeColor || "var(--color-accent-primary)";
 
   function handleSwitch(tenant: TenantAccessInfo) {
     if (tenant.tenant_id === currentTenantId) {
@@ -48,66 +50,70 @@ export function TenantSwitcher({ collapsed = false }: TenantSwitcherProps) {
       return;
     }
 
-    // Variant A: redirect if tenant has its own admin domain
     if (tenant.admin_domain) {
       switchTenantByRedirect(tenant);
       return;
     }
 
-    // Variant B: in-place switch via API
     switchInPlace(tenant.tenant_id);
     setOpen(false);
   }
 
   return (
-    <div ref={ref} className="relative mx-3 mb-4">
-      {/* Toggle button */}
+    <div ref={ref} className="relative">
       <button
         type="button"
-        onClick={() => setOpen(!open)}
+        onClick={hasMultiple ? () => setOpen(!open) : undefined}
         disabled={isPending}
         className={cn(
-          "flex w-full items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-secondary)] px-3 py-2 text-left transition-colors hover:bg-[var(--color-bg-hover)]",
+          "flex w-full items-center gap-3 border-b border-[var(--color-border)] px-4 transition-colors",
+          "h-[var(--header-height)]",
           collapsed && "justify-center px-2",
+          hasMultiple && "cursor-pointer hover:bg-[var(--color-bg-hover)]",
+          !hasMultiple && "cursor-default",
           isPending && "opacity-60",
         )}
       >
-        {currentTenant?.logo_url ? (
+        {displayLogo ? (
           <img
-            src={currentTenant.logo_url}
+            src={displayLogo}
             alt=""
-            className="h-5 w-5 shrink-0 rounded object-contain"
+            className={cn(
+              "shrink-0 rounded object-contain",
+              collapsed ? "h-7 w-7" : "h-8 w-8",
+            )}
           />
         ) : (
           <span
-            className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-[10px] font-bold text-white"
-            style={{
-              backgroundColor:
-                currentTenant?.primary_color || "var(--color-accent-primary)",
-            }}
+            className={cn(
+              "flex shrink-0 items-center justify-center rounded font-bold text-white",
+              collapsed ? "h-7 w-7 text-xs" : "h-8 w-8 text-sm",
+            )}
+            style={{ backgroundColor: displayColor }}
           >
-            {(currentTenant?.name ?? "T").charAt(0).toUpperCase()}
+            {displayName.charAt(0).toUpperCase()}
           </span>
         )}
 
         {!collapsed && (
           <>
-            <span className="flex-1 truncate text-sm font-medium text-[var(--color-text-primary)]">
-              {currentTenant?.name ?? "Организация"}
+            <span className="min-w-0 flex-1 truncate text-left text-sm font-semibold text-[var(--color-text-primary)]">
+              {displayName}
             </span>
-            <ChevronDown
-              className={cn(
-                "h-4 w-4 shrink-0 text-[var(--color-text-muted)] transition-transform",
-                open && "rotate-180",
-              )}
-            />
+            {hasMultiple && (
+              <ChevronDown
+                className={cn(
+                  "h-4 w-4 shrink-0 text-[var(--color-text-muted)] transition-transform",
+                  open && "rotate-180",
+                )}
+              />
+            )}
           </>
         )}
       </button>
 
-      {/* Dropdown */}
-      {open && (
-        <ul className="absolute left-0 right-0 z-50 mt-1 max-h-64 overflow-y-auto rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-primary)] py-1 shadow-[var(--shadow-lg)]">
+      {open && hasMultiple && (
+        <ul className="absolute left-2 right-2 z-50 mt-1 max-h-64 overflow-y-auto rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-primary)] py-1 shadow-[var(--shadow-lg)]">
           {tenants.map((t) => {
             const isCurrent = t.tenant_id === currentTenantId;
             return (

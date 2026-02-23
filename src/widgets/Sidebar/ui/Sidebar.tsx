@@ -28,7 +28,6 @@ import { cn } from "@/shared/lib";
 import { ROUTES } from "@/shared/config";
 import { useAuth } from "@/features/auth";
 import { useEnabledFeatures } from "@/features/tenants";
-import { useTenantStore } from "@/shared/model/useTenantStore";
 import type { FeatureCatalogItem } from "@/entities/tenant";
 import { NavItem } from "./NavItem";
 import { NavGroup } from "./NavGroup";
@@ -123,7 +122,6 @@ export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const { user } = useAuth();
   const { data: featuresData } = useEnabledFeatures();
-  const { name: tenantName, logoUrl } = useTenantStore();
 
   // Check if user is superuser (platform owner)
   const isSuperuser = user?.is_superuser || false;
@@ -199,36 +197,7 @@ export function Sidebar() {
         collapsed ? "w-[var(--sidebar-collapsed-width)]" : "w-[var(--sidebar-width)]",
       )}
     >
-      {/* Logo */}
-      <div
-        className={cn(
-          "flex h-[var(--header-height)] items-center border-b border-[var(--color-border)] px-4",
-          collapsed && "justify-center px-2",
-        )}
-      >
-        {logoUrl ? (
-          <img
-            src={logoUrl}
-            alt={tenantName || "Logo"}
-            className={cn(
-              "object-contain",
-              collapsed ? "h-7 w-7" : "h-8 max-w-[160px]",
-            )}
-          />
-        ) : collapsed ? (
-          <span className="text-xl font-bold text-[var(--color-accent-primary)]">
-            {tenantName ? tenantName.charAt(0).toUpperCase() : "M"}
-          </span>
-        ) : (
-          <span className="text-xl font-bold text-[var(--color-text-primary)]">
-            {tenantName || (
-              <>Media<span className="text-[var(--color-accent-primary)]">nn</span></>
-            )}
-          </span>
-        )}
-      </div>
-
-      {/* Tenant Switcher (only visible when user belongs to multiple orgs) */}
+      {/* Tenant header — replaces the old logo block */}
       <TenantSwitcher collapsed={collapsed} />
 
       {/* Navigation */}
