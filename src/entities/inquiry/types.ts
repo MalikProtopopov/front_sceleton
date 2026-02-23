@@ -188,9 +188,7 @@ export const URGENCY_OPTIONS: Record<string, string> = {
   "30days": "В течение 30 дней",
   fast: "Срочно",
   flexible: "Гибкие сроки",
-};
-
-// Source options labels
+};// Source options labels
 export const SOURCE_OPTIONS: Record<string, string> = {
   friend: "Рекомендация",
   google: "Google",
