@@ -12,7 +12,7 @@ export default function TenantsPage() {
   const router = useRouter();
   const [filters, setFilters] = useState<TenantListParams>({
     page: 1,
-    pageSize: 12,
+    page_size: 12,
     sort_by: "created_at",
     sort_order: "desc",
   });
@@ -39,7 +39,7 @@ export default function TenantsPage() {
   };
 
   const handleResetFilters = () => {
-    setFilters({ page: 1, pageSize: 12, sort_by: "created_at", sort_order: "desc" });
+    setFilters({ page: 1, page_size: 12, sort_by: "created_at", sort_order: "desc" });
     setSearchInput("");
   };
 
@@ -154,10 +154,10 @@ export default function TenantsPage() {
           </div>
 
           {/* Pagination */}
-          {data && data.total > filters.pageSize! && (
+          {data && data.total > (filters.page_size || 12) && (
             <Pagination
               page={filters.page || 1}
-              pageSize={filters.pageSize || 12}
+              pageSize={filters.page_size || 12}
               total={data.total}
               onPageChange={(page) => handleFiltersChange({ page })}
               showPageSize={false}

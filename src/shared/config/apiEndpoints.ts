@@ -141,6 +141,8 @@ export const API_ENDPOINTS = {
     LIST: "/tenants",
     BY_ID: (id: string) => `/tenants/${id}`,
     SETTINGS: (id: string) => `/tenants/${id}/settings`,
+    SETTINGS_EMAIL_TEST: (id: string) => `/tenants/${id}/settings/email-test`,
+    EMAIL_LOGS: (id: string) => `/tenants/${id}/email-logs`,
     LOGO: (id: string) => `/tenants/${id}/logo`,
     DOMAINS: (id: string) => `/tenants/${id}/domains`,
     DOMAIN_BY_ID: (tenantId: string, domainId: string) =>

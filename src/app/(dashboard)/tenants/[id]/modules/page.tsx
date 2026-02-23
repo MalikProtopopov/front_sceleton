@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -16,10 +17,9 @@ import {
 } from "lucide-react";
 import { useFeatureFlags, useUpdateFeatureFlag } from "@/features/settings";
 import { useTenantDetail } from "@/features/tenants";
-import { Button, Card, CardContent, Spinner, Switch } from "@/shared/ui";
+import { Button, Card, CardContent, Spinner, Switch, ConfirmModal } from "@/shared/ui";
 import { ROUTES } from "@/shared/config";
 
-// Map feature names to icons
 const featureIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   blog_module: FileText,
   cases_module: FolderOpen,
@@ -32,7 +32,6 @@ const featureIcons: Record<string, React.ComponentType<{ className?: string }>> 
   analytics_advanced: BarChart3,
 };
 
-// Russian translations for feature names
 const featureLabels: Record<string, string> = {
   blog_module: "Блог / Статьи",
   cases_module: "Кейсы / Портфолио",
@@ -54,18 +53,30 @@ export default function TenantModulesPage() {
   const { data: flagsData, isLoading: isFlagsLoading } = useFeatureFlags(tenantId);
   const { mutate: updateFlag, isPending: isUpdating } = useUpdateFeatureFlag(tenantId);
 
+  const [disableConfirm, setDisableConfirm] = useState<{ name: string; label: string } | null>(null);
+
   const isLoading = isTenantLoading || isFlagsLoading;
 
-  // Build a map of enabled features from items array
   const enabledFeatures = new Map(
-    flagsData?.items.map((flag) => [flag.feature_name, flag.enabled]) ?? []
+    flagsData?.items.map((flag) => [flag.feature_name, flag.enabled]) ?? [],
   );
 
-  // Get all available features from the response
   const availableFeatures = flagsData?.available_features ?? {};
 
   const handleToggle = (featureName: string, enabled: boolean) => {
-    updateFlag({ featureName, data: { enabled } });
+    if (!enabled) {
+      const label = featureLabels[featureName] || featureName;
+      setDisableConfirm({ name: featureName, label });
+    } else {
+      updateFlag({ featureName, data: { enabled } });
+    }
+  };
+
+  const confirmDisable = () => {
+    if (disableConfirm) {
+      updateFlag({ featureName: disableConfirm.name, data: { enabled: false } });
+      setDisableConfirm(null);
+    }
   };
 
   if (isLoading) {
@@ -101,16 +112,13 @@ export default function TenantModulesPage() {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">
-            Модули
-          </h1>
+          <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Модули</h1>
           <p className="text-[var(--color-text-secondary)]">
             Управление модулями для {tenant.name}
           </p>
         </div>
       </div>
 
-      {/* Feature Flags Grid */}
       {Object.keys(availableFeatures).length === 0 ? (
         <div className="flex min-h-[300px] flex-col items-center justify-center rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
           <ToggleLeft className="mb-4 h-12 w-12 text-[var(--color-text-muted)]" />
@@ -140,7 +148,7 @@ export default function TenantModulesPage() {
               <Card key={featureName} className="relative">
                 <CardContent className="p-4 sm:p-5">
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-3 min-w-0 flex-1">
+                    <div className="flex min-w-0 flex-1 items-start gap-3">
                       <div
                         className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors ${
                           isEnabled
@@ -151,10 +159,10 @@ export default function TenantModulesPage() {
                         <Icon className="h-5 w-5" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h3 className="font-medium text-[var(--color-text-primary)] leading-tight">
+                        <h3 className="font-medium leading-tight text-[var(--color-text-primary)]">
                           {label}
                         </h3>
-                        <p className="mt-1 text-sm text-[var(--color-text-muted)] line-clamp-2">
+                        <p className="mt-1 line-clamp-2 text-sm text-[var(--color-text-muted)]">
                           {descriptionText}
                         </p>
                       </div>
@@ -172,6 +180,16 @@ export default function TenantModulesPage() {
           })}
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={!!disableConfirm}
+        onClose={() => setDisableConfirm(null)}
+        onConfirm={confirmDisable}
+        title={`Отключить модуль «${disableConfirm?.label}»?`}
+        description="Все пользователи потеряют доступ к этому разделу. Продолжить?"
+        confirmText="Отключить"
+        variant="danger"
+      />
     </div>
   );
 }

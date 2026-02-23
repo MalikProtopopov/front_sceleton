@@ -28,6 +28,22 @@ export interface TenantSettings {
   allowed_domains: string[] | null;
   sitemap_static_pages: SitemapStaticPage[] | null;
   robots_txt_custom_rules: string | null;
+  // IndexNow
+  indexnow_key: string | null;
+  indexnow_enabled: boolean;
+  // llms.txt
+  llms_txt_enabled: boolean;
+  llms_txt_custom_content: string | null;
+  // Email / SMTP
+  email_provider: "smtp" | "sendgrid" | "mailgun" | "console" | null;
+  email_from_address: string | null;
+  email_from_name: string | null;
+  smtp_host: string | null;
+  smtp_port: number | null;
+  smtp_user: string | null;
+  smtp_use_tls: boolean;
+  smtp_password_configured: boolean;
+  email_api_key_configured: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -108,6 +124,22 @@ export interface UpdateTenantSettingsDto {
   allowed_domains?: string[] | null;
   sitemap_static_pages?: SitemapStaticPage[] | null;
   robots_txt_custom_rules?: string | null;
+  // IndexNow
+  indexnow_key?: string | null;
+  indexnow_enabled?: boolean;
+  // llms.txt
+  llms_txt_enabled?: boolean;
+  llms_txt_custom_content?: string | null;
+  // Email / SMTP
+  email_provider?: "smtp" | "sendgrid" | "mailgun" | "console" | null;
+  email_from_address?: string | null;
+  email_from_name?: string | null;
+  smtp_host?: string | null;
+  smtp_port?: number | null;
+  smtp_user?: string | null;
+  smtp_use_tls?: boolean;
+  smtp_password?: string | null;
+  email_api_key?: string | null;
 }
 
 export interface UpdateFeatureFlagDto {
@@ -117,18 +149,16 @@ export interface UpdateFeatureFlagDto {
 export interface CreateTenantDto {
   name: string;
   slug: string;
-  domain?: string;
   is_active?: boolean;
   contact_email?: string;
   contact_phone?: string;
-  logo_url?: string;
   primary_color?: string;
 }
 
 // List params
 export interface TenantListParams {
   page?: number;
-  pageSize?: number;
+  page_size?: number;
   is_active?: boolean;
   search?: string;
   sort_by?: "name" | "created_at";
@@ -224,6 +254,53 @@ export interface TenantDomainResponse {
   ssl_status: "pending" | "active" | "error";
   created_at: string; // ISO 8601
   updated_at: string;
+}
+
+export interface TenantDomainListResponse {
+  items: TenantDomainResponse[];
+  total: number;
+}
+
+export interface TenantDomainCreate {
+  domain: string; // FQDN, 4-255 chars
+  is_primary?: boolean;
+}
+
+export interface TenantDomainUpdate {
+  is_primary?: boolean;
+  ssl_status?: "pending" | "active" | "error";
+}
+
+/** Response from POST /tenants/{id}/settings/email-test */
+export interface EmailTestResponse {
+  success: boolean;
+  provider: string;
+  error: string | null;
+}
+
+/** Params for GET /tenants/{id}/email-logs */
+export interface EmailLogParams {
+  page?: number;
+  page_size?: number;
+  status?: "sent" | "failed" | "pending";
+}
+
+export interface EmailLogEntry {
+  id: string;
+  tenant_id: string;
+  to_email: string;
+  subject: string;
+  status: "sent" | "failed" | "pending";
+  provider: string;
+  error: string | null;
+  created_at: string;
+}
+
+export interface EmailLogsResponse {
+  items: EmailLogEntry[];
+  total: number;
+  page: number;
+  page_size: number;
 }
 
 // Constants

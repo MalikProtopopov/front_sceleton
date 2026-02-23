@@ -8,6 +8,9 @@ import type {
   TenantListParams,
   CreateTenantDto,
   UpdateTenantDto,
+  TenantDomainCreate,
+  TenantDomainUpdate,
+  EmailLogParams,
 } from "@/entities/tenant";
 
 // List all tenants (platform owner only)
@@ -118,12 +121,97 @@ export function useDeleteTenantLogo(tenantId: string) {
   });
 }
 
-// Get enabled features for current user (for sidebar filtering)
 export function useEnabledFeatures() {
   return useQuery({
     queryKey: tenantsKeys.enabledFeatures(),
     queryFn: () => tenantsApi.getEnabledFeatures(),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
+  });
+}
+
+// --- Domains ---
+
+export function useTenantDomains(tenantId: string) {
+  return useQuery({
+    queryKey: tenantsKeys.domains(tenantId),
+    queryFn: () => tenantsApi.listDomains(tenantId),
+    enabled: !!tenantId,
+  });
+}
+
+export function useCreateTenantDomain(tenantId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: TenantDomainCreate) => tenantsApi.createDomain(tenantId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: tenantsKeys.domains(tenantId) });
+      toast.success("Домен добавлен");
+    },
+    onError: (error) => {
+      const message = getErrorMessage(error, "Не удалось добавить домен");
+      toast.error(message);
+    },
+  });
+}
+
+export function useUpdateTenantDomain(tenantId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ domainId, data }: { domainId: string; data: TenantDomainUpdate }) =>
+      tenantsApi.updateDomain(tenantId, domainId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: tenantsKeys.domains(tenantId) });
+      toast.success("Домен обновлён");
+    },
+    onError: (error) => {
+      const message = getErrorMessage(error, "Не удалось обновить домен");
+      toast.error(message);
+    },
+  });
+}
+
+export function useDeleteTenantDomain(tenantId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (domainId: string) => tenantsApi.deleteDomain(tenantId, domainId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: tenantsKeys.domains(tenantId) });
+      toast.success("Домен удалён");
+    },
+    onError: (error) => {
+      const message = getErrorMessage(error, "Не удалось удалить домен");
+      toast.error(message);
+    },
+  });
+}
+
+// --- Email ---
+
+export function useSendTestEmail(tenantId: string) {
+  return useMutation({
+    mutationFn: (toEmail: string) => tenantsApi.sendTestEmail(tenantId, toEmail),
+    onSuccess: (result) => {
+      if (result.success) {
+        toast.success("Тестовое письмо отправлено");
+      } else {
+        toast.error(`Ошибка отправки: ${result.error || "Неизвестная ошибка"}`);
+      }
+    },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "Не удалось отправить тестовое письмо";
+      toast.error(message);
+    },
+  });
+}
+
+export function useEmailLogs(tenantId: string, params?: EmailLogParams) {
+  return useQuery({
+    queryKey: [...tenantsKeys.emailLogs(tenantId), params],
+    queryFn: () => tenantsApi.getEmailLogs(tenantId, params),
+    enabled: !!tenantId && !!params,
   });
 }

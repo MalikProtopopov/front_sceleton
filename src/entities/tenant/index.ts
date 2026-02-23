@@ -20,6 +20,13 @@ export type {
   SelectTenantRequest,
   TokenPair,
   TenantDomainResponse,
+  TenantDomainListResponse,
+  TenantDomainCreate,
+  TenantDomainUpdate,
+  EmailTestResponse,
+  EmailLogParams,
+  EmailLogEntry,
+  EmailLogsResponse,
 } from "./types";
 
 export {
@@ -28,4 +35,3 @@ export {
   DATE_FORMATS,
   TIME_FORMATS,
 } from "./types";
-
