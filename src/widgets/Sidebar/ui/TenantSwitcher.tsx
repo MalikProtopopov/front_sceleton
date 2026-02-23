@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { ChevronDown, Check } from "lucide-react";
+import { ChevronDown, Check, Loader2 } from "lucide-react";
 import { cn } from "@/shared/lib";
 import { useTenantStore } from "@/shared/model/useTenantStore";
 import {
@@ -60,6 +60,17 @@ export function TenantSwitcher({ collapsed = false }: TenantSwitcherProps) {
   }
 
   return (
+    <>
+      {isPending && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[var(--color-bg-primary)]/80 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-3">
+            <Loader2 className="h-8 w-8 animate-spin text-[var(--color-accent-primary)]" />
+            <span className="text-sm font-medium text-[var(--color-text-secondary)]">
+              Переключение организации…
+            </span>
+          </div>
+        </div>
+      )}
     <div ref={ref} className="relative">
       <button
         type="button"
@@ -165,5 +176,6 @@ export function TenantSwitcher({ collapsed = false }: TenantSwitcherProps) {
         </ul>
       )}
     </div>
+    </>
   );
 }

@@ -61,10 +61,11 @@ class ApiClient {
           config.headers.Authorization = `Bearer ${token}`;
         }
 
-        // Add X-Tenant-ID — skip for select-tenant (tenant_id is in the body)
-        const skipTenantHeader = config.url?.includes("/auth/select-tenant");
+        // X-Tenant-ID is only needed on POST /auth/login (after login, tenant is in the JWT)
+        const isLoginRequest =
+          config.url?.includes("/auth/login") && config.method === "post";
         const tenantId = useTenantStore.getState().tenantId;
-        if (tenantId && !skipTenantHeader) {
+        if (tenantId && isLoginRequest) {
           config.headers["X-Tenant-ID"] = tenantId;
         }
 

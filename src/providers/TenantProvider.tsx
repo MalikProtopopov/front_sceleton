@@ -87,6 +87,7 @@ function applyBranding(primaryColor: string | null) {
     darkenColor(primaryColor, 0.1),
   );
   root.style.setProperty("--color-border-focus", primaryColor);
+  root.style.setProperty("--color-accent-primary-light", `${primaryColor}1F`);
 }
 
 /**
