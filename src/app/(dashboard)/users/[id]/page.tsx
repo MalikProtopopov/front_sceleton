@@ -43,7 +43,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
       first_name: formData.first_name ?? user.first_name,
       last_name: formData.last_name ?? user.last_name,
       role_id: formData.role_id !== undefined ? (formData.role_id || undefined) : user.role?.id,
-      version: user.version,
+      version: user.version ?? 1,
     };
 
     if (password) {
@@ -59,7 +59,7 @@ export default function EditUserPage({ params }: { params: Promise<{ id: string 
   };
 
   const handleToggleActive = () => {
-    toggleActive({ isActive: !user.is_active, version: user.version });
+    toggleActive({ isActive: !user.is_active, version: user.version ?? 1 });
   };
 
   const getUserName = (): string => {
