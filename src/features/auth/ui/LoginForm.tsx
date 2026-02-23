@@ -9,7 +9,7 @@ import { AlertCircle } from "lucide-react";
 import { Button, Input } from "@/shared/ui";
 import { ROUTES } from "@/shared/config";
 import { useLogin } from "../model/useAuth";
-import type { TenantOption } from "@/entities/user";
+import type { TenantOption, TenantRedirectRequired } from "@/entities/user";
 
 const loginSchema = z.object({
   email: z.string().min(1, "Email обязателен").email("Неверный формат email"),
@@ -20,9 +20,10 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 interface LoginFormProps {
   onTenantSelection?: (tenants: TenantOption[], selectionToken: string) => void;
+  onTenantRedirect?: (data: TenantRedirectRequired) => void;
 }
 
-export function LoginForm({ onTenantSelection }: LoginFormProps) {
+export function LoginForm({ onTenantSelection, onTenantRedirect }: LoginFormProps) {
   const { mutate: login, isPending, error, data, reset } = useLogin();
 
   const {
@@ -37,12 +38,14 @@ export function LoginForm({ onTenantSelection }: LoginFormProps) {
     },
   });
 
-  // When login returns tenant_selection_required, notify parent
   useEffect(() => {
     if (data?.status === "tenant_selection_required" && onTenantSelection) {
       onTenantSelection(data.tenants, data.selection_token);
     }
-  }, [data, onTenantSelection]);
+    if (data?.status === "tenant_redirect_required" && onTenantRedirect) {
+      onTenantRedirect(data);
+    }
+  }, [data, onTenantSelection, onTenantRedirect]);
 
   const onSubmit = (formData: LoginFormValues) => {
     reset();

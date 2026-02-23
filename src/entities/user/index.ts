@@ -9,6 +9,7 @@ export type {
   LoginResult,
   LoginSuccess,
   TenantSelectionRequired,
+  TenantRedirectRequired,
   TenantOption,
   UserWithPermissions,
   ChangePasswordRequest,

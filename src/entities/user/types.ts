@@ -123,7 +123,13 @@ export interface TenantOption {
   role: string | null;
 }
 
-export type LoginResult = LoginSuccess | TenantSelectionRequired;
+export interface TenantRedirectRequired {
+  status: "tenant_redirect_required";
+  tenant: TenantOption;
+  message: string;
+}
+
+export type LoginResult = LoginSuccess | TenantSelectionRequired | TenantRedirectRequired;
 
 // For backward compatibility
 export type TokensResponse = AuthTokens;
