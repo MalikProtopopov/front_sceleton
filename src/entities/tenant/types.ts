@@ -201,6 +201,12 @@ export interface SwitchTenantRequest {
   tenant_id: string;
 }
 
+/** Request body for POST /auth/select-tenant (Smart Login v2) */
+export interface SelectTenantRequest {
+  selection_token: string;
+  tenant_id: string;
+}
+
 /** Response from POST /auth/switch-tenant (same as login tokens) */
 export interface TokenPair {
   access_token: string;

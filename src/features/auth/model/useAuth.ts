@@ -7,10 +7,13 @@ import { authApi, authKeys } from "../api/authApi";
 import {
   getAccessToken,
   setTokens,
+  setTenantId,
   clearTokens,
 } from "../lib/tokenStorage";
-import type { LoginRequest, ForgotPasswordRequest, ResetPasswordRequest } from "@/entities/user";
+import type { LoginRequest, LoginSuccess, TenantOption, ForgotPasswordRequest, ResetPasswordRequest } from "@/entities/user";
+import type { SelectTenantRequest, TenantByDomainResponse } from "@/entities/tenant";
 import { ROUTES } from "@/shared/config";
+import { useTenantStore } from "@/shared/model/useTenantStore";
 
 export function useCurrentUser() {
   return useQuery({
@@ -22,47 +25,96 @@ export function useCurrentUser() {
   });
 }
 
+function completeLogin(
+  result: LoginSuccess,
+  queryClient: ReturnType<typeof useQueryClient>,
+  router: ReturnType<typeof useRouter>,
+  tenantMeta?: TenantOption,
+) {
+  setTokens(result.tokens);
+  setTenantId(result.user.tenant_id);
+
+  // Update tenant store so the interceptor picks up the new tenant ID
+  const store = useTenantStore.getState();
+  if (!store.tenantId || store.isSharedDomain) {
+    const info: TenantByDomainResponse = tenantMeta
+      ? {
+          tenant_id: tenantMeta.tenant_id,
+          slug: tenantMeta.slug,
+          name: tenantMeta.name,
+          logo_url: tenantMeta.logo_url,
+          primary_color: tenantMeta.primary_color,
+          site_url: null,
+        }
+      : {
+          tenant_id: result.user.tenant_id,
+          slug: "",
+          name: "",
+          logo_url: null,
+          primary_color: null,
+          site_url: null,
+        };
+    store.setTenant(info);
+  }
+
+  queryClient.setQueryData(authKeys.me(), result.user);
+
+  if (result.user.force_password_change) {
+    toast.warning("Необходимо сменить пароль перед началом работы");
+    router.push(ROUTES.SETTINGS);
+  } else {
+    toast.success("Вы успешно вошли в систему");
+    router.push(ROUTES.ARTICLES);
+  }
+}
+
+function extractLoginError(error: unknown): string {
+  if (error && typeof error === "object") {
+    const axiosError = error as { response?: { status?: number; data?: { detail?: string; message?: string } }; message?: string };
+    if (axiosError.response?.status === 401) return "Неверный email или пароль";
+    if (axiosError.response?.data?.detail) return axiosError.response.data.detail;
+    if (axiosError.response?.data?.message) return axiosError.response.data.message;
+    if (axiosError.message && !axiosError.message.includes("status code")) return axiosError.message;
+  }
+  if (error instanceof Error) return error.message;
+  return "Неверный email или пароль";
+}
+
 export function useLogin() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (data: LoginRequest) => authApi.login(data),
-    onSuccess: (response) => {
-      setTokens(response.tokens);
-      queryClient.setQueryData(authKeys.me(), response.user);
-
-      // Check if user must change their password on first login
-      if (response.user.force_password_change) {
-        toast.warning("Необходимо сменить пароль перед началом работы");
-        router.push(ROUTES.SETTINGS);
-      } else {
-        toast.success("Вы успешно вошли в систему");
-        router.push(ROUTES.ARTICLES);
+    onSuccess: (result) => {
+      if (result.status === "success") {
+        completeLogin(result, queryClient, router);
       }
+      // "tenant_selection_required" — data is stored in mutation.data,
+      // the calling component reads it to show the tenant picker
     },
     onError: (error: unknown) => {
-      // Extract error message from various error formats
-      let message = "Неверный email или пароль";
-      
-      if (error && typeof error === "object") {
-        // Axios error with response
-        const axiosError = error as { response?: { status?: number; data?: { detail?: string; message?: string } }; message?: string };
-        
-        if (axiosError.response?.status === 401) {
-          message = "Неверный email или пароль";
-        } else if (axiosError.response?.data?.detail) {
-          message = axiosError.response.data.detail;
-        } else if (axiosError.response?.data?.message) {
-          message = axiosError.response.data.message;
-        } else if (axiosError.message && axiosError.message !== "Request failed with status code 401") {
-          message = axiosError.message;
-        }
-      } else if (error instanceof Error) {
-        message = error.message;
-      }
-      
-      toast.error(message);
+      toast.error(extractLoginError(error));
+    },
+  });
+}
+
+interface SelectTenantVars {
+  request: SelectTenantRequest;
+  tenantMeta?: TenantOption;
+}
+
+export function useSelectTenant() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (vars: SelectTenantVars) => authApi.selectTenant(vars.request),
+    onSuccess: (result, vars) => {
+      completeLogin(result, queryClient, router, vars.tenantMeta);
+    },
+    onError: (error: unknown) => {
+      toast.error(extractLoginError(error));
     },
   });
 }

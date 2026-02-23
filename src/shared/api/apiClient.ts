@@ -61,9 +61,10 @@ class ApiClient {
           config.headers.Authorization = `Bearer ${token}`;
         }
 
-        // Add X-Tenant-ID to every request (resolved from domain at startup)
+        // Add X-Tenant-ID — skip for select-tenant (tenant_id is in the body)
+        const skipTenantHeader = config.url?.includes("/auth/select-tenant");
         const tenantId = useTenantStore.getState().tenantId;
-        if (tenantId) {
+        if (tenantId && !skipTenantHeader) {
           config.headers["X-Tenant-ID"] = tenantId;
         }
 

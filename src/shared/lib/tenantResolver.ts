@@ -32,10 +32,8 @@ export async function resolveTenant(
   // --- Local development shortcut ---
   if (isLocalhost(hostname)) {
     if (!FALLBACK_TENANT_ID) {
-      throw new Error(
-        "Local development requires NEXT_PUBLIC_TENANT_ID in .env. " +
-          "Set it to the UUID of the tenant you want to work with.",
-      );
+      // No tenant configured -- enter shared-domain / generic login mode
+      throw new Error(`DOMAIN_NOT_FOUND:${hostname}`);
     }
 
     const resp = await fetch(

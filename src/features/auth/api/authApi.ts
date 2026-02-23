@@ -2,20 +2,25 @@ import { apiClient } from "@/shared/api";
 import { API_ENDPOINTS } from "@/shared/config";
 import type {
   LoginRequest,
-  LoginResponse,
+  LoginResult,
+  LoginSuccess,
   UserWithPermissions,
   ChangePasswordRequest,
   ForgotPasswordRequest,
   ResetPasswordRequest,
   User,
 } from "@/entities/user";
-import type { MyTenantsResponse, TokenPair } from "@/entities/tenant";
+import type { MyTenantsResponse, SelectTenantRequest, TokenPair } from "@/entities/tenant";
 import type { PaginatedResponse, ListParams } from "@/shared/types";
 
 export const authApi = {
   // Authentication
   login: (data: LoginRequest) =>
-    apiClient.post<LoginResponse>(API_ENDPOINTS.AUTH.LOGIN, data),
+    apiClient.post<LoginResult>(API_ENDPOINTS.AUTH.LOGIN, data),
+
+  /** Complete login after tenant selection (Smart Login v2) */
+  selectTenant: (data: SelectTenantRequest) =>
+    apiClient.post<LoginSuccess>(API_ENDPOINTS.AUTH.SELECT_TENANT, data),
 
   logout: () =>
     apiClient.post<void>(API_ENDPOINTS.AUTH.LOGOUT),

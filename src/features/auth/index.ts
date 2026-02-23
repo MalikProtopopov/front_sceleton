@@ -1,7 +1,8 @@
 // Auth feature exports
 export { LoginForm } from "./ui/LoginForm";
+export { TenantPicker } from "./ui/TenantPicker";
 export { authApi, authKeys } from "./api/authApi";
-export { useCurrentUser, useLogin, useLogout, useChangePassword, useForgotPassword, useResetPassword, useIsAuthenticated, useAuth } from "./model/useAuth";
+export { useCurrentUser, useLogin, useSelectTenant, useLogout, useChangePassword, useForgotPassword, useResetPassword, useIsAuthenticated, useAuth } from "./model/useAuth";
 export { useMyTenants, useSwitchTenant, switchTenantByRedirect } from "./model/useTenantSwitcher";
-export { getAccessToken, getRefreshToken, setTokens, clearTokens } from "./lib/tokenStorage";
+export { getAccessToken, getRefreshToken, setTokens, clearTokens, getTenantId, setTenantId } from "./lib/tokenStorage";
 

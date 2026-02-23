@@ -13,9 +13,13 @@ interface TenantStoreState {
   isResolved: boolean;
   /** Non-null when domain resolution failed */
   error: string | null;
+  /** True when the SPA is running on a shared/generic domain (no tenant pre-resolved) */
+  isSharedDomain: boolean;
 
   /** Populate the store after successful domain resolution */
   setTenant: (info: TenantByDomainResponse) => void;
+  /** Enter shared-domain mode (domain didn't resolve to a specific tenant) */
+  setSharedDomain: () => void;
   /** Record a resolution error */
   setError: (error: string) => void;
   /** Reset back to initial state */
@@ -31,6 +35,7 @@ export const useTenantStore = create<TenantStoreState>((set) => ({
   siteUrl: null,
   isResolved: false,
   error: null,
+  isSharedDomain: false,
 
   setTenant: (info) =>
     set({
@@ -41,6 +46,14 @@ export const useTenantStore = create<TenantStoreState>((set) => ({
       primaryColor: info.primary_color,
       siteUrl: info.site_url,
       isResolved: true,
+      isSharedDomain: false,
+      error: null,
+    }),
+
+  setSharedDomain: () =>
+    set({
+      isResolved: true,
+      isSharedDomain: true,
       error: null,
     }),
 
@@ -60,5 +73,6 @@ export const useTenantStore = create<TenantStoreState>((set) => ({
       siteUrl: null,
       isResolved: false,
       error: null,
+      isSharedDomain: false,
     }),
 }));

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -8,6 +9,7 @@ import { AlertCircle } from "lucide-react";
 import { Button, Input } from "@/shared/ui";
 import { ROUTES } from "@/shared/config";
 import { useLogin } from "../model/useAuth";
+import type { TenantOption } from "@/entities/user";
 
 const loginSchema = z.object({
   email: z.string().min(1, "Email обязателен").email("Неверный формат email"),
@@ -16,8 +18,12 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
-export function LoginForm() {
-  const { mutate: login, isPending, error, reset } = useLogin();
+interface LoginFormProps {
+  onTenantSelection?: (tenants: TenantOption[], selectionToken: string) => void;
+}
+
+export function LoginForm({ onTenantSelection }: LoginFormProps) {
+  const { mutate: login, isPending, error, data, reset } = useLogin();
 
   const {
     register,
@@ -31,46 +37,35 @@ export function LoginForm() {
     },
   });
 
-  const onSubmit = (data: LoginFormValues) => {
-    // Reset previous error before new attempt
+  // When login returns tenant_selection_required, notify parent
+  useEffect(() => {
+    if (data?.status === "tenant_selection_required" && onTenantSelection) {
+      onTenantSelection(data.tenants, data.selection_token);
+    }
+  }, [data, onTenantSelection]);
+
+  const onSubmit = (formData: LoginFormValues) => {
     reset();
-    login(data);
+    login(formData);
   };
 
-  // Extract error message from various error formats
   const getErrorMessage = () => {
     if (!error) return null;
-    
     if (error && typeof error === "object") {
-      // Axios error with response
       const axiosError = error as { response?: { status?: number; data?: { detail?: string; message?: string } }; message?: string };
-      
-      if (axiosError.response?.status === 401) {
-        return "Неверный email или пароль";
-      }
-      if (axiosError.response?.data?.detail) {
-        return axiosError.response.data.detail;
-      }
-      if (axiosError.response?.data?.message) {
-        return axiosError.response.data.message;
-      }
-      if (axiosError.message && !axiosError.message.includes("status code")) {
-        return axiosError.message;
-      }
+      if (axiosError.response?.status === 401) return "Неверный email или пароль";
+      if (axiosError.response?.data?.detail) return axiosError.response.data.detail;
+      if (axiosError.response?.data?.message) return axiosError.response.data.message;
+      if (axiosError.message && !axiosError.message.includes("status code")) return axiosError.message;
     }
-    
-    if (error instanceof Error) {
-      return error.message;
-    }
-    
+    if (error instanceof Error) return error.message;
     return "Неверный email или пароль";
   };
-  
+
   const errorMessage = getErrorMessage();
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      {/* Error banner */}
       {errorMessage && (
         <div className="flex items-center gap-3 rounded-lg border border-[var(--color-error)]/30 bg-[var(--color-error)]/10 p-4">
           <AlertCircle className="h-5 w-5 flex-shrink-0 text-[var(--color-error)]" />

@@ -1,21 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useTenantStore } from "@/shared/model/useTenantStore";
 import { resolveTenant } from "@/shared/lib/tenantResolver";
-import { Spinner, DomainNotFoundPage } from "@/shared/ui";
+import { Spinner } from "@/shared/ui";
 
 /**
  * Resolves the current tenant from `window.location.hostname` before
  * rendering the rest of the app.  Must be the outermost client provider
  * so that the tenant ID is available before any API calls.
+ *
+ * When the domain does not resolve (404), the provider enters
+ * "shared-domain" mode — no branding is applied and the login form
+ * works without a pre-known tenant (Smart Login v2).
  */
 export function TenantProvider({ children }: { children: React.ReactNode }) {
-  const { isResolved, error, setTenant, setError } = useTenantStore();
-  const [failedHostname, setFailedHostname] = useState<string>("");
+  const { isResolved, error, setTenant, setSharedDomain, setError } = useTenantStore();
 
   useEffect(() => {
-    // If already resolved (e.g. HMR re-mount), skip
     if (isResolved) return;
 
     const hostname = window.location.hostname;
@@ -28,14 +30,15 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
       .catch((err: Error) => {
         const msg = err.message || "Unknown error";
         if (msg.startsWith("DOMAIN_NOT_FOUND:")) {
-          setFailedHostname(msg.replace("DOMAIN_NOT_FOUND:", ""));
+          // Shared domain — allow the app to render without tenant branding
+          setSharedDomain();
+        } else {
+          setError(msg);
         }
-        setError(msg);
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // --- Loading state ---
   if (!isResolved) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -44,12 +47,7 @@ export function TenantProvider({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // --- Domain not found ---
-  if (error?.startsWith("DOMAIN_NOT_FOUND:") || failedHostname) {
-    return <DomainNotFoundPage hostname={failedHostname || undefined} />;
-  }
-
-  // --- Other resolution errors (network, bad tenant ID, etc.) ---
+  // Hard errors (network failure, bad tenant ID, etc.) — NOT domain-not-found
   if (error) {
     return (
       <div className="flex min-h-screen items-center justify-center p-8">

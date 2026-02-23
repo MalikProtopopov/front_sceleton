@@ -93,10 +93,37 @@ export interface LoginRequest {
   password: string;
 }
 
+/** @deprecated Use LoginResult (discriminated union) instead */
 export interface LoginResponse {
   user: User;
   tokens: AuthTokens;
 }
+
+// --- Smart Login v2: discriminated union ---
+
+export interface LoginSuccess {
+  status: "success";
+  tokens: AuthTokens;
+  user: User;
+}
+
+export interface TenantSelectionRequired {
+  status: "tenant_selection_required";
+  tenants: TenantOption[];
+  selection_token: string;
+}
+
+export interface TenantOption {
+  tenant_id: string;
+  name: string;
+  slug: string;
+  logo_url: string | null;
+  primary_color: string | null;
+  admin_domain: string | null;
+  role: string | null;
+}
+
+export type LoginResult = LoginSuccess | TenantSelectionRequired;
 
 // For backward compatibility
 export type TokensResponse = AuthTokens;

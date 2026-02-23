@@ -17,6 +17,7 @@ export type {
   TenantAccessInfo,
   MyTenantsResponse,
   SwitchTenantRequest,
+  SelectTenantRequest,
   TokenPair,
   TenantDomainResponse,
 } from "./types";

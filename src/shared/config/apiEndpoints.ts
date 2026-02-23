@@ -25,6 +25,7 @@ export const API_ENDPOINTS = {
     ME: "/auth/me",
     ME_FEATURES: "/auth/me/features",
     ME_TENANTS: "/auth/me/tenants",
+    SELECT_TENANT: "/auth/select-tenant",
     SWITCH_TENANT: "/auth/switch-tenant",
     CHANGE_PASSWORD: "/auth/me/password",
     FORGOT_PASSWORD: "/auth/forgot-password",
