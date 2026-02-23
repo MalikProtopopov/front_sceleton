@@ -43,7 +43,7 @@ export function TenantRedirectScreen({ tenant, message, onBack }: TenantRedirect
         </h2>
 
         <p className="mb-4 text-center text-sm text-[var(--color-text-secondary)]">
-          Ваш аккаунт принадлежит организации
+          {message}
         </p>
 
         <p
