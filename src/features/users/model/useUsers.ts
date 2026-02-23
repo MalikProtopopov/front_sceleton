@@ -45,6 +45,7 @@ export function useCreateUser(tenantId?: string) {
 }
 
 export function useUpdateUser(id: string, tenantId?: string) {
+  const router = useRouter();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -56,6 +57,14 @@ export function useUpdateUser(id: string, tenantId?: string) {
     },
     onError: (error) => {
       if (handleVersionConflict(error, queryClient, usersKeys.detail(id, tenantId))) {
+        return;
+      }
+      const axiosError = error as { response?: { status?: number } };
+      if (axiosError.response?.status === 404) {
+        queryClient.removeQueries({ queryKey: usersKeys.detail(id, tenantId) });
+        queryClient.invalidateQueries({ queryKey: usersKeys.lists() });
+        toast.error("Пользователь был удалён");
+        router.push(ROUTES.USERS);
         return;
       }
       const message = getErrorMessage(error, "Не удалось обновить пользователя");
@@ -70,10 +79,10 @@ export function useDeleteUser(tenantId?: string) {
 
   return useMutation({
     mutationFn: (id: string) => usersApi.delete(id, tenantId),
-    onSuccess: () => {
+    onSuccess: (_data, id) => {
+      queryClient.removeQueries({ queryKey: usersKeys.detail(id, tenantId) });
       queryClient.invalidateQueries({ queryKey: usersKeys.lists() });
       toast.success("Пользователь удален");
-      // If managing cross-tenant users, don't navigate away
       if (!tenantId) {
         router.push(ROUTES.USERS);
       }
@@ -94,6 +103,7 @@ export function useRoles(tenantId?: string) {
 }
 
 export function useToggleUserActive(id: string, tenantId?: string) {
+  const router = useRouter();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -106,6 +116,14 @@ export function useToggleUserActive(id: string, tenantId?: string) {
     },
     onError: (error) => {
       if (handleVersionConflict(error, queryClient, usersKeys.detail(id, tenantId))) {
+        return;
+      }
+      const axiosError = error as { response?: { status?: number } };
+      if (axiosError.response?.status === 404) {
+        queryClient.removeQueries({ queryKey: usersKeys.detail(id, tenantId) });
+        queryClient.invalidateQueries({ queryKey: usersKeys.lists() });
+        toast.error("Пользователь был удалён");
+        router.push(ROUTES.USERS);
         return;
       }
       const message = getErrorMessage(error, "Не удалось изменить статус");
