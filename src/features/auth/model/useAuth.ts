@@ -61,11 +61,10 @@ function completeLogin(
 
   if (result.user.force_password_change) {
     toast.warning("Необходимо сменить пароль перед началом работы");
-    router.push(ROUTES.SETTINGS);
   } else {
     toast.success("Вы успешно вошли в систему");
-    router.push(ROUTES.ARTICLES);
   }
+  router.push(ROUTES.ARTICLES);
 }
 
 function extractLoginError(error: unknown): string {
