@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Eye, Mail, Phone, Globe, MapPin, Trash2, Search, Download, LayoutList, LayoutGrid } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Eye, Mail, Phone, Globe, MapPin, Trash2, Search, Download, LayoutList, LayoutGrid, Package } from "lucide-react";
 import { useLeadsList, useDeleteLead, useUpdateLeadStatus, useInquiryForms, LeadsKanban } from "@/features/leads";
 import { Button, Table, Pagination, Badge, ConfirmModal, Select, Input, FilterBar, type Column } from "@/shared/ui";
 import { ROUTES } from "@/shared/config";
@@ -12,9 +12,13 @@ import { INQUIRY_STATUS_CONFIG, FORM_SLUG_CONFIG } from "@/entities/inquiry";
 
 export default function LeadsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const productIdParam = searchParams.get("productId");
+
   const [filters, setFilters] = useState<InquiryFilterParams>({
     page: 1,
     pageSize: 20,
+    productId: productIdParam || undefined,
   });
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Inquiry | null>(null);
@@ -106,9 +110,17 @@ export default function LeadsPage() {
       key: "message",
       header: "Сообщение",
       render: (lead) => (
-        <p className="max-w-xs text-[var(--color-text-secondary)] line-clamp-2">
-          {lead.message || "—"}
-        </p>
+        <div className="max-w-xs">
+          <p className="text-[var(--color-text-secondary)] line-clamp-2">
+            {lead.message || "—"}
+          </p>
+          {lead.product && (
+            <span className="mt-1 inline-flex items-center gap-1 text-xs text-[var(--color-accent-primary)]">
+              <Package className="h-3 w-3" />
+              {lead.product.name || lead.product.sku}
+            </span>
+          )}
+        </div>
       ),
     },
     {
@@ -244,6 +256,26 @@ export default function LeadsPage() {
           </Button>
         </div>
       </div>
+
+      {/* Product filter banner */}
+      {filters.productId && (
+        <div className="flex items-center gap-3 rounded-lg border border-[var(--color-accent-primary)]/30 bg-[var(--color-accent-primary)]/5 px-4 py-3">
+          <Package className="h-5 w-5 text-[var(--color-accent-primary)]" />
+          <span className="text-sm text-[var(--color-text-primary)]">
+            Показаны заявки, привязанные к товару
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              handleFiltersChange({ productId: undefined });
+              router.replace(ROUTES.LEADS);
+            }}
+          >
+            Сбросить фильтр
+          </Button>
+        </div>
+      )}
 
       {/* Stats */}
       {data && (

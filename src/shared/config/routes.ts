@@ -37,6 +37,15 @@ export const ROUTES = {
   REVIEW_NEW: "/reviews/new",
   REVIEW_EDIT: (id: string) => `/reviews/${id}`,
   
+  // Catalog
+  CATALOG: "/catalog",
+  PRODUCTS: "/catalog/products",
+  PRODUCT_NEW: "/catalog/products/new",
+  PRODUCT_EDIT: (id: string) => `/catalog/products/${id}`,
+  CATEGORIES: "/catalog/categories",
+  CATEGORY_NEW: "/catalog/categories/new",
+  CATEGORY_EDIT: (id: string) => `/catalog/categories/${id}`,
+  
   // Leads
   LEADS: "/leads",
   LEAD_DETAIL: (id: string) => `/leads/${id}`,

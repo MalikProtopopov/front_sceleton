@@ -234,6 +234,42 @@ export const API_ENDPOINTS = {
     BY_ID: (id: string) => `/admin/contacts/${id}`,
   },
   
+  // Products (Catalog)
+  PRODUCTS: {
+    LIST: "/admin/products",
+    BY_ID: (id: string) => `/admin/products/${id}`,
+    CHARS: (id: string) => `/admin/products/${id}/chars`,
+    IMAGES: (id: string) => `/admin/products/${id}/images`,
+    IMAGE_BY_ID: (productId: string, imageId: string) =>
+      `/admin/products/${productId}/images/${imageId}`,
+    IMAGES_REORDER: (id: string) => `/admin/products/${id}/images/reorder`,
+    IMAGE_SET_COVER: (productId: string, imageId: string) =>
+      `/admin/products/${productId}/images/${imageId}/set-cover`,
+    PRICES: (id: string) => `/admin/products/${id}/prices`,
+    PRICE_BY_ID: (productId: string, priceId: string) =>
+      `/admin/products/${productId}/prices/${priceId}`,
+    ALIASES: (id: string) => `/admin/products/${id}/aliases`,
+    ALIAS_BY_ID: (productId: string, aliasId: string) =>
+      `/admin/products/${productId}/aliases/${aliasId}`,
+    ANALOGS: (id: string) => `/admin/products/${id}/analogs`,
+    ANALOG_BY_ID: (productId: string, analogId: string) =>
+      `/admin/products/${productId}/analogs/${analogId}`,
+    CATEGORIES_LINK: (id: string) => `/admin/products/${id}/categories`,
+  },
+
+  // Categories (Catalog)
+  CATEGORIES: {
+    LIST: "/admin/categories",
+    TREE: "/admin/categories/tree",
+    BY_ID: (id: string) => `/admin/categories/${id}`,
+  },
+
+  // Units of Measure (Catalog)
+  UOMS: {
+    LIST: "/admin/uoms",
+    BY_ID: (id: string) => `/admin/uoms/${id}`,
+  },
+
   // Telegram Integration
   TELEGRAM: {
     INTEGRATION: "/telegram/integration",

@@ -23,6 +23,8 @@ import {
   Globe,
   ArrowRight,
   LayoutDashboard,
+  Package,
+  FolderTree,
 } from "lucide-react";
 import { cn } from "@/shared/lib";
 import { ROUTES } from "@/shared/config";
@@ -75,6 +77,13 @@ const navigation: NavSection[] = [
       { href: ROUTES.FAQ, icon: HelpCircle, label: "Вопросы и ответы", feature: "faq_module" },
       { href: ROUTES.SERVICES, icon: Briefcase, label: "Услуги", feature: "services_module" },
       { href: ROUTES.DOCUMENTS, icon: Files, label: "Документы" }, // Always visible
+    ],
+  },
+  {
+    label: "Каталог",
+    items: [
+      { href: ROUTES.PRODUCTS, icon: Package, label: "Товары", feature: "catalog_module" },
+      { href: ROUTES.CATEGORIES, icon: FolderTree, label: "Категории", feature: "catalog_module" },
     ],
   },
   {

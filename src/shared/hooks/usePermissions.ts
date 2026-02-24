@@ -135,6 +135,12 @@ export const PERMISSIONS = {
   FEATURES_READ: "features:read",
   FEATURES_UPDATE: "features:update",
 
+  // Catalog
+  CATALOG_CREATE: "catalog:create",
+  CATALOG_READ: "catalog:read",
+  CATALOG_UPDATE: "catalog:update",
+  CATALOG_DELETE: "catalog:delete",
+
   // Audit
   AUDIT_READ: "audit:read",
 } as const;

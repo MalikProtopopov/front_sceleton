@@ -41,6 +41,7 @@ import {
   Puzzle,
   Copy,
   Check,
+  Package,
 } from "lucide-react";
 import { useLead, useUpdateLead, useDeleteLead } from "@/features/leads";
 import {
@@ -56,6 +57,7 @@ import {
   ConfirmModal,
 } from "@/shared/ui";
 import { formatDateTime, cn } from "@/shared/lib";
+import { ROUTES } from "@/shared/config";
 import type { InquiryStatus, MvpBriefFields } from "@/entities/inquiry";
 import {
   INQUIRY_STATUS_CONFIG,
@@ -246,6 +248,11 @@ function buildLeadCopyText(lead: import("@/entities/inquiry").Inquiry): string {
   if (lead.form_slug) {
     const formLabel = FORM_SLUG_CONFIG[lead.form_slug]?.label || lead.form_slug;
     lines.push(`Тип заявки: ${formLabel}`);
+  }
+
+  // Product
+  if (lead.product) {
+    lines.push(`Товар: ${lead.product.name || lead.product.slug} (${lead.product.sku})`);
   }
 
   // Message
@@ -770,6 +777,36 @@ export default function LeadDetailPage({
           </CardContent>
         </Card>
 
+        {/* Linked Product */}
+        {lead.product && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5" />
+                Товар
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <a
+                href={ROUTES.PRODUCT_EDIT(lead.product.id)}
+                className="flex items-center gap-3 rounded-lg border border-[var(--color-border)] p-3 transition-colors hover:bg-[var(--color-bg-hover)]"
+              >
+                <div className="flex h-10 w-10 items-center justify-center rounded bg-[var(--color-bg-secondary)]">
+                  <Package className="h-5 w-5 text-[var(--color-accent-primary)]" />
+                </div>
+                <div>
+                  <p className="font-medium text-[var(--color-text-primary)]">
+                    {lead.product.name || lead.product.slug}
+                  </p>
+                  <p className="text-xs text-[var(--color-text-muted)]">
+                    SKU: {lead.product.sku} · /{lead.product.slug}
+                  </p>
+                </div>
+              </a>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Brief Data - only for mvp-brief form type */}
         {lead.form_slug === "mvp-brief" && lead.custom_fields && (
           <BriefDataCard customFields={lead.custom_fields} />
@@ -1109,6 +1146,17 @@ export default function LeadDetailPage({
             <p>ID: {lead.id}</p>
             {lead.form_slug && <p>Тип формы: {lead.form_slug}</p>}
             {lead.service_id && <p>Услуга: {lead.service_id}</p>}
+            {lead.product && (
+              <p>
+                Товар:{" "}
+                <a
+                  href={ROUTES.PRODUCT_EDIT(lead.product.id)}
+                  className="text-[var(--color-accent-primary)] hover:underline"
+                >
+                  {lead.product.name || lead.product.sku}
+                </a>
+              </p>
+            )}
           </div>
         </div>
       </div>

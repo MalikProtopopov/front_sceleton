@@ -37,6 +37,7 @@ import {
   Calendar,
   Globe,
   Loader2,
+  Package,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -331,6 +332,12 @@ function KanbanCard({
           <Calendar className="h-3 w-3" />
         {formatDateTime(inquiry.created_at)}
         </span>
+        {inquiry.product && (
+          <span className="flex items-center gap-1 rounded-full bg-[var(--color-accent-primary)]/10 px-2 py-0.5 text-[var(--color-accent-primary)]">
+            <Package className="h-2.5 w-2.5" />
+            {inquiry.product.name || inquiry.product.sku}
+          </span>
+        )}
         {inquiry.utm_source && (
           <span className="flex items-center gap-1 rounded-full bg-[var(--color-bg-elevated)] px-2 py-0.5">
             <Globe className="h-2.5 w-2.5" />

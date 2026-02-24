@@ -2,6 +2,13 @@
 
 export type InquiryStatus = "new" | "in_progress" | "contacted" | "completed" | "spam" | "cancelled";
 
+export interface InquiryProductBrief {
+  id: string;
+  slug: string;
+  sku: string;
+  name: string | null;
+}
+
 export interface Inquiry {
   id: string;
   tenant_id: string;
@@ -14,6 +21,8 @@ export interface Inquiry {
   company: string | null;
   message: string | null;
   service_id: string | null;
+  product_id: string | null;
+  product: InquiryProductBrief | null;
   utm_source: string | null;
   utm_medium: string | null;
   utm_campaign: string | null;
@@ -80,6 +89,7 @@ export interface InquiryFilterParams {
   status?: InquiryStatus;
   formId?: string;
   formSlug?: string;
+  productId?: string;
   assignedTo?: string;
   utmSource?: string;
   search?: string;
