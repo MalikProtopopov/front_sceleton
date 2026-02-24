@@ -32,7 +32,7 @@ import {
   Table,
   type Column,
 } from "@/shared/ui";
-import { formatDateTime, formatDate } from "@/shared/lib";
+import { formatDateTime, formatDate, cn } from "@/shared/lib";
 import { usePermissions } from "@/shared/hooks/usePermissions";
 import { ROUTES } from "@/shared/config";
 import type { CreateProductDto, UpdateProductDto, Category } from "@/entities/product";
@@ -203,7 +203,12 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                 multiple
                 value={linkedCategoryIds}
                 onChange={handleCategoriesChange}
-                className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] p-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent-primary)] focus:outline-none"
+                className={cn(
+                  "min-h-11 w-full rounded-[var(--radius-md)] border bg-[var(--color-bg-primary)] px-4 py-2.5 text-sm text-[var(--color-text-primary)] transition-colors duration-[var(--transition-fast)]",
+                  "hover:border-[var(--color-border-hover)]",
+                  "focus:border-[var(--color-accent-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent-primary)]",
+                  "border-[var(--color-border)]"
+                )}
                 size={Math.min(allCategories.length, 10) || 1}
               >
                 {allCategories.map((cat: Category) => (

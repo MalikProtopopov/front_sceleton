@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Button, Input, Textarea, Select, Switch } from "@/shared/ui";
-import { transliterate } from "@/shared/lib";
+import { transliterate, cn } from "@/shared/lib";
 import { useCategoriesTree } from "../model/useCategories";
 import { useUomsList } from "../model/useUoms";
 import type { Product, CreateProductDto, UpdateProductDto } from "@/entities/product";
@@ -143,7 +143,12 @@ export function ProductForm({ product, onSubmit, isSubmitting }: ProductFormProp
             </label>
             <select
               multiple
-              className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] p-2 text-sm text-[var(--color-text-primary)] focus:border-[var(--color-accent-primary)] focus:outline-none"
+              className={cn(
+                "min-h-11 w-full rounded-[var(--radius-md)] border bg-[var(--color-bg-primary)] px-4 py-2.5 text-sm text-[var(--color-text-primary)] transition-colors duration-[var(--transition-fast)]",
+                "hover:border-[var(--color-border-hover)]",
+                "focus:border-[var(--color-accent-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent-primary)]",
+                "border-[var(--color-border)]"
+              )}
               {...register("category_ids")}
               size={Math.min(categoryOptions.length, 5) || 1}
             >

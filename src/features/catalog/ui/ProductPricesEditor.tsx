@@ -27,10 +27,12 @@ const CURRENCY_OPTIONS = [
   { value: "EUR", label: "EUR" },
 ];
 
+type FormState = Omit<CreateProductPriceDto, "amount"> & { amount: number | "" };
+
 export function ProductPricesEditor({ productId, prices }: ProductPricesEditorProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState<CreateProductPriceDto>({
+  const [form, setForm] = useState<FormState>({
     price_type: "regular",
     amount: 0,
     currency: "RUB",
@@ -41,7 +43,7 @@ export function ProductPricesEditor({ productId, prices }: ProductPricesEditorPr
   const { mutate: deletePrice } = useDeleteProductPrice(productId);
 
   const handleAdd = () => {
-    createPrice(form, {
+    createPrice({ ...form, amount: typeof form.amount === "number" ? form.amount : 0 }, {
       onSuccess: () => {
         setIsAdding(false);
         setForm({ price_type: "regular", amount: 0, currency: "RUB" });
@@ -52,7 +54,7 @@ export function ProductPricesEditor({ productId, prices }: ProductPricesEditorPr
   const handleUpdate = () => {
     if (!editingId) return;
     updatePrice(
-      { priceId: editingId, data: form },
+      { priceId: editingId, data: { ...form, amount: typeof form.amount === "number" ? form.amount : 0 } },
       {
         onSuccess: () => {
           setEditingId(null);
@@ -83,11 +85,15 @@ export function ProductPricesEditor({ productId, prices }: ProductPricesEditorPr
       />
       <Input
         label="Сумма"
+        id="сумма"
         type="number"
         step="0.01"
         min="0"
-        value={form.amount}
-        onChange={(e) => setForm({ ...form, amount: parseFloat(e.target.value) || 0 })}
+        value={form.amount === "" ? "" : form.amount}
+        onChange={(e) => {
+          const raw = e.target.value;
+          setForm({ ...form, amount: raw === "" ? "" : (parseFloat(raw) || 0) });
+        }}
         className="w-32"
       />
       <Select
