@@ -8,6 +8,7 @@ import {
   Button,
   Input,
   Select,
+  Textarea,
   Card,
   CardHeader,
   CardTitle,
@@ -90,6 +91,17 @@ export function TenantSettingsTab({ tenant }: TenantSettingsTabProps) {
     ym_counter_id: s?.ym_counter_id || "",
   });
 
+  const [seoForm, setSeoForm] = useState({
+    yandex_verification_code: s?.yandex_verification_code || "",
+    google_verification_code: s?.google_verification_code || "",
+    google_verification_meta: s?.google_verification_meta || "",
+    robots_txt_custom_rules: s?.robots_txt_custom_rules || "",
+    indexnow_key: s?.indexnow_key || "",
+    indexnow_enabled: s?.indexnow_enabled ?? false,
+    llms_txt_enabled: s?.llms_txt_enabled ?? false,
+    llms_txt_custom_content: s?.llms_txt_custom_content || "",
+  });
+
   const [emailForm, setEmailForm] = useState({
     email_provider: s?.email_provider || "",
     email_from_address: s?.email_from_address || "",
@@ -127,6 +139,16 @@ export function TenantSettingsTab({ tenant }: TenantSettingsTabProps) {
         ga_tracking_id: ns.ga_tracking_id || "",
         ym_counter_id: ns.ym_counter_id || "",
       });
+      setSeoForm({
+        yandex_verification_code: ns.yandex_verification_code || "",
+        google_verification_code: ns.google_verification_code || "",
+        google_verification_meta: ns.google_verification_meta || "",
+        robots_txt_custom_rules: ns.robots_txt_custom_rules || "",
+        indexnow_key: ns.indexnow_key || "",
+        indexnow_enabled: ns.indexnow_enabled,
+        llms_txt_enabled: ns.llms_txt_enabled,
+        llms_txt_custom_content: ns.llms_txt_custom_content || "",
+      });
       setEmailForm({
         email_provider: ns.email_provider || "",
         email_from_address: ns.email_from_address || "",
@@ -151,6 +173,14 @@ export function TenantSettingsTab({ tenant }: TenantSettingsTabProps) {
       telegram_chat_id: siteForm.telegram_chat_id || null,
       ga_tracking_id: analyticsForm.ga_tracking_id || null,
       ym_counter_id: analyticsForm.ym_counter_id || null,
+      yandex_verification_code: seoForm.yandex_verification_code || null,
+      google_verification_code: seoForm.google_verification_code || null,
+      google_verification_meta: seoForm.google_verification_meta || null,
+      robots_txt_custom_rules: seoForm.robots_txt_custom_rules || null,
+      indexnow_key: seoForm.indexnow_key || null,
+      indexnow_enabled: seoForm.indexnow_enabled,
+      llms_txt_enabled: seoForm.llms_txt_enabled,
+      llms_txt_custom_content: seoForm.llms_txt_custom_content || null,
       email_provider: (emailForm.email_provider || null) as UpdateTenantSettingsDto["email_provider"],
       email_from_address: emailForm.email_from_address || null,
       email_from_name: emailForm.email_from_name || null,
@@ -258,6 +288,77 @@ export function TenantSettingsTab({ tenant }: TenantSettingsTabProps) {
               onChange={(e) => setAnalyticsForm({ ...analyticsForm, ym_counter_id: e.target.value })}
               placeholder="12345678"
             />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* SEO & Webmaster verification */}
+      <Card>
+        <CardHeader>
+          <CardTitle>SEO и верификация</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Input
+              label="Яндекс.Вебмастер"
+              value={seoForm.yandex_verification_code}
+              onChange={(e) => setSeoForm({ ...seoForm, yandex_verification_code: e.target.value })}
+              placeholder="yandex_821edd51f146c052"
+            />
+            <Input
+              label="Google Search Console"
+              value={seoForm.google_verification_code}
+              onChange={(e) => setSeoForm({ ...seoForm, google_verification_code: e.target.value })}
+              placeholder="google1234567890abcdef"
+            />
+          </div>
+          <Input
+            label="Google meta-тег верификации"
+            value={seoForm.google_verification_meta}
+            onChange={(e) => setSeoForm({ ...seoForm, google_verification_meta: e.target.value })}
+            placeholder='<meta name="google-site-verification" content="..." />'
+          />
+          <Textarea
+            label="Кастомные правила robots.txt"
+            value={seoForm.robots_txt_custom_rules}
+            onChange={(e) => setSeoForm({ ...seoForm, robots_txt_custom_rules: e.target.value })}
+            placeholder={"Disallow: /admin/\nDisallow: /api/"}
+            rows={4}
+          />
+          <div className="space-y-4 rounded-lg border border-[var(--color-border)] p-4">
+            <p className="text-sm font-medium text-[var(--color-text-secondary)]">IndexNow</p>
+            <Switch
+              checked={seoForm.indexnow_enabled}
+              onChange={(checked) => setSeoForm({ ...seoForm, indexnow_enabled: checked })}
+              label="Включить IndexNow"
+              description="Мгновенное уведомление поисковиков об изменениях контента"
+            />
+            {seoForm.indexnow_enabled && (
+              <Input
+                label="IndexNow API Key"
+                value={seoForm.indexnow_key}
+                onChange={(e) => setSeoForm({ ...seoForm, indexnow_key: e.target.value })}
+                placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+              />
+            )}
+          </div>
+          <div className="space-y-4 rounded-lg border border-[var(--color-border)] p-4">
+            <p className="text-sm font-medium text-[var(--color-text-secondary)]">llms.txt</p>
+            <Switch
+              checked={seoForm.llms_txt_enabled}
+              onChange={(checked) => setSeoForm({ ...seoForm, llms_txt_enabled: checked })}
+              label="Включить llms.txt"
+              description="Файл с инструкциями для LLM-ботов"
+            />
+            {seoForm.llms_txt_enabled && (
+              <Textarea
+                label="Контент llms.txt"
+                value={seoForm.llms_txt_custom_content}
+                onChange={(e) => setSeoForm({ ...seoForm, llms_txt_custom_content: e.target.value })}
+                placeholder="# About this site..."
+                rows={4}
+              />
+            )}
           </div>
         </CardContent>
       </Card>

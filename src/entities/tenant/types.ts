@@ -245,13 +245,17 @@ export interface TokenPair {
   expires_in: number;
 }
 
+export type SSLStatus = "pending" | "verifying" | "active" | "error";
+
 /** Response from GET /tenants/{id}/domains */
 export interface TenantDomainResponse {
   id: string;
   tenant_id: string;
   domain: string; // "admin.client1.com"
   is_primary: boolean;
-  ssl_status: "pending" | "active" | "error";
+  ssl_status: SSLStatus;
+  dns_verified_at: string | null;
+  ssl_provisioned_at: string | null;
   created_at: string; // ISO 8601
   updated_at: string;
 }
@@ -268,7 +272,25 @@ export interface TenantDomainCreate {
 
 export interface TenantDomainUpdate {
   is_primary?: boolean;
-  ssl_status?: "pending" | "active" | "error";
+  ssl_status?: SSLStatus;
+}
+
+/** Response from POST /tenants/{id}/domains/{domain_id}/verify */
+export interface DNSVerifyResponse {
+  ok: boolean;
+  cname_target: string | null;
+  expected_target: string;
+  message: string;
+}
+
+/** Response from GET /tenants/{id}/domains/{domain_id}/ssl-status */
+export interface TenantDomainSSLStatusResponse {
+  domain_id: string;
+  domain: string;
+  ssl_status: SSLStatus;
+  dns_verified_at: string | null;
+  ssl_provisioned_at: string | null;
+  message?: string;
 }
 
 /** Response from POST /tenants/{id}/settings/email-test */

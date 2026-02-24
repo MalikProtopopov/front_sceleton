@@ -10,6 +10,7 @@ import type {
   UpdateTenantDto,
   TenantDomainCreate,
   TenantDomainUpdate,
+  TenantDomainListResponse,
   EmailLogParams,
 } from "@/entities/tenant";
 
@@ -185,6 +186,64 @@ export function useDeleteTenantDomain(tenantId: string) {
     onError: (error) => {
       const message = getErrorMessage(error, "Не удалось удалить домен");
       toast.error(message);
+    },
+  });
+}
+
+export function useVerifyTenantDomain(tenantId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (domainId: string) => tenantsApi.verifyDomain(tenantId, domainId),
+    onSuccess: (result) => {
+      if (result.ok) {
+        queryClient.invalidateQueries({ queryKey: tenantsKeys.domains(tenantId) });
+        toast.success("DNS подтверждён, получаем SSL-сертификат...");
+      }
+    },
+    onError: (error) => {
+      const message = getErrorMessage(error, "Не удалось проверить DNS");
+      toast.error(message);
+    },
+  });
+}
+
+export function useDomainSSLPolling(tenantId: string, domainId: string, enabled: boolean) {
+  const queryClient = useQueryClient();
+
+  return useQuery({
+    queryKey: [...tenantsKeys.domains(tenantId), "ssl-poll", domainId],
+    queryFn: async () => {
+      const data = await tenantsApi.getDomainSSLStatus(tenantId, domainId);
+
+      queryClient.setQueryData<TenantDomainListResponse>(
+        tenantsKeys.domains(tenantId),
+        (old) =>
+          old && {
+            ...old,
+            items: old.items.map((d) =>
+              d.id === data.domain_id
+                ? {
+                    ...d,
+                    ssl_status: data.ssl_status,
+                    dns_verified_at: data.dns_verified_at,
+                    ssl_provisioned_at: data.ssl_provisioned_at,
+                  }
+                : d,
+            ),
+          },
+      );
+
+      if (data.ssl_status === "active" || data.ssl_status === "error") {
+        queryClient.invalidateQueries({ queryKey: tenantsKeys.domains(tenantId) });
+      }
+
+      return data;
+    },
+    enabled,
+    refetchInterval: (query) => {
+      const status = query.state.data?.ssl_status;
+      return status === "active" || status === "error" ? false : 10_000;
     },
   });
 }

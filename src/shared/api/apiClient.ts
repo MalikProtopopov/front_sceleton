@@ -61,11 +61,13 @@ class ApiClient {
           config.headers.Authorization = `Bearer ${token}`;
         }
 
-        // X-Tenant-ID is only needed on POST /auth/login (after login, tenant is in the JWT)
-        const isLoginRequest =
-          config.url?.includes("/auth/login") && config.method === "post";
+        // X-Tenant-ID: required on all authenticated requests.
+        // On POST /auth/login — only if tenant is known (resolved from domain).
+        // On POST /auth/select-tenant — not needed (tenant_id is in the body).
         const tenantId = useTenantStore.getState().tenantId;
-        if (tenantId && isLoginRequest) {
+        const isSelectTenant =
+          config.url?.includes("/auth/select-tenant") && config.method === "post";
+        if (tenantId && !isSelectTenant) {
           config.headers["X-Tenant-ID"] = tenantId;
         }
 

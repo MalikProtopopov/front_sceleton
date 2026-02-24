@@ -12,6 +12,8 @@ import type {
   TenantDomainListResponse,
   TenantDomainCreate,
   TenantDomainUpdate,
+  DNSVerifyResponse,
+  TenantDomainSSLStatusResponse,
   EmailTestResponse,
   EmailLogParams,
   EmailLogsResponse,
@@ -55,6 +57,16 @@ export const tenantsApi = {
 
   deleteDomain: (tenantId: string, domainId: string) =>
     apiClient.delete(API_ENDPOINTS.TENANTS.DOMAIN_BY_ID(tenantId, domainId)),
+
+  verifyDomain: (tenantId: string, domainId: string) =>
+    apiClient.post<DNSVerifyResponse>(
+      API_ENDPOINTS.TENANTS.DOMAIN_VERIFY(tenantId, domainId),
+    ),
+
+  getDomainSSLStatus: (tenantId: string, domainId: string) =>
+    apiClient.get<TenantDomainSSLStatusResponse>(
+      API_ENDPOINTS.TENANTS.DOMAIN_SSL_STATUS(tenantId, domainId),
+    ),
 
   // --- Email ---
 

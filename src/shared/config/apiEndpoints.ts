@@ -147,6 +147,10 @@ export const API_ENDPOINTS = {
     DOMAINS: (id: string) => `/tenants/${id}/domains`,
     DOMAIN_BY_ID: (tenantId: string, domainId: string) =>
       `/tenants/${tenantId}/domains/${domainId}`,
+    DOMAIN_VERIFY: (tenantId: string, domainId: string) =>
+      `/tenants/${tenantId}/domains/${domainId}/verify`,
+    DOMAIN_SSL_STATUS: (tenantId: string, domainId: string) =>
+      `/tenants/${tenantId}/domains/${domainId}/ssl-status`,
   },
   
   // Feature Flags

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -20,8 +20,10 @@ import {
   HelpCircle,
   Users,
   ToggleLeft,
+  Upload,
+  X,
 } from "lucide-react";
-import { useTenantDetail, useDeleteTenant, TenantDomainsTab, TenantSettingsTab } from "@/features/tenants";
+import { useTenantDetail, useDeleteTenant, useUploadTenantLogo, useDeleteTenantLogo, TenantDomainsTab, TenantSettingsTab } from "@/features/tenants";
 import { TenantUsersTab } from "@/features/tenants/ui/TenantUsersTab";
 import { useFeatureFlags, useUpdateFeatureFlag } from "@/features/settings";
 import {
@@ -73,6 +75,10 @@ export default function TenantDetailPage() {
 
   const { data: tenant, isLoading } = useTenantDetail(tenantId);
   const { mutate: deleteTenant, isPending: isDeleting } = useDeleteTenant();
+
+  const { mutate: uploadLogo, isPending: isUploadingLogo } = useUploadTenantLogo(tenantId);
+  const { mutate: deleteLogoFn, isPending: isDeletingLogo } = useDeleteTenantLogo(tenantId);
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   const { data: flagsData, isLoading: isFlagsLoading } = useFeatureFlags(tenantId);
   const { mutate: updateFlag, isPending: isUpdatingFlag } = useUpdateFeatureFlag(tenantId);
@@ -190,6 +196,68 @@ export default function TenantDetailPage() {
         {/* General Info */}
         <TabsContent value="details">
           <div className="grid gap-6 lg:grid-cols-2">
+            {/* Logo */}
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Логотип</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-6">
+                  {tenant.logo_url ? (
+                    <img
+                      src={tenant.logo_url}
+                      alt={tenant.name}
+                      className="h-20 w-20 rounded-lg border border-[var(--color-border)] object-contain"
+                    />
+                  ) : (
+                    <div
+                      className="flex h-20 w-20 items-center justify-center rounded-lg text-2xl font-bold text-white"
+                      style={{ backgroundColor: tenant.primary_color || "var(--color-accent-primary)" }}
+                    >
+                      {tenant.name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <input
+                      ref={logoInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) uploadLogo(file);
+                        e.target.value = "";
+                      }}
+                    />
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => logoInputRef.current?.click()}
+                      disabled={isUploadingLogo}
+                      leftIcon={<Upload className="h-4 w-4" />}
+                    >
+                      {isUploadingLogo ? "Загрузка..." : "Загрузить"}
+                    </Button>
+                    {tenant.logo_url && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => deleteLogoFn()}
+                        disabled={isDeletingLogo}
+                        className="text-[var(--color-error)] hover:text-[var(--color-error)]"
+                        leftIcon={<X className="h-4 w-4" />}
+                      >
+                        Удалить
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                <p className="mt-2 text-xs text-[var(--color-text-muted)]">
+                  JPEG, PNG, WebP или GIF. Максимум 10 МБ.
+                </p>
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader>
                 <CardTitle>Общая информация</CardTitle>

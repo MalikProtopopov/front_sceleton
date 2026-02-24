@@ -15,6 +15,8 @@ export {
   useCreateTenantDomain,
   useUpdateTenantDomain,
   useDeleteTenantDomain,
+  useVerifyTenantDomain,
+  useDomainSSLPolling,
   useSendTestEmail,
   useEmailLogs,
 } from "./model/useTenants";
