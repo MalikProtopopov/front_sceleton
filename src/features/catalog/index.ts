@@ -24,6 +24,11 @@ export {
   useCreateProductAnalog,
   useDeleteProductAnalog,
   useUpdateProductCategories,
+  useProductContentBlocks,
+  useCreateProductContentBlock,
+  useUpdateProductContentBlock,
+  useDeleteProductContentBlock,
+  useReorderProductContentBlocks,
 } from "./model/useProducts";
 
 export {

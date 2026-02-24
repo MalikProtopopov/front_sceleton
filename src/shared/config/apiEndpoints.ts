@@ -255,6 +255,9 @@ export const API_ENDPOINTS = {
     ANALOG_BY_ID: (productId: string, analogId: string) =>
       `/admin/products/${productId}/analogs/${analogId}`,
     CATEGORIES_LINK: (id: string) => `/admin/products/${id}/categories`,
+    CONTENT_BLOCKS: (id: string) => `/admin/products/${id}/content-blocks`,
+    CONTENT_BLOCK_BY_ID: (productId: string, blockId: string) => `/admin/products/${productId}/content-blocks/${blockId}`,
+    CONTENT_BLOCKS_REORDER: (id: string) => `/admin/products/${id}/content-blocks/reorder`,
   },
 
   // Categories (Catalog)

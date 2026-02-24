@@ -16,6 +16,7 @@ import type {
   CreateProductAliasesDto,
   CreateProductAnalogDto,
 } from "@/entities/product";
+import type { CreateContentBlockDto, UpdateContentBlockDto, ReorderContentBlocksDto } from "@/entities/content-block";
 
 // --- Product CRUD ---
 
@@ -347,6 +348,80 @@ export function useUpdateProductCategories(productId: string) {
     },
     onError: (error) => {
       const message = getErrorMessage(error, "Не удалось обновить категории");
+      toast.error(message);
+    },
+  });
+}
+
+// --- Content Blocks ---
+
+export function useProductContentBlocks(productId: string, locale?: string) {
+  return useQuery({
+    queryKey: productsKeys.contentBlocks(productId, locale),
+    queryFn: () => productsApi.getContentBlocks(productId, locale),
+    enabled: !!productId,
+  });
+}
+
+export function useCreateProductContentBlock(productId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: CreateContentBlockDto) => productsApi.createContentBlock(productId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...productsKeys.all, "content-blocks", productId] });
+      toast.success("Блок добавлен");
+    },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "Не удалось добавить блок";
+      toast.error(message);
+    },
+  });
+}
+
+export function useUpdateProductContentBlock(productId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ blockId, data }: { blockId: string; data: UpdateContentBlockDto }) =>
+      productsApi.updateContentBlock(productId, blockId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...productsKeys.all, "content-blocks", productId] });
+      toast.success("Блок обновлён");
+    },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "Не удалось обновить блок";
+      toast.error(message);
+    },
+  });
+}
+
+export function useDeleteProductContentBlock(productId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (blockId: string) => productsApi.deleteContentBlock(productId, blockId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...productsKeys.all, "content-blocks", productId] });
+      toast.success("Блок удалён");
+    },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "Не удалось удалить блок";
+      toast.error(message);
+    },
+  });
+}
+
+export function useReorderProductContentBlocks(productId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: ReorderContentBlocksDto) => productsApi.reorderContentBlocks(productId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...productsKeys.all, "content-blocks", productId] });
+    },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "Не удалось изменить порядок блоков";
       toast.error(message);
     },
   });

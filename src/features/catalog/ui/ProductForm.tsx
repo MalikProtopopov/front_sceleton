@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { Button, Input, Textarea, Select, Switch } from "@/shared/ui";
-import { transliterate, cn } from "@/shared/lib";
+import { Button, Input, Textarea, Select, Switch, Combobox } from "@/shared/ui";
+import { transliterate } from "@/shared/lib";
 import { useCategoriesTree } from "../model/useCategories";
 import { useUomsList } from "../model/useUoms";
 import type { Product, CreateProductDto, UpdateProductDto } from "@/entities/product";
@@ -137,31 +137,18 @@ export function ProductForm({ product, onSubmit, isSubmitting }: ProductFormProp
       <div className="grid gap-6 sm:grid-cols-2">
         <Select label="Единица измерения" options={uomOptions} {...register("uom_id")} />
         {!product && (
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-[var(--color-text-primary)]">
-              Категории
-            </label>
-            <select
-              multiple
-              className={cn(
-                "min-h-11 w-full rounded-[var(--radius-md)] border bg-[var(--color-bg-primary)] px-4 py-2.5 text-sm text-[var(--color-text-primary)] transition-colors duration-[var(--transition-fast)]",
-                "hover:border-[var(--color-border-hover)]",
-                "focus:border-[var(--color-accent-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent-primary)]",
-                "border-[var(--color-border)]"
-              )}
-              {...register("category_ids")}
-              size={Math.min(categoryOptions.length, 5) || 1}
-            >
-              {categoryOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-            <p className="mt-1 text-xs text-[var(--color-text-muted)]">
-              Удерживайте Ctrl/Cmd для множественного выбора
-            </p>
-          </div>
+          <Combobox
+            label="Категории"
+            placeholder="Выберите категории..."
+            searchPlaceholder="Поиск категорий"
+            options={categoryOptions}
+            value={watch("category_ids") || []}
+            onChange={(val) => setValue("category_ids", Array.isArray(val) ? val : val ? [val] : [])}
+            multiple
+            searchable
+            clearable
+            emptyMessage="Нет категорий"
+          />
         )}
       </div>
 

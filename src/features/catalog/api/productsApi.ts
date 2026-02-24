@@ -19,6 +19,7 @@ import type {
   CreateProductAliasesDto,
   CreateProductAnalogDto,
 } from "@/entities/product";
+import type { ContentBlock, CreateContentBlockDto, UpdateContentBlockDto, ReorderContentBlocksDto } from "@/entities/content-block";
 
 export const productsApi = {
   getAll: (params?: ProductFilterParams) =>
@@ -111,6 +112,24 @@ export const productsApi = {
       API_ENDPOINTS.PRODUCTS.CATEGORIES_LINK(productId),
       categoryIds,
     ),
+
+  // Content Blocks
+  getContentBlocks: (productId: string, locale?: string) =>
+    apiClient.get<ContentBlock[]>(API_ENDPOINTS.PRODUCTS.CONTENT_BLOCKS(productId), {
+      params: locale ? { locale } : undefined,
+    }),
+
+  createContentBlock: (productId: string, data: CreateContentBlockDto) =>
+    apiClient.post<ContentBlock>(API_ENDPOINTS.PRODUCTS.CONTENT_BLOCKS(productId), data),
+
+  updateContentBlock: (productId: string, blockId: string, data: UpdateContentBlockDto) =>
+    apiClient.patch<ContentBlock>(API_ENDPOINTS.PRODUCTS.CONTENT_BLOCK_BY_ID(productId, blockId), data),
+
+  deleteContentBlock: (productId: string, blockId: string) =>
+    apiClient.delete(API_ENDPOINTS.PRODUCTS.CONTENT_BLOCK_BY_ID(productId, blockId)),
+
+  reorderContentBlocks: (productId: string, data: ReorderContentBlocksDto) =>
+    apiClient.post<ContentBlock[]>(API_ENDPOINTS.PRODUCTS.CONTENT_BLOCKS_REORDER(productId), data),
 };
 
 export const productsKeys = {
@@ -124,4 +143,5 @@ export const productsKeys = {
   prices: (id: string) => [...productsKeys.all, "prices", id] as const,
   aliases: (id: string) => [...productsKeys.all, "aliases", id] as const,
   analogs: (id: string) => [...productsKeys.all, "analogs", id] as const,
+  contentBlocks: (id: string, locale?: string) => [...productsKeys.all, "content-blocks", id, locale] as const,
 };

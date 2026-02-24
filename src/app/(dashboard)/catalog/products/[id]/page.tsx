@@ -16,6 +16,11 @@ import {
   useDeleteProduct,
   useUpdateProductCategories,
   useCategoriesTree,
+  useProductContentBlocks,
+  useCreateProductContentBlock,
+  useUpdateProductContentBlock,
+  useDeleteProductContentBlock,
+  useReorderProductContentBlocks,
 } from "@/features/catalog";
 import { useLeadsList } from "@/features/leads";
 import {
@@ -30,14 +35,30 @@ import {
   CardTitle,
   CardContent,
   Table,
+  Select,
+  Combobox,
+  ContentBlocksManager,
+  TextBlockEditor,
+  ImageBlockEditor,
+  VideoBlockEditor,
+  GalleryBlockEditor,
+  LinkBlockEditor,
+  ResultBlockEditor,
+  type BlockEditorProps,
   type Column,
 } from "@/shared/ui";
-import { formatDateTime, formatDate, cn } from "@/shared/lib";
+import { formatDateTime, formatDate } from "@/shared/lib";
 import { usePermissions } from "@/shared/hooks/usePermissions";
 import { ROUTES } from "@/shared/config";
 import type { CreateProductDto, UpdateProductDto, Category } from "@/entities/product";
+import type { CreateContentBlockDto, UpdateContentBlockDto } from "@/entities/content-block";
 import type { Inquiry } from "@/entities/inquiry";
 import { INQUIRY_STATUS_CONFIG } from "@/entities/inquiry";
+
+const SUPPORTED_LOCALES = [
+  { value: "ru", label: "Русский" },
+  { value: "en", label: "English" },
+];
 
 export default function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -46,12 +67,20 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
 
+  const [selectedBlocksLocale, setSelectedBlocksLocale] = useState("ru");
+
   const { data: product, isLoading, error } = useProduct(id);
   const { mutate: updateProduct, isPending: isUpdating } = useUpdateProduct(id);
   const { mutate: deleteProduct, isPending: isDeleting } = useDeleteProduct();
   const { mutate: updateCategories } = useUpdateProductCategories(id);
   const { data: categoriesData } = useCategoriesTree();
   const { data: inquiriesData } = useLeadsList({ productId: id, pageSize: 10 });
+
+  const { data: contentBlocks = [], isLoading: isLoadingBlocks } = useProductContentBlocks(id, undefined);
+  const createContentBlock = useCreateProductContentBlock(id);
+  const updateContentBlock = useUpdateProductContentBlock(id);
+  const deleteContentBlock = useDeleteProductContentBlock(id);
+  const reorderContentBlocks = useReorderProductContentBlocks(id);
 
   if (isLoading) {
     return (
@@ -74,9 +103,33 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     setDeleteModalOpen(false);
   };
 
-  const handleCategoriesChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selected = Array.from(e.target.selectedOptions, (o) => o.value);
-    updateCategories(selected);
+  const handleCategoriesChange = (value: string | string[]) => {
+    updateCategories(Array.isArray(value) ? value : value ? [value] : []);
+  };
+
+  const handleCreateContentBlock = async (data: CreateContentBlockDto) => {
+    await createContentBlock.mutateAsync(data);
+  };
+  const handleUpdateContentBlock = async (blockId: string, data: UpdateContentBlockDto) => {
+    await updateContentBlock.mutateAsync({ blockId, data });
+  };
+  const handleDeleteContentBlock = async (blockId: string) => {
+    await deleteContentBlock.mutateAsync(blockId);
+  };
+  const handleReorderContentBlocks = async (blockIds: string[]) => {
+    await reorderContentBlocks.mutateAsync({ locale: selectedBlocksLocale, block_ids: blockIds });
+  };
+
+  const renderBlockEditor = (props: BlockEditorProps) => {
+    switch (props.blockType) {
+      case "text": return <TextBlockEditor {...props} />;
+      case "image": return <ImageBlockEditor {...props} />;
+      case "video": return <VideoBlockEditor {...props} />;
+      case "gallery": return <GalleryBlockEditor {...props} />;
+      case "link": return <LinkBlockEditor {...props} />;
+      case "result": return <ResultBlockEditor {...props} />;
+      default: return null;
+    }
   };
 
   const allCategories = categoriesData?.items || [];
@@ -189,6 +242,44 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           </Card>
         </Tab>
 
+        <Tab label="Контент">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between gap-4">
+                <CardTitle>Контент-блоки</CardTitle>
+                <Select
+                  value={selectedBlocksLocale}
+                  onChange={(e) => setSelectedBlocksLocale(e.target.value)}
+                  options={SUPPORTED_LOCALES}
+                  minWidth="150px"
+                />
+              </div>
+            </CardHeader>
+            <CardContent>
+              {isLoadingBlocks ? (
+                <div className="py-8 text-center text-sm text-[var(--color-text-muted)]">
+                  Загрузка блоков...
+                </div>
+              ) : (
+                <ContentBlocksManager
+                  blocks={contentBlocks}
+                  locale={selectedBlocksLocale}
+                  isEditing={true}
+                  onCreateBlock={handleCreateContentBlock}
+                  onUpdateBlock={handleUpdateContentBlock}
+                  onDeleteBlock={handleDeleteContentBlock}
+                  onReorderBlocks={handleReorderContentBlocks}
+                  isCreating={createContentBlock.isPending}
+                  isUpdating={updateContentBlock.isPending}
+                  isDeleting={deleteContentBlock.isPending}
+                  renderBlockEditor={renderBlockEditor}
+                  title=""
+                />
+              )}
+            </CardContent>
+          </Card>
+        </Tab>
+
         <Tab label="Категории">
           <Card>
             <CardHeader>
@@ -196,27 +287,23 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
             </CardHeader>
             <CardContent>
               <p className="mb-3 text-sm text-[var(--color-text-muted)]">
-                Первая выбранная категория становится основной. Удерживайте Ctrl/Cmd для
-                множественного выбора.
+                Первая выбранная категория становится основной.
               </p>
-              <select
-                multiple
+              <Combobox
+                label="Категории"
+                placeholder="Выберите категории..."
+                searchPlaceholder="Поиск категорий"
+                options={allCategories.map((cat: Category) => ({
+                  value: cat.id,
+                  label: `${cat.title} (/${cat.slug})`,
+                }))}
                 value={linkedCategoryIds}
                 onChange={handleCategoriesChange}
-                className={cn(
-                  "min-h-11 w-full rounded-[var(--radius-md)] border bg-[var(--color-bg-primary)] px-4 py-2.5 text-sm text-[var(--color-text-primary)] transition-colors duration-[var(--transition-fast)]",
-                  "hover:border-[var(--color-border-hover)]",
-                  "focus:border-[var(--color-accent-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent-primary)]",
-                  "border-[var(--color-border)]"
-                )}
-                size={Math.min(allCategories.length, 10) || 1}
-              >
-                {allCategories.map((cat: Category) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.title} (/{cat.slug})
-                  </option>
-                ))}
-              </select>
+                multiple
+                searchable
+                clearable
+                emptyMessage="Нет категорий"
+              />
             </CardContent>
           </Card>
         </Tab>

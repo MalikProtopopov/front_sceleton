@@ -154,13 +154,14 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(
         <div
           onClick={() => !disabled && setIsOpen(!isOpen)}
           className={cn(
-            "flex min-h-[40px] w-full items-center gap-2 rounded-lg border px-3 py-2",
+            "flex h-11 min-h-11 w-full items-center gap-2 rounded-[var(--radius-md)] border px-4 py-2",
             "bg-[var(--color-bg-primary)] text-sm",
-            "transition-colors cursor-pointer",
+            "transition-colors duration-[var(--transition-fast)] cursor-pointer",
+            "hover:border-[var(--color-border-hover)]",
             error
               ? "border-[var(--color-error)]"
               : isOpen
-              ? "border-[var(--color-accent-primary)]"
+              ? "border-[var(--color-accent-primary)] ring-1 ring-[var(--color-accent-primary)]"
               : "border-[var(--color-border)]",
             disabled && "cursor-not-allowed opacity-50"
           )}
@@ -219,7 +220,7 @@ export const Combobox = forwardRef<HTMLInputElement, ComboboxProps>(
 
         {/* Dropdown */}
         {isOpen && !disabled && (
-          <div className="absolute left-0 top-full z-50 mt-1 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] shadow-lg">
+          <div className="absolute left-0 top-full z-50 mt-1 w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-bg-primary)] shadow-lg">
             {/* Search */}
             {searchable && (
               <div className="border-b border-[var(--color-border)] p-2">
