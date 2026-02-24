@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { Image as ImageIcon, X } from "lucide-react";
 import { Button, Input, Textarea, Select, Switch } from "@/shared/ui";
-import { transliterate } from "@/shared/lib";
+import { MediaPickerModal } from "@/features/media";
+import { transliterate, getFileContentUrl, getMediaUrl } from "@/shared/lib";
 import { useCategoriesTree } from "../model/useCategories";
 import type { Category, CreateCategoryDto, UpdateCategoryDto } from "@/entities/product";
 
@@ -25,6 +27,7 @@ interface FormValues {
 
 export function CategoryForm({ category, onSubmit, isSubmitting }: CategoryFormProps) {
   const [autoSlug, setAutoSlug] = useState(!category);
+  const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
   const { data: categoriesData } = useCategoriesTree();
 
   const {
@@ -46,6 +49,7 @@ export function CategoryForm({ category, onSubmit, isSubmitting }: CategoryFormP
   });
 
   const title = watch("title");
+  const imageUrl = watch("image_url");
 
   useEffect(() => {
     if (autoSlug && title) {
@@ -118,7 +122,48 @@ export function CategoryForm({ category, onSubmit, isSubmitting }: CategoryFormP
         {...register("description")}
       />
 
-      <Input label="URL изображения" placeholder="https://..." {...register("image_url")} />
+      <div className="w-full">
+        <label className="mb-2 block text-sm font-medium text-[var(--color-text-secondary)]">
+          URL изображения
+        </label>
+        <div className="flex gap-2">
+          <Input
+            value={imageUrl || ""}
+            onChange={(e) => setValue("image_url", e.target.value)}
+            placeholder="https://... или выберите из медиатеки"
+            className="flex-1"
+          />
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => setMediaPickerOpen(true)}
+            className="shrink-0"
+          >
+            <ImageIcon className="mr-2 h-4 w-4" />
+            Выбрать
+          </Button>
+        </div>
+        {imageUrl && (
+          <div className="relative mt-2 rounded-lg border border-[var(--color-border)] p-2">
+            <button
+              type="button"
+              onClick={() => setValue("image_url", "")}
+              className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-[var(--color-bg-secondary)] text-[var(--color-text-muted)] hover:bg-[var(--color-error-bg)] hover:text-[var(--color-error)] transition-colors"
+              title="Удалить изображение"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <img
+              src={getMediaUrl(imageUrl)}
+              alt=""
+              className="mx-auto h-24 w-auto max-w-full object-contain"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = "none";
+              }}
+            />
+          </div>
+        )}
+      </div>
 
       <div className="grid gap-6 sm:grid-cols-2">
         <Input
@@ -140,6 +185,17 @@ export function CategoryForm({ category, onSubmit, isSubmitting }: CategoryFormP
           {category ? "Сохранить" : "Создать категорию"}
         </Button>
       </div>
+
+      <MediaPickerModal
+        isOpen={mediaPickerOpen}
+        onClose={() => setMediaPickerOpen(false)}
+        onSelect={(file) => {
+          setValue("image_url", getFileContentUrl(file));
+          setMediaPickerOpen(false);
+        }}
+        imagesOnly
+        title="Выбрать изображение"
+      />
     </form>
   );
 }
