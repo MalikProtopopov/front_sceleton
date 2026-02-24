@@ -11,6 +11,7 @@ import {
   useSetCoverImage,
 } from "../model/useProducts";
 import type { ProductImage } from "@/entities/product";
+import { getMediaUrl } from "@/shared/lib";
 
 interface ProductImagesManagerProps {
   productId: string;
@@ -97,7 +98,7 @@ export function ProductImagesManager({ productId, images }: ProductImagesManager
             >
               <div className="aspect-square bg-[var(--color-bg-secondary)]">
                 <img
-                  src={img.url}
+                  src={getMediaUrl(img.url)}
                   alt={img.alt || ""}
                   className="h-full w-full object-cover"
                 />

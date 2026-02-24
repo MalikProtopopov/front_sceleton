@@ -16,7 +16,7 @@ import {
   type Column,
 } from "@/shared/ui";
 import { ROUTES } from "@/shared/config";
-import { formatDate } from "@/shared/lib";
+import { formatDate, getMediaUrl } from "@/shared/lib";
 import { usePermissions } from "@/shared/hooks/usePermissions";
 import type { Product, ProductFilterParams } from "@/entities/product";
 
@@ -67,7 +67,7 @@ export default function ProductsPage() {
 
   const getCoverUrl = (product: Product) => {
     const cover = product.images?.find((img) => img.is_cover) || product.images?.[0];
-    return cover?.url;
+    return cover ? getMediaUrl(cover.url) : undefined;
   };
 
   const categoryOptions = [
