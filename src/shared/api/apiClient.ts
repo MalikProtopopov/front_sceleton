@@ -71,6 +71,12 @@ class ApiClient {
           config.headers["X-Tenant-ID"] = tenantId;
         }
 
+        // FormData must be sent as multipart/form-data with boundary.
+        // Do not send Content-Type so axios/browser sets it automatically.
+        if (config.data instanceof FormData) {
+          delete config.headers["Content-Type"];
+        }
+
         return config;
       },
       (error) => Promise.reject(error),
@@ -234,16 +240,11 @@ class ApiClient {
     return response.data;
   }
 
-  // Upload file via multipart/form-data
+  // Upload file via multipart/form-data (Content-Type with boundary set by interceptor/axios)
   async uploadFile<T>(url: string, file: File, fieldName: string = "file"): Promise<T> {
     const formData = new FormData();
     formData.append(fieldName, file);
-
-    const response = await this.instance.post<T>(url, formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
+    const response = await this.instance.post<T>(url, formData);
     return response.data;
   }
 
