@@ -188,46 +188,48 @@ export default function ParametersPage() {
       </div>
 
       <FilterBar onReset={handleResetFilters}>
-        <Input
-          placeholder="Поиск по названию..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          onKeyDown={handleSearchKeyDown}
-          onBlur={handleSearch}
-          className="w-64"
-        />
-        <Select
-          value={filters.valueType || ""}
-          onChange={(e) =>
-            handleFiltersChange({
-              valueType: (e.target.value || undefined) as ParameterFilterParams["valueType"],
-            })
-          }
-          options={[
-            { value: "", label: "Все типы" },
-            ...Object.entries(PARAMETER_VALUE_TYPE_LABELS).map(([v, l]) => ({
-              value: v,
-              label: l,
-            })),
-          ]}
-          className="w-40"
-        />
-        <Select
-          value={filters.scope || ""}
-          onChange={(e) =>
-            handleFiltersChange({
-              scope: (e.target.value || undefined) as ParameterFilterParams["scope"],
-            })
-          }
-          options={[
-            { value: "", label: "Все scope" },
-            ...Object.entries(PARAMETER_SCOPE_LABELS).map(([v, l]) => ({
-              value: v,
-              label: l,
-            })),
-          ]}
-          className="w-40"
-        />
+        <div className="flex flex-wrap items-center gap-4">
+          <Input
+            placeholder="Поиск по названию..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={handleSearchKeyDown}
+            onBlur={handleSearch}
+            className="w-64"
+          />
+          <Select
+            value={filters.valueType || ""}
+            onChange={(e) =>
+              handleFiltersChange({
+                valueType: (e.target.value || undefined) as ParameterFilterParams["valueType"],
+              })
+            }
+            options={[
+              { value: "", label: "Все типы" },
+              ...Object.entries(PARAMETER_VALUE_TYPE_LABELS).map(([v, l]) => ({
+                value: v,
+                label: l,
+              })),
+            ]}
+            className="w-40 flex-shrink-0"
+          />
+          <Select
+            value={filters.scope || ""}
+            onChange={(e) =>
+              handleFiltersChange({
+                scope: (e.target.value || undefined) as ParameterFilterParams["scope"],
+              })
+            }
+            options={[
+              { value: "", label: "Все scope" },
+              ...Object.entries(PARAMETER_SCOPE_LABELS).map(([v, l]) => ({
+                value: v,
+                label: l,
+              })),
+            ]}
+            className="w-40 flex-shrink-0"
+          />
+        </div>
       </FilterBar>
 
       <Table

@@ -78,8 +78,8 @@ function buildRowFromExisting(
 }
 
 export function ProductCharsEditor({ productId, productCategoryIds = [] }: ProductCharsEditorProps) {
-  const { data: characteristics = [], isLoading: charsLoading } = useProductCharacteristics(productId);
-  const { data: parametersData } = useParametersList({ page: 1, page_size: 200 });
+  const { data: characteristics = [], isLoading: charsLoading, error: charsError } = useProductCharacteristics(productId);
+  const { data: parametersData, isLoading: paramsLoading, error: paramsError } = useParametersList({ page: 1, page_size: 200 });
   const { data: uoms } = useUomsList();
   const bulkUpdate = useBulkUpdateCharacteristics(productId);
   const deleteChar = useDeleteCharacteristic(productId);
@@ -305,7 +305,7 @@ export function ProductCharsEditor({ productId, productCategoryIds = [] }: Produ
     }
   };
 
-  if (charsLoading) {
+  if (charsLoading || paramsLoading) {
     return (
       <p className="text-sm text-[var(--color-text-muted)] py-4 text-center">
         Загрузка характеристик...
@@ -313,12 +313,44 @@ export function ProductCharsEditor({ productId, productCategoryIds = [] }: Produ
     );
   }
 
+  if (charsError || paramsError) {
+    return (
+      <div className="rounded-lg border border-[var(--color-error)] bg-red-50 p-4 text-center">
+        <p className="text-sm text-[var(--color-error)]">
+          Не удалось загрузить данные.
+          {charsError && " Ошибка загрузки характеристик."}
+          {paramsError && " Ошибка загрузки словаря параметров."}
+        </p>
+        <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+          Проверьте, что API-эндпоинты /characteristics и /parameters доступны.
+        </p>
+      </div>
+    );
+  }
+
+  const hasNoParameters = allParameters.length === 0;
+
   return (
     <div className="space-y-4">
-      {rows.length === 0 && (
+      {rows.length === 0 && !hasNoParameters && (
         <p className="text-sm text-[var(--color-text-muted)] italic py-4 text-center">
-          Характеристики не добавлены
+          Характеристики не добавлены. Выберите параметр из списка ниже.
         </p>
+      )}
+
+      {rows.length === 0 && hasNoParameters && (
+        <div className="rounded-lg border border-dashed border-[var(--color-border)] p-6 text-center">
+          <p className="text-sm text-[var(--color-text-muted)]">
+            Словарь параметров пуст.
+          </p>
+          <p className="mt-1 text-sm text-[var(--color-text-muted)]">
+            Сначала создайте параметры в разделе{" "}
+            <a href="/catalog/parameters" className="text-[var(--color-accent-primary)] underline">
+              Каталог → Параметры
+            </a>
+            , затем возвращайтесь сюда для привязки характеристик к товару.
+          </p>
+        </div>
       )}
 
       {rows.map((row, index) => (
@@ -353,7 +385,7 @@ export function ProductCharsEditor({ productId, productCategoryIds = [] }: Produ
       ))}
 
       <div className="flex items-center gap-3">
-        {availableParameters.length > 0 && (
+        {!hasNoParameters && (
           <Combobox
             placeholder="Добавить параметр..."
             searchPlaceholder="Поиск параметров"
@@ -364,7 +396,7 @@ export function ProductCharsEditor({ productId, productCategoryIds = [] }: Produ
             value=""
             onChange={handleAddParameter}
             searchable
-            emptyMessage="Нет доступных параметров"
+            emptyMessage="Все параметры уже добавлены"
             className="w-72"
           />
         )}
