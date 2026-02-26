@@ -38,11 +38,68 @@ export interface ProductImage {
   created_at: string;
 }
 
+// Legacy — kept for backward compat during migration
 export interface ProductChar {
   id: string;
   name: string;
   value_text: string;
   uom_id: string | null;
+}
+
+// ---------- Parameters (dictionary of characteristics) ----------
+
+export type ParameterValueType = "string" | "number" | "enum" | "bool" | "range";
+export type ParameterScope = "global" | "category";
+
+export interface ParameterValue {
+  id: string;
+  parameter_id: string;
+  label: string;
+  slug: string;
+  code: string | null;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Parameter {
+  id: string;
+  tenant_id: string;
+  name: string;
+  slug: string;
+  value_type: ParameterValueType;
+  uom_id: string | null;
+  scope: ParameterScope;
+  description: string | null;
+  constraints: Record<string, unknown> | null;
+  is_filterable: boolean;
+  is_required: boolean;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  values: ParameterValue[];
+  category_ids: string[];
+}
+
+// ---------- Product characteristics (normalized) ----------
+
+export type SourceType = "manual" | "import" | "system";
+
+export interface ProductCharacteristic {
+  id: string;
+  product_id: string;
+  parameter_id: string;
+  parameter_value_id: string | null;
+  value_text: string | null;
+  value_number: number | null;
+  value_bool: boolean | null;
+  uom_id: string | null;
+  source_type: SourceType;
+  is_locked: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface ProductAlias {
@@ -97,7 +154,6 @@ export interface Product {
 }
 
 export interface ProductDetail extends Product {
-  chars: ProductChar[];
   aliases: ProductAlias[];
   categories: ProductCategoryLink[];
   prices: ProductPrice[];
@@ -163,6 +219,7 @@ export interface UpdateUOMDto {
   is_active?: boolean;
 }
 
+// Legacy — kept for backward compat during migration
 export interface BulkCharsDto {
   created?: Array<{ name: string; value_text: string; uom_id?: string | null }>;
   updated?: Array<{ id: string; name?: string; value_text?: string; uom_id?: string | null }>;
@@ -173,6 +230,91 @@ export interface BulkCharsResponse {
   created: number;
   updated: number;
   deleted: number;
+}
+
+// --- Parameter DTOs ---
+
+export interface ParameterCreate {
+  name: string;
+  slug?: string;
+  value_type: ParameterValueType;
+  uom_id?: string;
+  scope?: ParameterScope;
+  description?: string;
+  constraints?: Record<string, unknown>;
+  is_filterable?: boolean;
+  is_required?: boolean;
+  sort_order?: number;
+  category_ids?: string[];
+  values?: ParameterValueCreate[];
+}
+
+export interface ParameterUpdate {
+  name?: string;
+  slug?: string;
+  description?: string;
+  uom_id?: string | null;
+  scope?: ParameterScope;
+  constraints?: Record<string, unknown>;
+  is_filterable?: boolean;
+  is_required?: boolean;
+  sort_order?: number;
+  is_active?: boolean;
+}
+
+export interface ParameterValueCreate {
+  label: string;
+  slug?: string;
+  code?: string;
+  sort_order?: number;
+}
+
+export interface ParameterValueUpdate {
+  label?: string;
+  slug?: string;
+  code?: string;
+  sort_order?: number;
+  is_active?: boolean;
+}
+
+export interface ParameterCategorySet {
+  category_ids: string[];
+}
+
+// --- Product characteristic DTOs ---
+
+export interface ProductCharacteristicCreate {
+  parameter_id: string;
+  parameter_value_id?: string;
+  value_text?: string;
+  value_number?: number;
+  value_bool?: boolean;
+  uom_id?: string;
+  source_type?: SourceType;
+}
+
+export interface ProductCharacteristicBulkItem {
+  parameter_id: string;
+  parameter_value_ids?: string[];
+  value_text?: string;
+  value_number?: number;
+  value_bool?: boolean;
+  uom_id?: string;
+}
+
+export interface ProductCharacteristicBulkCreate {
+  characteristics: ProductCharacteristicBulkItem[];
+}
+
+export interface ProductCharacteristicBulkResponse {
+  created: number;
+  updated: number;
+  deleted: number;
+}
+
+export interface AddProductCategoryDto {
+  category_id: string;
+  is_primary?: boolean;
 }
 
 export interface CreateProductPriceDto {
@@ -218,6 +360,14 @@ export interface CategoryFilterParams {
   parent_id?: string;
 }
 
+export interface ParameterFilterParams {
+  page?: number;
+  page_size?: number;
+  search?: string;
+  valueType?: ParameterValueType;
+  scope?: ParameterScope;
+}
+
 // --- Display helpers ---
 
 export const PRICE_TYPE_LABELS: Record<PriceType, string> = {
@@ -231,4 +381,17 @@ export const ANALOG_RELATION_LABELS: Record<AnalogRelation, string> = {
   equivalent: "Полный аналог",
   better: "Аналог лучше",
   worse: "Аналог хуже",
+};
+
+export const PARAMETER_VALUE_TYPE_LABELS: Record<ParameterValueType, string> = {
+  enum: "Список",
+  number: "Число",
+  string: "Строка",
+  bool: "Да/Нет",
+  range: "Диапазон",
+};
+
+export const PARAMETER_SCOPE_LABELS: Record<ParameterScope, string> = {
+  global: "Глобальный",
+  category: "По категориям",
 };

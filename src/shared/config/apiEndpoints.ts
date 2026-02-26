@@ -239,6 +239,10 @@ export const API_ENDPOINTS = {
     LIST: "/admin/products",
     BY_ID: (id: string) => `/admin/products/${id}`,
     CHARS: (id: string) => `/admin/products/${id}/chars`,
+    CHARACTERISTICS: (id: string) => `/admin/products/${id}/characteristics`,
+    CHARACTERISTICS_BULK: (id: string) => `/admin/products/${id}/characteristics/bulk`,
+    CHARACTERISTIC_BY_PARAM: (productId: string, parameterId: string) =>
+      `/admin/products/${productId}/characteristics/${parameterId}`,
     IMAGES: (id: string) => `/admin/products/${id}/images`,
     IMAGE_BY_ID: (productId: string, imageId: string) =>
       `/admin/products/${productId}/images/${imageId}`,
@@ -255,6 +259,8 @@ export const API_ENDPOINTS = {
     ANALOG_BY_ID: (productId: string, analogId: string) =>
       `/admin/products/${productId}/analogs/${analogId}`,
     CATEGORIES_LINK: (id: string) => `/admin/products/${id}/categories`,
+    CATEGORY_LINK_BY_ID: (productId: string, linkId: string) =>
+      `/admin/products/${productId}/categories/${linkId}`,
     CONTENT_BLOCKS: (id: string) => `/admin/products/${id}/content-blocks`,
     CONTENT_BLOCK_BY_ID: (productId: string, blockId: string) => `/admin/products/${productId}/content-blocks/${blockId}`,
     CONTENT_BLOCKS_REORDER: (id: string) => `/admin/products/${id}/content-blocks/reorder`,
@@ -265,6 +271,16 @@ export const API_ENDPOINTS = {
     LIST: "/admin/categories",
     TREE: "/admin/categories/tree",
     BY_ID: (id: string) => `/admin/categories/${id}`,
+  },
+
+  // Parameters (Catalog — characteristics dictionary)
+  PARAMETERS: {
+    LIST: "/admin/parameters",
+    BY_ID: (id: string) => `/admin/parameters/${id}`,
+    VALUES: (parameterId: string) => `/admin/parameters/${parameterId}/values`,
+    VALUE_BY_ID: (parameterId: string, valueId: string) =>
+      `/admin/parameters/${parameterId}/values/${valueId}`,
+    CATEGORIES: (parameterId: string) => `/admin/parameters/${parameterId}/categories`,
   },
 
   // Units of Measure (Catalog)

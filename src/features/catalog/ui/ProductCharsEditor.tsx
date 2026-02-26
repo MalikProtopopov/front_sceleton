@@ -1,153 +1,382 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, Trash2, Save } from "lucide-react";
-import { Button, Input } from "@/shared/ui";
-import { useBulkUpdateChars } from "../model/useProducts";
-import type { ProductChar, BulkCharsDto } from "@/entities/product";
+import { useState, useMemo, useEffect } from "react";
+import { Trash2, Save } from "lucide-react";
+import { Button, Input, Switch, Badge, Combobox } from "@/shared/ui";
+import { useParametersList } from "../model/useParameters";
+import { useUomsList } from "../model/useUoms";
+import {
+  useProductCharacteristics,
+  useBulkUpdateCharacteristics,
+  useDeleteCharacteristic,
+} from "../model/useProducts";
+import type {
+  Parameter,
+  ProductCharacteristic,
+  ProductCharacteristicBulkItem,
+} from "@/entities/product";
+import { PARAMETER_VALUE_TYPE_LABELS } from "@/entities/product";
 
 interface ProductCharsEditorProps {
   productId: string;
-  chars: ProductChar[];
+  productCategoryIds?: string[];
 }
 
 interface CharRow {
-  id?: string;
-  name: string;
-  value_text: string;
+  parameter: Parameter;
+  selectedValueIds: string[];
+  valueText: string;
+  valueNumber: string;
+  valueBool: boolean;
+  rangeMin: string;
+  rangeMax: string;
   isNew?: boolean;
-  isDeleted?: boolean;
-  isDirty?: boolean;
 }
 
-export function ProductCharsEditor({ productId, chars }: ProductCharsEditorProps) {
-  const [rows, setRows] = useState<CharRow[]>(
-    chars.map((c) => ({ id: c.id, name: c.name, value_text: c.value_text })),
-  );
-  const { mutate: bulkUpdate, isPending } = useBulkUpdateChars(productId);
-
-  const addRow = () => {
-    setRows((prev) => [...prev, { name: "", value_text: "", isNew: true }]);
+function buildRowFromExisting(
+  param: Parameter,
+  chars: ProductCharacteristic[],
+): CharRow {
+  const paramChars = chars.filter((c) => c.parameter_id === param.id);
+  const row: CharRow = {
+    parameter: param,
+    selectedValueIds: [],
+    valueText: "",
+    valueNumber: "",
+    valueBool: false,
+    rangeMin: "",
+    rangeMax: "",
   };
 
-  const updateRow = (index: number, field: "name" | "value_text", value: string) => {
-    setRows((prev) =>
-      prev.map((r, i) =>
-        i === index ? { ...r, [field]: value, isDirty: !r.isNew ? true : r.isDirty } : r,
-      ),
-    );
+  switch (param.value_type) {
+    case "enum":
+      row.selectedValueIds = paramChars
+        .map((c) => c.parameter_value_id)
+        .filter((id): id is string => !!id);
+      break;
+    case "number":
+      row.valueNumber = paramChars[0]?.value_number?.toString() ?? "";
+      break;
+    case "string":
+      row.valueText = paramChars[0]?.value_text ?? "";
+      break;
+    case "bool":
+      row.valueBool = paramChars[0]?.value_bool ?? false;
+      break;
+    case "range": {
+      const sorted = paramChars
+        .map((c) => c.value_number)
+        .filter((n): n is number => n != null)
+        .sort((a, b) => a - b);
+      row.rangeMin = sorted[0]?.toString() ?? "";
+      row.rangeMax = sorted[1]?.toString() ?? sorted[0]?.toString() ?? "";
+      break;
+    }
+  }
+
+  return row;
+}
+
+export function ProductCharsEditor({ productId, productCategoryIds = [] }: ProductCharsEditorProps) {
+  const { data: characteristics = [], isLoading: charsLoading } = useProductCharacteristics(productId);
+  const { data: parametersData } = useParametersList({ page: 1, page_size: 200 });
+  const { data: uoms } = useUomsList();
+  const bulkUpdate = useBulkUpdateCharacteristics(productId);
+  const deleteChar = useDeleteCharacteristic(productId);
+
+  const allParameters = parametersData?.items || [];
+  const uomMap = useMemo(() => {
+    const map = new Map<string, string>();
+    (uoms || []).forEach((u) => map.set(u.id, u.symbol || u.code));
+    return map;
+  }, [uoms]);
+
+  const [rows, setRows] = useState<CharRow[]>([]);
+  const [initialized, setInitialized] = useState(false);
+
+  useEffect(() => {
+    if (initialized || charsLoading || allParameters.length === 0) return;
+
+    const usedParamIds = new Set(characteristics.map((c) => c.parameter_id));
+    const initialRows: CharRow[] = [];
+
+    usedParamIds.forEach((paramId) => {
+      const param = allParameters.find((p) => p.id === paramId);
+      if (param) {
+        initialRows.push(buildRowFromExisting(param, characteristics));
+      }
+    });
+
+    setRows(initialRows);
+    setInitialized(true);
+  }, [initialized, charsLoading, allParameters, characteristics]);
+
+  const usedParameterIds = useMemo(() => new Set(rows.map((r) => r.parameter.id)), [rows]);
+
+  const availableParameters = useMemo(() => {
+    return allParameters.filter((p) => {
+      if (usedParameterIds.has(p.id)) return false;
+      if (!p.is_active) return false;
+      if (p.scope === "global") return true;
+      if (productCategoryIds.length === 0) return true;
+      return p.category_ids?.some((cid) => productCategoryIds.includes(cid));
+    });
+  }, [allParameters, usedParameterIds, productCategoryIds]);
+
+  const handleAddParameter = (parameterId: string | string[]) => {
+    const id = Array.isArray(parameterId) ? parameterId[0] : parameterId;
+    if (!id) return;
+    const param = allParameters.find((p) => p.id === id);
+    if (!param) return;
+    setRows((prev) => [
+      ...prev,
+      {
+        parameter: param,
+        selectedValueIds: [],
+        valueText: "",
+        valueNumber: "",
+        valueBool: false,
+        rangeMin: "",
+        rangeMax: "",
+        isNew: true,
+      },
+    ]);
   };
 
-  const deleteRow = (index: number) => {
-    setRows((prev) =>
-      prev.map((r, i) => {
-        if (i !== index) return r;
-        if (r.isNew) return { ...r, isDeleted: true };
-        return { ...r, isDeleted: !r.isDeleted };
-      }),
-    );
+  const handleRemoveRow = (index: number) => {
+    const row = rows[index];
+    if (!row) return;
+    if (!row.isNew) {
+      deleteChar.mutate(row.parameter.id);
+    }
+    setRows((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const updateRow = (index: number, updates: Partial<CharRow>) => {
+    setRows((prev) => prev.map((r, i) => (i === index ? { ...r, ...updates } : r)));
   };
 
   const handleSave = () => {
-    const dto: BulkCharsDto = {};
+    const items: ProductCharacteristicBulkItem[] = rows
+      .map((row) => {
+        const item: ProductCharacteristicBulkItem = {
+          parameter_id: row.parameter.id,
+        };
+        switch (row.parameter.value_type) {
+          case "enum":
+            item.parameter_value_ids = row.selectedValueIds;
+            break;
+          case "number":
+            if (row.valueNumber !== "") item.value_number = parseFloat(row.valueNumber);
+            break;
+          case "string":
+            if (row.valueText) item.value_text = row.valueText;
+            break;
+          case "bool":
+            item.value_bool = row.valueBool;
+            break;
+          case "range":
+            // Range stores the product's value; constraints on the parameter define bounds
+            if (row.rangeMin !== "") item.value_number = parseFloat(row.rangeMin);
+            if (row.rangeMax !== "" && !item.value_number) item.value_number = parseFloat(row.rangeMax);
+            break;
+        }
+        return item;
+      })
+      .filter((item) => {
+        if (item.parameter_value_ids?.length) return true;
+        if (item.value_text) return true;
+        if (item.value_number != null) return true;
+        if (item.value_bool != null) return true;
+        return false;
+      });
 
-    const created = rows.filter((r) => r.isNew && !r.isDeleted && r.name && r.value_text);
-    if (created.length) {
-      dto.created = created.map((r) => ({ name: r.name, value_text: r.value_text }));
-    }
-
-    const updated = rows.filter((r) => r.isDirty && !r.isNew && !r.isDeleted && r.id);
-    if (updated.length) {
-      dto.updated = updated.map((r) => ({
-        id: r.id!,
-        name: r.name,
-        value_text: r.value_text,
-      }));
-    }
-
-    const deleted = rows.filter((r) => r.isDeleted && !r.isNew && r.id);
-    if (deleted.length) {
-      dto.deleted = deleted.map((r) => r.id!);
-    }
-
-    if (!dto.created?.length && !dto.updated?.length && !dto.deleted?.length) return;
-
-    bulkUpdate(dto, {
-      onSuccess: () => {
-        setRows((prev) =>
-          prev
-            .filter((r) => !r.isDeleted)
-            .map((r) => ({ ...r, isNew: false, isDirty: false })),
-        );
+    bulkUpdate.mutate(
+      { characteristics: items },
+      {
+        onSuccess: () => {
+          setRows((prev) => prev.map((r) => ({ ...r, isNew: false })));
+        },
       },
-    });
+    );
   };
 
-  const visibleRows = rows.filter((r) => !(r.isNew && r.isDeleted));
-  const hasChanges = rows.some((r) => r.isNew || r.isDirty || r.isDeleted);
+  const renderValueWidget = (row: CharRow, index: number) => {
+    switch (row.parameter.value_type) {
+      case "enum": {
+        const values = row.parameter.values?.filter((v) => v.is_active) || [];
+        return (
+          <div className="flex flex-wrap gap-2">
+            {values.map((v) => {
+              const isSelected = row.selectedValueIds.includes(v.id);
+              return (
+                <label
+                  key={v.id}
+                  className={`flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-sm cursor-pointer transition-colors ${
+                    isSelected
+                      ? "border-[var(--color-primary)] bg-[var(--color-primary-light)] text-[var(--color-primary)]"
+                      : "border-[var(--color-border)] hover:bg-[var(--color-bg-hover)]"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => {
+                      const next = isSelected
+                        ? row.selectedValueIds.filter((id) => id !== v.id)
+                        : [...row.selectedValueIds, v.id];
+                      updateRow(index, { selectedValueIds: next });
+                    }}
+                    className="sr-only"
+                  />
+                  {v.label}
+                </label>
+              );
+            })}
+            {values.length === 0 && (
+              <span className="text-sm text-[var(--color-text-muted)] italic">
+                Нет значений
+              </span>
+            )}
+          </div>
+        );
+      }
+      case "number":
+        return (
+          <div className="flex items-center gap-2">
+            <Input
+              type="number"
+              value={row.valueNumber}
+              onChange={(e) => updateRow(index, { valueNumber: e.target.value })}
+              placeholder="0"
+              className="w-32"
+            />
+            {row.parameter.uom_id && uomMap.get(row.parameter.uom_id) && (
+              <span className="text-sm text-[var(--color-text-muted)]">
+                {uomMap.get(row.parameter.uom_id)}
+              </span>
+            )}
+          </div>
+        );
+      case "string":
+        return (
+          <Input
+            value={row.valueText}
+            onChange={(e) => updateRow(index, { valueText: e.target.value })}
+            placeholder="Значение"
+            className="max-w-md"
+          />
+        );
+      case "bool":
+        return (
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={row.valueBool}
+              onChange={(checked: boolean) => updateRow(index, { valueBool: checked })}
+            />
+            <span className="text-sm">{row.valueBool ? "Да" : "Нет"}</span>
+          </div>
+        );
+      case "range":
+        return (
+          <div className="flex items-center gap-2">
+            <Input
+              type="number"
+              value={row.rangeMin}
+              onChange={(e) => updateRow(index, { rangeMin: e.target.value })}
+              placeholder="Мин"
+              className="w-24"
+            />
+            <span className="text-sm text-[var(--color-text-muted)]">—</span>
+            <Input
+              type="number"
+              value={row.rangeMax}
+              onChange={(e) => updateRow(index, { rangeMax: e.target.value })}
+              placeholder="Макс"
+              className="w-24"
+            />
+            {row.parameter.uom_id && uomMap.get(row.parameter.uom_id) && (
+              <span className="text-sm text-[var(--color-text-muted)]">
+                {uomMap.get(row.parameter.uom_id)}
+              </span>
+            )}
+          </div>
+        );
+    }
+  };
+
+  if (charsLoading) {
+    return (
+      <p className="text-sm text-[var(--color-text-muted)] py-4 text-center">
+        Загрузка характеристик...
+      </p>
+    );
+  }
 
   return (
     <div className="space-y-4">
-      <div className="space-y-2">
-        {visibleRows.length === 0 && (
-          <p className="text-sm text-[var(--color-text-muted)] italic py-4 text-center">
-            Характеристики не добавлены
-          </p>
-        )}
-        {visibleRows.map((row) => {
-          const realIndex = rows.indexOf(row);
-          return (
-            <div
-              key={realIndex}
-              className={`flex items-center gap-3 ${row.isDeleted ? "opacity-40" : ""}`}
-            >
-              <Input
-                placeholder="Название"
-                value={row.name}
-                onChange={(e) => updateRow(realIndex, "name", e.target.value)}
-                disabled={row.isDeleted}
-                className="flex-1"
-              />
-              <Input
-                placeholder="Значение"
-                value={row.value_text}
-                onChange={(e) => updateRow(realIndex, "value_text", e.target.value)}
-                disabled={row.isDeleted}
-                className="flex-1"
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => deleteRow(realIndex)}
-                className={`h-9 w-9 flex-shrink-0 ${row.isDeleted ? "text-[var(--color-success)]" : "text-[var(--color-error)]"}`}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+      {rows.length === 0 && (
+        <p className="text-sm text-[var(--color-text-muted)] italic py-4 text-center">
+          Характеристики не добавлены
+        </p>
+      )}
+
+      {rows.map((row, index) => (
+        <div
+          key={row.parameter.id}
+          className="flex items-start gap-4 rounded-lg border border-[var(--color-border)] p-4"
+        >
+          <div className="flex-1 space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-sm text-[var(--color-text-primary)]">
+                {row.parameter.name}
+              </span>
+              <Badge variant="outline" className="text-xs">
+                {PARAMETER_VALUE_TYPE_LABELS[row.parameter.value_type]}
+              </Badge>
+              {row.isNew && (
+                <Badge variant="warning" className="text-xs">Новая</Badge>
+              )}
             </div>
-          );
-        })}
-      </div>
+            {renderValueWidget(row, index)}
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={() => handleRemoveRow(index)}
+            className="h-8 w-8 flex-shrink-0 text-[var(--color-error)] mt-1"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      ))}
 
       <div className="flex items-center gap-3">
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          onClick={addRow}
-          leftIcon={<Plus className="h-4 w-4" />}
-        >
-          Добавить
-        </Button>
-        {hasChanges && (
+        {availableParameters.length > 0 && (
+          <Combobox
+            placeholder="Добавить параметр..."
+            searchPlaceholder="Поиск параметров"
+            options={availableParameters.map((p) => ({
+              value: p.id,
+              label: `${p.name} (${PARAMETER_VALUE_TYPE_LABELS[p.value_type]})`,
+            }))}
+            value=""
+            onChange={handleAddParameter}
+            searchable
+            emptyMessage="Нет доступных параметров"
+            className="w-72"
+          />
+        )}
+        {rows.length > 0 && (
           <Button
             type="button"
             size="sm"
             onClick={handleSave}
-            isLoading={isPending}
+            isLoading={bulkUpdate.isPending}
             leftIcon={<Save className="h-4 w-4" />}
           >
-            Сохранить характеристики
+            Сохранить всё
           </Button>
         )}
       </div>

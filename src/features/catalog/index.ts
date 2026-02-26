@@ -1,6 +1,7 @@
 export { productsApi, productsKeys } from "./api/productsApi";
 export { categoriesApi, categoriesKeys } from "./api/categoriesApi";
 export { uomsApi, uomsKeys } from "./api/uomsApi";
+export { parametersApi, parametersKeys } from "./api/parametersApi";
 
 export {
   useProductsList,
@@ -10,6 +11,9 @@ export {
   useDeleteProduct,
   useProductChars,
   useBulkUpdateChars,
+  useProductCharacteristics,
+  useBulkUpdateCharacteristics,
+  useDeleteCharacteristic,
   useUploadProductImage,
   useUpdateProductImage,
   useDeleteProductImage,
@@ -23,6 +27,9 @@ export {
   useProductAnalogs,
   useCreateProductAnalog,
   useDeleteProductAnalog,
+  useProductCategories,
+  useAddProductCategory,
+  useRemoveProductCategory,
   useUpdateProductCategories,
   useProductContentBlocks,
   useCreateProductContentBlock,
@@ -42,6 +49,18 @@ export {
 
 export { useUomsList, useCreateUom, useUpdateUom } from "./model/useUoms";
 
+export {
+  useParametersList,
+  useParameter,
+  useCreateParameter,
+  useUpdateParameter,
+  useDeleteParameter,
+  useAddParameterValue,
+  useUpdateParameterValue,
+  useDeleteParameterValue,
+  useSetParameterCategories,
+} from "./model/useParameters";
+
 export { ProductForm } from "./ui/ProductForm";
 export { ProductCharsEditor } from "./ui/ProductCharsEditor";
 export { ProductImagesManager } from "./ui/ProductImagesManager";
@@ -50,3 +69,6 @@ export { ProductAliasesEditor } from "./ui/ProductAliasesEditor";
 export { ProductAnalogsEditor } from "./ui/ProductAnalogsEditor";
 export { CategoryForm } from "./ui/CategoryForm";
 export { CategoryTree } from "./ui/CategoryTree";
+export { ParameterForm } from "./ui/ParameterForm";
+export { ParameterValuesEditor } from "./ui/ParameterValuesEditor";
+export { ParameterCategoriesEditor } from "./ui/ParameterCategoriesEditor";

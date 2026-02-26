@@ -39,12 +39,16 @@ export const ROUTES = {
   
   // Catalog
   CATALOG: "/catalog",
+  UOM: "/catalog/uom",
   PRODUCTS: "/catalog/products",
   PRODUCT_NEW: "/catalog/products/new",
   PRODUCT_EDIT: (id: string) => `/catalog/products/${id}`,
   CATEGORIES: "/catalog/categories",
   CATEGORY_NEW: "/catalog/categories/new",
   CATEGORY_EDIT: (id: string) => `/catalog/categories/${id}`,
+  PARAMETERS: "/catalog/parameters",
+  PARAMETER_NEW: "/catalog/parameters/new",
+  PARAMETER_EDIT: (id: string) => `/catalog/parameters/${id}`,
   
   // Leads
   LEADS: "/leads",

@@ -14,7 +14,9 @@ import {
   useProduct,
   useUpdateProduct,
   useDeleteProduct,
-  useUpdateProductCategories,
+  useProductCategories,
+  useAddProductCategory,
+  useRemoveProductCategory,
   useCategoriesTree,
   useProductContentBlocks,
   useCreateProductContentBlock,
@@ -50,7 +52,7 @@ import {
 import { formatDateTime, formatDate } from "@/shared/lib";
 import { usePermissions } from "@/shared/hooks/usePermissions";
 import { ROUTES } from "@/shared/config";
-import type { CreateProductDto, UpdateProductDto, Category } from "@/entities/product";
+import type { CreateProductDto, UpdateProductDto, Category, ProductCategoryLink } from "@/entities/product";
 import type { CreateContentBlockDto, UpdateContentBlockDto } from "@/entities/content-block";
 import type { Inquiry } from "@/entities/inquiry";
 import { INQUIRY_STATUS_CONFIG } from "@/entities/inquiry";
@@ -72,7 +74,9 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   const { data: product, isLoading, error } = useProduct(id);
   const { mutate: updateProduct, isPending: isUpdating } = useUpdateProduct(id);
   const { mutate: deleteProduct, isPending: isDeleting } = useDeleteProduct();
-  const { mutate: updateCategories } = useUpdateProductCategories(id);
+  const { data: productCategories = [] } = useProductCategories(id);
+  const { mutate: addCategory } = useAddProductCategory(id);
+  const { mutate: removeCategory } = useRemoveProductCategory(id);
   const { data: categoriesData } = useCategoriesTree();
   const { data: inquiriesData } = useLeadsList({ productId: id, pageSize: 10 });
 
@@ -103,8 +107,12 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     setDeleteModalOpen(false);
   };
 
-  const handleCategoriesChange = (value: string | string[]) => {
-    updateCategories(Array.isArray(value) ? value : value ? [value] : []);
+  const handleAddCategory = (categoryId: string) => {
+    addCategory({ category_id: categoryId, is_primary: productCategories.length === 0 });
+  };
+
+  const handleRemoveCategory = (linkId: string) => {
+    removeCategory(linkId);
   };
 
   const handleCreateContentBlock = async (data: CreateContentBlockDto) => {
@@ -133,7 +141,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   };
 
   const allCategories = categoriesData?.items || [];
-  const linkedCategoryIds = product.categories?.map((c) => c.category_id) || [];
+  const linkedCategoryIds = productCategories.map((c: ProductCategoryLink) => c.category_id);
 
   const inquiryColumns: Column<Inquiry>[] = [
     {
@@ -223,10 +231,10 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
         <Tab label="Характеристики">
           <Card>
             <CardHeader>
-              <CardTitle>Характеристики (EAV)</CardTitle>
+              <CardTitle>Характеристики</CardTitle>
             </CardHeader>
             <CardContent>
-              <ProductCharsEditor productId={id} chars={product.chars || []} />
+              <ProductCharsEditor productId={id} productCategoryIds={linkedCategoryIds} />
             </CardContent>
           </Card>
         </Tab>
@@ -287,23 +295,63 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
             </CardHeader>
             <CardContent>
               <p className="mb-3 text-sm text-[var(--color-text-muted)]">
-                Первая выбранная категория становится основной.
+                Первая привязанная категория автоматически становится основной (★).
               </p>
-              <Combobox
-                label="Категории"
-                placeholder="Выберите категории..."
-                searchPlaceholder="Поиск категорий"
-                options={allCategories.map((cat: Category) => ({
-                  value: cat.id,
-                  label: `${cat.title} (/${cat.slug})`,
-                }))}
-                value={linkedCategoryIds}
-                onChange={handleCategoriesChange}
-                multiple
-                searchable
-                clearable
-                emptyMessage="Нет категорий"
-              />
+
+              {/* Linked categories */}
+              {productCategories.length > 0 && (
+                <div className="space-y-2 mb-4">
+                  {productCategories.map((link: ProductCategoryLink) => {
+                    const cat = allCategories.find((c: Category) => c.id === link.category_id);
+                    return (
+                      <div key={link.id} className="flex items-center justify-between rounded-md border border-[var(--color-border)] px-3 py-2">
+                        <div className="flex items-center gap-2">
+                          {link.is_primary && (
+                            <span className="text-amber-500" title="Основная категория">★</span>
+                          )}
+                          <span className="text-sm font-medium text-[var(--color-text-primary)]">
+                            {cat?.title || link.category_id}
+                          </span>
+                          {cat && (
+                            <span className="text-xs text-[var(--color-text-muted)]">/{cat.slug}</span>
+                          )}
+                        </div>
+                        {can("catalog", "update") && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleRemoveCategory(link.id)}
+                            className="h-7 w-7 text-[var(--color-error)]"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Add category */}
+              {can("catalog", "update") && (
+                <Combobox
+                  placeholder="Добавить категорию..."
+                  searchPlaceholder="Поиск категорий"
+                  options={allCategories
+                    .filter((cat: Category) => !linkedCategoryIds.includes(cat.id))
+                    .map((cat: Category) => ({
+                      value: cat.id,
+                      label: `${cat.title} (/${cat.slug})`,
+                    }))}
+                  value=""
+                  onChange={(val) => {
+                    const catId = Array.isArray(val) ? val[0] : val;
+                    if (catId) handleAddCategory(catId);
+                  }}
+                  searchable
+                  emptyMessage="Нет категорий"
+                />
+              )}
             </CardContent>
           </Card>
         </Tab>

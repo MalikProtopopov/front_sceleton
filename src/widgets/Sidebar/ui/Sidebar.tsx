@@ -25,6 +25,8 @@ import {
   LayoutDashboard,
   Package,
   FolderTree,
+  Ruler,
+  SlidersHorizontal,
 } from "lucide-react";
 import { cn } from "@/shared/lib";
 import { ROUTES } from "@/shared/config";
@@ -82,8 +84,10 @@ const navigation: NavSection[] = [
   {
     label: "Каталог",
     items: [
-      { href: ROUTES.PRODUCTS, icon: Package, label: "Товары", feature: "catalog_module" },
+      { href: ROUTES.UOM, icon: Ruler, label: "Ед. измерения", feature: "catalog_module" },
       { href: ROUTES.CATEGORIES, icon: FolderTree, label: "Категории", feature: "catalog_module" },
+      { href: ROUTES.PARAMETERS, icon: SlidersHorizontal, label: "Параметры", feature: "catalog_module" },
+      { href: ROUTES.PRODUCTS, icon: Package, label: "Товары", feature: "catalog_module" },
     ],
   },
   {

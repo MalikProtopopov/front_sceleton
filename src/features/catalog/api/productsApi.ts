@@ -6,6 +6,11 @@ import type {
   ProductDetail,
   ProductImage,
   ProductChar,
+  ProductCharacteristic,
+  ProductCharacteristicBulkCreate,
+  ProductCharacteristicBulkResponse,
+  ProductCategoryLink,
+  AddProductCategoryDto,
   ProductPrice,
   ProductAlias,
   ProductAnalog,
@@ -39,12 +44,25 @@ export const productsApi = {
   delete: (id: string) =>
     apiClient.delete(API_ENDPOINTS.PRODUCTS.BY_ID(id)),
 
-  // Characteristics (EAV)
+  // Characteristics (legacy EAV)
   getChars: (productId: string) =>
     apiClient.get<ProductChar[]>(API_ENDPOINTS.PRODUCTS.CHARS(productId)),
 
   bulkUpdateChars: (productId: string, data: BulkCharsDto) =>
     apiClient.put<BulkCharsResponse>(API_ENDPOINTS.PRODUCTS.CHARS(productId), data),
+
+  // Characteristics (normalized — parameter-based)
+  getCharacteristics: (productId: string) =>
+    apiClient.get<ProductCharacteristic[]>(API_ENDPOINTS.PRODUCTS.CHARACTERISTICS(productId)),
+
+  bulkUpdateCharacteristics: (productId: string, data: ProductCharacteristicBulkCreate) =>
+    apiClient.put<ProductCharacteristicBulkResponse>(
+      API_ENDPOINTS.PRODUCTS.CHARACTERISTICS_BULK(productId),
+      data,
+    ),
+
+  deleteCharacteristic: (productId: string, parameterId: string) =>
+    apiClient.delete(API_ENDPOINTS.PRODUCTS.CHARACTERISTIC_BY_PARAM(productId, parameterId)),
 
   // Images
   getImages: (productId: string) =>
@@ -107,6 +125,15 @@ export const productsApi = {
     apiClient.delete(API_ENDPOINTS.PRODUCTS.ANALOG_BY_ID(productId, analogProductId)),
 
   // Categories link
+  getCategories: (productId: string) =>
+    apiClient.get<ProductCategoryLink[]>(API_ENDPOINTS.PRODUCTS.CATEGORIES_LINK(productId)),
+
+  addCategory: (productId: string, data: AddProductCategoryDto) =>
+    apiClient.post<ProductCategoryLink>(API_ENDPOINTS.PRODUCTS.CATEGORIES_LINK(productId), data),
+
+  removeCategory: (productId: string, linkId: string) =>
+    apiClient.delete(API_ENDPOINTS.PRODUCTS.CATEGORY_LINK_BY_ID(productId, linkId)),
+
   updateCategories: (productId: string, categoryIds: string[]) =>
     apiClient.put<{ count: number }>(
       API_ENDPOINTS.PRODUCTS.CATEGORIES_LINK(productId),
@@ -139,6 +166,8 @@ export const productsKeys = {
   details: () => [...productsKeys.all, "detail"] as const,
   detail: (id: string) => [...productsKeys.details(), id] as const,
   chars: (id: string) => [...productsKeys.all, "chars", id] as const,
+  characteristics: (id: string) => [...productsKeys.all, "characteristics", id] as const,
+  categories: (id: string) => [...productsKeys.all, "categories", id] as const,
   images: (id: string) => [...productsKeys.all, "images", id] as const,
   prices: (id: string) => [...productsKeys.all, "prices", id] as const,
   aliases: (id: string) => [...productsKeys.all, "aliases", id] as const,

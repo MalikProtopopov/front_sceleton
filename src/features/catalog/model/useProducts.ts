@@ -11,6 +11,8 @@ import type {
   CreateProductDto,
   UpdateProductDto,
   BulkCharsDto,
+  ProductCharacteristicBulkCreate,
+  AddProductCategoryDto,
   CreateProductPriceDto,
   UpdateProductPriceDto,
   CreateProductAliasesDto,
@@ -30,7 +32,7 @@ export function useProductsList(params?: ProductFilterParams) {
 export function useProduct(id: string) {
   return useQuery({
     queryKey: productsKeys.detail(id),
-    queryFn: () => productsApi.getById(id, "chars,prices,aliases,categories"),
+    queryFn: () => productsApi.getById(id, "aliases,categories,prices"),
     enabled: !!id,
   });
 }
@@ -113,6 +115,52 @@ export function useBulkUpdateChars(productId: string) {
     },
     onError: (error) => {
       const message = getErrorMessage(error, "Не удалось сохранить характеристики");
+      toast.error(message);
+    },
+  });
+}
+
+// --- Characteristics (normalized) ---
+
+export function useProductCharacteristics(productId: string) {
+  return useQuery({
+    queryKey: productsKeys.characteristics(productId),
+    queryFn: () => productsApi.getCharacteristics(productId),
+    enabled: !!productId,
+  });
+}
+
+export function useBulkUpdateCharacteristics(productId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: ProductCharacteristicBulkCreate) =>
+      productsApi.bulkUpdateCharacteristics(productId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: productsKeys.characteristics(productId) });
+      queryClient.invalidateQueries({ queryKey: productsKeys.detail(productId) });
+      toast.success("Характеристики сохранены");
+    },
+    onError: (error) => {
+      const message = getErrorMessage(error, "Не удалось сохранить характеристики");
+      toast.error(message);
+    },
+  });
+}
+
+export function useDeleteCharacteristic(productId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (parameterId: string) =>
+      productsApi.deleteCharacteristic(productId, parameterId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: productsKeys.characteristics(productId) });
+      queryClient.invalidateQueries({ queryKey: productsKeys.detail(productId) });
+      toast.success("Характеристика удалена");
+    },
+    onError: (error) => {
+      const message = getErrorMessage(error, "Не удалось удалить характеристику");
       toast.error(message);
     },
   });
@@ -336,6 +384,50 @@ export function useDeleteProductAnalog(productId: string) {
 
 // --- Categories link ---
 
+export function useProductCategories(productId: string) {
+  return useQuery({
+    queryKey: productsKeys.categories(productId),
+    queryFn: () => productsApi.getCategories(productId),
+    enabled: !!productId,
+  });
+}
+
+export function useAddProductCategory(productId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: AddProductCategoryDto) =>
+      productsApi.addCategory(productId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: productsKeys.categories(productId) });
+      queryClient.invalidateQueries({ queryKey: productsKeys.detail(productId) });
+      toast.success("Категория привязана");
+    },
+    onError: (error) => {
+      const message = getErrorMessage(error, "Не удалось привязать категорию");
+      toast.error(message);
+    },
+  });
+}
+
+export function useRemoveProductCategory(productId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (linkId: string) =>
+      productsApi.removeCategory(productId, linkId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: productsKeys.categories(productId) });
+      queryClient.invalidateQueries({ queryKey: productsKeys.detail(productId) });
+      toast.success("Категория откреплена");
+    },
+    onError: (error) => {
+      const message = getErrorMessage(error, "Не удалось открепить категорию");
+      toast.error(message);
+    },
+  });
+}
+
 export function useUpdateProductCategories(productId: string) {
   const queryClient = useQueryClient();
 
@@ -344,6 +436,7 @@ export function useUpdateProductCategories(productId: string) {
       productsApi.updateCategories(productId, categoryIds),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: productsKeys.detail(productId) });
+      queryClient.invalidateQueries({ queryKey: productsKeys.categories(productId) });
       toast.success("Категории обновлены");
     },
     onError: (error) => {
