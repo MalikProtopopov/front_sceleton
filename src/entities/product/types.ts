@@ -83,6 +83,29 @@ export interface Parameter {
   category_ids: string[];
 }
 
+// ---------- Embedded briefs returned inside enriched responses ----------
+
+export interface UOMBrief {
+  id: string;
+  code: string;
+  symbol: string | null;
+}
+
+export interface ParameterBrief {
+  id: string;
+  name: string;
+  slug: string;
+  value_type: ParameterValueType;
+  is_filterable: boolean;
+  uom: UOMBrief | null;
+}
+
+export interface ParameterValueBrief {
+  id: string;
+  label: string;
+  slug: string;
+}
+
 // ---------- Product characteristics (normalized) ----------
 
 export type SourceType = "manual" | "import" | "system";
@@ -100,6 +123,8 @@ export interface ProductCharacteristic {
   is_locked: boolean;
   created_at: string;
   updated_at: string;
+  parameter: ParameterBrief;
+  parameter_value: ParameterValueBrief | null;
 }
 
 export interface ProductAlias {

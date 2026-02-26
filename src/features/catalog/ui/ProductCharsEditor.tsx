@@ -12,6 +12,10 @@ import {
 } from "../model/useProducts";
 import type {
   Parameter,
+  ParameterBrief,
+  ParameterValue,
+  ParameterValueBrief,
+  ParameterValueType,
   ProductCharacteristic,
   ProductCharacteristicBulkItem,
 } from "@/entities/product";
@@ -22,8 +26,25 @@ interface ProductCharsEditorProps {
   productCategoryIds?: string[];
 }
 
+/**
+ * Unified parameter info used within CharRow.
+ * For rows built from existing characteristics we start with ParameterBrief
+ * and enrich with full Parameter data (values[], uom_id) when available.
+ * For rows added from the dropdown we always have the full Parameter.
+ */
+interface CharRowParam {
+  id: string;
+  name: string;
+  slug: string;
+  value_type: ParameterValueType;
+  is_filterable: boolean;
+  uom_symbol: string | null;
+  /** Full enum values list from the parameters dictionary (for checkboxes). */
+  enumValues: ParameterValue[];
+}
+
 interface CharRow {
-  parameter: Parameter;
+  param: CharRowParam;
   selectedValueIds: string[];
   valueText: string;
   valueNumber: string;
@@ -33,13 +54,40 @@ interface CharRow {
   isNew: boolean;
 }
 
-function buildRowFromExisting(
-  param: Parameter,
+function paramFromBrief(brief: ParameterBrief): CharRowParam {
+  return {
+    id: brief.id,
+    name: brief.name,
+    slug: brief.slug,
+    value_type: brief.value_type,
+    is_filterable: brief.is_filterable,
+    uom_symbol: brief.uom?.symbol ?? brief.uom?.code ?? null,
+    enumValues: [],
+  };
+}
+
+function paramFromFull(
+  full: Parameter,
+  uomMap: Map<string, string>,
+): CharRowParam {
+  return {
+    id: full.id,
+    name: full.name,
+    slug: full.slug,
+    value_type: full.value_type,
+    is_filterable: full.is_filterable,
+    uom_symbol: full.uom_id ? (uomMap.get(full.uom_id) ?? null) : null,
+    enumValues: full.values?.filter((v) => v.is_active) ?? [],
+  };
+}
+
+function buildRowFromChars(
+  brief: ParameterBrief,
   chars: ProductCharacteristic[],
 ): CharRow {
-  const paramChars = chars.filter((c) => c.parameter_id === param.id);
+  const paramChars = chars.filter((c) => c.parameter_id === brief.id);
   const row: CharRow = {
-    parameter: param,
+    param: paramFromBrief(brief),
     selectedValueIds: [],
     valueText: "",
     valueNumber: "",
@@ -49,7 +97,7 @@ function buildRowFromExisting(
     isNew: false,
   };
 
-  switch (param.value_type) {
+  switch (brief.value_type) {
     case "enum":
       row.selectedValueIds = paramChars
         .map((c) => c.parameter_value_id)
@@ -81,7 +129,7 @@ function buildRowFromExisting(
 }
 
 function rowHasValue(row: CharRow): boolean {
-  switch (row.parameter.value_type) {
+  switch (row.param.value_type) {
     case "enum":
       return row.selectedValueIds.length > 0;
     case "number":
@@ -97,7 +145,10 @@ function rowHasValue(row: CharRow): boolean {
   }
 }
 
-export function ProductCharsEditor({ productId, productCategoryIds = [] }: ProductCharsEditorProps) {
+export function ProductCharsEditor({
+  productId,
+  productCategoryIds = [],
+}: ProductCharsEditorProps) {
   const {
     data: characteristics = [],
     isLoading: charsLoading,
@@ -113,6 +164,7 @@ export function ProductCharsEditor({ productId, productCategoryIds = [] }: Produ
   const deleteChar = useDeleteCharacteristic(productId);
 
   const allParameters = parametersData?.items || [];
+
   const uomMap = useMemo(() => {
     const map = new Map<string, string>();
     (uoms || []).forEach((u) => map.set(u.id, u.symbol || u.code));
@@ -122,25 +174,48 @@ export function ProductCharsEditor({ productId, productCategoryIds = [] }: Produ
   const [rows, setRows] = useState<CharRow[]>([]);
   const [initialized, setInitialized] = useState(false);
 
+  // Build initial rows from enriched characteristics — no dependency on parameters list.
   useEffect(() => {
-    if (initialized || charsLoading || paramsLoading) return;
+    if (initialized || charsLoading) return;
 
-    const usedParamIds = new Set(characteristics.map((c) => c.parameter_id));
+    const seen = new Set<string>();
     const initialRows: CharRow[] = [];
 
-    usedParamIds.forEach((paramId) => {
-      const param = allParameters.find((p) => p.id === paramId);
-      if (param) {
-        initialRows.push(buildRowFromExisting(param, characteristics));
-      }
-    });
+    for (const ch of characteristics) {
+      if (seen.has(ch.parameter_id)) continue;
+      seen.add(ch.parameter_id);
+      initialRows.push(buildRowFromChars(ch.parameter, characteristics));
+    }
 
     setRows(initialRows);
     setInitialized(true);
-  }, [initialized, charsLoading, paramsLoading, allParameters, characteristics]);
+  }, [initialized, charsLoading, characteristics]);
+
+  // Once the full parameters list arrives, enrich existing rows with
+  // full enum values and UOM symbols so checkboxes show all options.
+  useEffect(() => {
+    if (paramsLoading || allParameters.length === 0) return;
+
+    setRows((prev) =>
+      prev.map((row) => {
+        const full = allParameters.find((p) => p.id === row.param.id);
+        if (!full) return row;
+        return {
+          ...row,
+          param: {
+            ...row.param,
+            enumValues: full.values?.filter((v) => v.is_active) ?? [],
+            uom_symbol:
+              row.param.uom_symbol ??
+              (full.uom_id ? (uomMap.get(full.uom_id) ?? null) : null),
+          },
+        };
+      }),
+    );
+  }, [paramsLoading, allParameters, uomMap]);
 
   const usedParameterIds = useMemo(
-    () => new Set(rows.map((r) => r.parameter.id)),
+    () => new Set(rows.map((r) => r.param.id)),
     [rows],
   );
 
@@ -158,12 +233,12 @@ export function ProductCharsEditor({ productId, productCategoryIds = [] }: Produ
     (parameterId: string | string[]) => {
       const id = Array.isArray(parameterId) ? parameterId[0] : parameterId;
       if (!id) return;
-      const param = allParameters.find((p) => p.id === id);
-      if (!param) return;
+      const full = allParameters.find((p) => p.id === id);
+      if (!full) return;
       setRows((prev) => [
         ...prev,
         {
-          parameter: param,
+          param: paramFromFull(full, uomMap),
           selectedValueIds: [],
           valueText: "",
           valueNumber: "",
@@ -174,7 +249,7 @@ export function ProductCharsEditor({ productId, productCategoryIds = [] }: Produ
         },
       ]);
     },
-    [allParameters],
+    [allParameters, uomMap],
   );
 
   const handleRemoveRow = useCallback(
@@ -182,7 +257,7 @@ export function ProductCharsEditor({ productId, productCategoryIds = [] }: Produ
       const row = rows[index];
       if (!row) return;
       if (!row.isNew) {
-        deleteChar.mutate(row.parameter.id);
+        deleteChar.mutate(row.param.id);
       }
       setRows((prev) => prev.filter((_, i) => i !== index));
     },
@@ -202,9 +277,9 @@ export function ProductCharsEditor({ productId, productCategoryIds = [] }: Produ
     const items: ProductCharacteristicBulkItem[] = rows
       .map((row): ProductCharacteristicBulkItem => {
         const item: ProductCharacteristicBulkItem = {
-          parameter_id: row.parameter.id,
+          parameter_id: row.param.id,
         };
-        switch (row.parameter.value_type) {
+        switch (row.param.value_type) {
           case "enum":
             item.parameter_value_ids = row.selectedValueIds;
             break;
@@ -245,12 +320,42 @@ export function ProductCharsEditor({ productId, productCategoryIds = [] }: Produ
   }, [rows, bulkUpdate]);
 
   const renderValueWidget = (row: CharRow, index: number) => {
-    switch (row.parameter.value_type) {
+    switch (row.param.value_type) {
       case "enum": {
-        const values = row.parameter.values?.filter((v) => v.is_active) || [];
+        const fullValues = row.param.enumValues;
+        // When the full parameter dictionary hasn't loaded yet, show
+        // selected values inline using the enriched characteristic labels.
+        if (fullValues.length === 0 && row.selectedValueIds.length > 0) {
+          const selectedLabels = characteristics
+            .filter(
+              (c) =>
+                c.parameter_id === row.param.id && c.parameter_value != null,
+            )
+            .map((c) => ({
+              id: c.parameter_value_id!,
+              label: (c.parameter_value as ParameterValueBrief).label,
+            }));
+          return (
+            <div className="flex flex-wrap gap-2">
+              {selectedLabels.map((v) => (
+                <span
+                  key={v.id}
+                  className="flex items-center gap-1.5 rounded-md border border-[var(--color-primary)] bg-[var(--color-primary-light)] text-[var(--color-primary)] px-2.5 py-1 text-sm"
+                >
+                  {v.label}
+                </span>
+              ))}
+              {paramsLoading && (
+                <span className="text-xs text-[var(--color-text-muted)] italic self-center">
+                  Загрузка вариантов...
+                </span>
+              )}
+            </div>
+          );
+        }
         return (
           <div className="flex flex-wrap gap-2">
-            {values.map((v) => {
+            {fullValues.map((v) => {
               const isSelected = row.selectedValueIds.includes(v.id);
               return (
                 <label
@@ -276,7 +381,7 @@ export function ProductCharsEditor({ productId, productCategoryIds = [] }: Produ
                 </label>
               );
             })}
-            {values.length === 0 && (
+            {fullValues.length === 0 && (
               <span className="text-sm text-[var(--color-text-muted)] italic">
                 Нет значений в справочнике
               </span>
@@ -294,9 +399,9 @@ export function ProductCharsEditor({ productId, productCategoryIds = [] }: Produ
               placeholder="0"
               className="w-32"
             />
-            {row.parameter.uom_id && uomMap.get(row.parameter.uom_id) && (
+            {row.param.uom_symbol && (
               <span className="text-sm text-[var(--color-text-muted)]">
-                {uomMap.get(row.parameter.uom_id)}
+                {row.param.uom_symbol}
               </span>
             )}
           </div>
@@ -340,9 +445,9 @@ export function ProductCharsEditor({ productId, productCategoryIds = [] }: Produ
               placeholder="Макс"
               className="w-24"
             />
-            {row.parameter.uom_id && uomMap.get(row.parameter.uom_id) && (
+            {row.param.uom_symbol && (
               <span className="text-sm text-[var(--color-text-muted)]">
-                {uomMap.get(row.parameter.uom_id)}
+                {row.param.uom_symbol}
               </span>
             )}
           </div>
@@ -350,7 +455,7 @@ export function ProductCharsEditor({ productId, productCategoryIds = [] }: Produ
     }
   };
 
-  if (charsLoading || paramsLoading) {
+  if (charsLoading) {
     return (
       <p className="text-sm text-[var(--color-text-muted)] py-4 text-center">
         Загрузка характеристик...
@@ -358,22 +463,20 @@ export function ProductCharsEditor({ productId, productCategoryIds = [] }: Produ
     );
   }
 
-  if (charsError || paramsError) {
+  if (charsError) {
     return (
       <div className="rounded-lg border border-[var(--color-error)] bg-red-50 p-4 text-center">
         <p className="text-sm text-[var(--color-error)]">
-          Не удалось загрузить данные.
-          {charsError && " Ошибка загрузки характеристик."}
-          {paramsError && " Ошибка загрузки словаря параметров."}
+          Не удалось загрузить характеристики.
         </p>
         <p className="mt-1 text-xs text-[var(--color-text-muted)]">
-          Проверьте, что API-эндпоинты /characteristics и /parameters доступны.
+          Проверьте, что API-эндпоинт /characteristics доступен.
         </p>
       </div>
     );
   }
 
-  const hasNoParameters = allParameters.length === 0;
+  const hasNoParameters = !paramsLoading && allParameters.length === 0;
 
   return (
     <div className="space-y-4">
@@ -383,7 +486,7 @@ export function ProductCharsEditor({ productId, productCategoryIds = [] }: Produ
         </p>
       )}
 
-      {rows.length === 0 && hasNoParameters && (
+      {rows.length === 0 && hasNoParameters && characteristics.length === 0 && (
         <div className="rounded-lg border border-dashed border-[var(--color-border)] p-6 text-center">
           <p className="text-sm text-[var(--color-text-muted)]">
             Словарь параметров пуст.
@@ -403,16 +506,16 @@ export function ProductCharsEditor({ productId, productCategoryIds = [] }: Produ
 
       {rows.map((row, index) => (
         <div
-          key={row.parameter.id}
+          key={row.param.id}
           className="flex items-start gap-4 rounded-lg border border-[var(--color-border)] p-4"
         >
           <div className="flex-1 space-y-2">
             <div className="flex items-center gap-2">
               <span className="font-medium text-sm text-[var(--color-text-primary)]">
-                {row.parameter.name}
+                {row.param.name}
               </span>
               <Badge variant="outline" className="text-xs">
-                {PARAMETER_VALUE_TYPE_LABELS[row.parameter.value_type]}
+                {PARAMETER_VALUE_TYPE_LABELS[row.param.value_type]}
               </Badge>
               {row.isNew && (
                 <Badge variant="warning" className="text-xs">
@@ -435,7 +538,15 @@ export function ProductCharsEditor({ productId, productCategoryIds = [] }: Produ
       ))}
 
       <div className="flex items-center gap-3">
-        {!hasNoParameters && (
+        {paramsLoading ? (
+          <span className="text-xs text-[var(--color-text-muted)]">
+            Загрузка параметров...
+          </span>
+        ) : paramsError ? (
+          <span className="text-xs text-[var(--color-error)]">
+            Ошибка загрузки словаря параметров
+          </span>
+        ) : allParameters.length > 0 ? (
           <Combobox
             placeholder="Добавить параметр..."
             searchPlaceholder="Поиск параметров"
@@ -449,7 +560,7 @@ export function ProductCharsEditor({ productId, productCategoryIds = [] }: Produ
             emptyMessage="Все параметры уже добавлены"
             className="w-72"
           />
-        )}
+        ) : null}
         {rows.length > 0 && (
           <Button
             type="button"
