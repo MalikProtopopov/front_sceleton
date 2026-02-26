@@ -158,7 +158,7 @@ export function ProductCharsEditor({
     data: parametersData,
     isLoading: paramsLoading,
     error: paramsError,
-  } = useParametersList({ page: 1, page_size: 200 });
+  } = useParametersList({ page: 1, page_size: 100 });
   const { data: uoms } = useUomsList();
   const bulkUpdate = useBulkUpdateCharacteristics(productId);
   const deleteChar = useDeleteCharacteristic(productId);
