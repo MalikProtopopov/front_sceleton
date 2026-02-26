@@ -184,9 +184,7 @@ export const APP_TYPES_OPTIONS: Record<string, string> = {
   desktop: "Десктоп",
   telegram: "Telegram бот",
   api: "API",
-};
-
-// Budget options labels
+};// Budget options labels
 export const BUDGET_OPTIONS: Record<string, string> = {
   "5-15k": "$5,000 – $15,000",
   "15-40k": "$15,000 – $40,000",

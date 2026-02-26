@@ -11,6 +11,7 @@ import type {
   CreateProductDto,
   UpdateProductDto,
   BulkCharsDto,
+  ProductCharacteristicCreate,
   ProductCharacteristicBulkCreate,
   AddProductCategoryDto,
   CreateProductPriceDto,
@@ -127,6 +128,24 @@ export function useProductCharacteristics(productId: string) {
     queryKey: productsKeys.characteristics(productId),
     queryFn: () => productsApi.getCharacteristics(productId),
     enabled: !!productId,
+  });
+}
+
+export function useAddCharacteristic(productId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: ProductCharacteristicCreate) =>
+      productsApi.addCharacteristic(productId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: productsKeys.characteristics(productId) });
+      queryClient.invalidateQueries({ queryKey: productsKeys.detail(productId) });
+      toast.success("Характеристика добавлена");
+    },
+    onError: (error) => {
+      const message = getErrorMessage(error, "Не удалось добавить характеристику");
+      toast.error(message);
+    },
   });
 }
 

@@ -7,6 +7,7 @@ import type {
   ProductImage,
   ProductChar,
   ProductCharacteristic,
+  ProductCharacteristicCreate,
   ProductCharacteristicBulkCreate,
   ProductCharacteristicBulkResponse,
   ProductCategoryLink,
@@ -54,6 +55,12 @@ export const productsApi = {
   // Characteristics (normalized — parameter-based)
   getCharacteristics: (productId: string) =>
     apiClient.get<ProductCharacteristic[]>(API_ENDPOINTS.PRODUCTS.CHARACTERISTICS(productId)),
+
+  addCharacteristic: (productId: string, data: ProductCharacteristicCreate) =>
+    apiClient.post<ProductCharacteristic>(
+      API_ENDPOINTS.PRODUCTS.CHARACTERISTICS(productId),
+      data,
+    ),
 
   bulkUpdateCharacteristics: (productId: string, data: ProductCharacteristicBulkCreate) =>
     apiClient.put<ProductCharacteristicBulkResponse>(

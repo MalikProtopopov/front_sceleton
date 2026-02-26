@@ -93,7 +93,7 @@ export interface ProductCharacteristic {
   parameter_id: string;
   parameter_value_id: string | null;
   value_text: string | null;
-  value_number: number | null;
+  value_number: string | null; // decimal comes as string from API
   value_bool: boolean | null;
   uom_id: string | null;
   source_type: SourceType;

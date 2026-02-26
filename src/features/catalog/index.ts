@@ -12,6 +12,7 @@ export {
   useProductChars,
   useBulkUpdateChars,
   useProductCharacteristics,
+  useAddCharacteristic,
   useBulkUpdateCharacteristics,
   useDeleteCharacteristic,
   useUploadProductImage,

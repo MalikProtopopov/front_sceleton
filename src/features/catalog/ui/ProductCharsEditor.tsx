@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { Trash2, Save } from "lucide-react";
 import { Button, Input, Switch, Badge, Combobox } from "@/shared/ui";
 import { useParametersList } from "../model/useParameters";
@@ -30,7 +30,7 @@ interface CharRow {
   valueBool: boolean;
   rangeMin: string;
   rangeMax: string;
-  isNew?: boolean;
+  isNew: boolean;
 }
 
 function buildRowFromExisting(
@@ -46,6 +46,7 @@ function buildRowFromExisting(
     valueBool: false,
     rangeMin: "",
     rangeMax: "",
+    isNew: false,
   };
 
   switch (param.value_type) {
@@ -55,7 +56,7 @@ function buildRowFromExisting(
         .filter((id): id is string => !!id);
       break;
     case "number":
-      row.valueNumber = paramChars[0]?.value_number?.toString() ?? "";
+      row.valueNumber = paramChars[0]?.value_number ?? "";
       break;
     case "string":
       row.valueText = paramChars[0]?.value_text ?? "";
@@ -64,12 +65,14 @@ function buildRowFromExisting(
       row.valueBool = paramChars[0]?.value_bool ?? false;
       break;
     case "range": {
-      const sorted = paramChars
+      const nums = paramChars
         .map((c) => c.value_number)
-        .filter((n): n is number => n != null)
+        .filter((n): n is string => n != null)
+        .map(parseFloat)
+        .filter((n) => !isNaN(n))
         .sort((a, b) => a - b);
-      row.rangeMin = sorted[0]?.toString() ?? "";
-      row.rangeMax = sorted[1]?.toString() ?? sorted[0]?.toString() ?? "";
+      row.rangeMin = nums[0]?.toString() ?? "";
+      row.rangeMax = nums[1]?.toString() ?? nums[0]?.toString() ?? "";
       break;
     }
   }
@@ -77,9 +80,34 @@ function buildRowFromExisting(
   return row;
 }
 
+function rowHasValue(row: CharRow): boolean {
+  switch (row.parameter.value_type) {
+    case "enum":
+      return row.selectedValueIds.length > 0;
+    case "number":
+      return row.valueNumber !== "";
+    case "string":
+      return row.valueText !== "";
+    case "bool":
+      return true;
+    case "range":
+      return row.rangeMin !== "" || row.rangeMax !== "";
+    default:
+      return false;
+  }
+}
+
 export function ProductCharsEditor({ productId, productCategoryIds = [] }: ProductCharsEditorProps) {
-  const { data: characteristics = [], isLoading: charsLoading, error: charsError } = useProductCharacteristics(productId);
-  const { data: parametersData, isLoading: paramsLoading, error: paramsError } = useParametersList({ page: 1, page_size: 200 });
+  const {
+    data: characteristics = [],
+    isLoading: charsLoading,
+    error: charsError,
+  } = useProductCharacteristics(productId);
+  const {
+    data: parametersData,
+    isLoading: paramsLoading,
+    error: paramsError,
+  } = useParametersList({ page: 1, page_size: 200 });
   const { data: uoms } = useUomsList();
   const bulkUpdate = useBulkUpdateCharacteristics(productId);
   const deleteChar = useDeleteCharacteristic(productId);
@@ -95,7 +123,7 @@ export function ProductCharsEditor({ productId, productCategoryIds = [] }: Produ
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
-    if (initialized || charsLoading || allParameters.length === 0) return;
+    if (initialized || charsLoading || paramsLoading) return;
 
     const usedParamIds = new Set(characteristics.map((c) => c.parameter_id));
     const initialRows: CharRow[] = [];
@@ -109,9 +137,12 @@ export function ProductCharsEditor({ productId, productCategoryIds = [] }: Produ
 
     setRows(initialRows);
     setInitialized(true);
-  }, [initialized, charsLoading, allParameters, characteristics]);
+  }, [initialized, charsLoading, paramsLoading, allParameters, characteristics]);
 
-  const usedParameterIds = useMemo(() => new Set(rows.map((r) => r.parameter.id)), [rows]);
+  const usedParameterIds = useMemo(
+    () => new Set(rows.map((r) => r.parameter.id)),
+    [rows],
+  );
 
   const availableParameters = useMemo(() => {
     return allParameters.filter((p) => {
@@ -123,42 +154,53 @@ export function ProductCharsEditor({ productId, productCategoryIds = [] }: Produ
     });
   }, [allParameters, usedParameterIds, productCategoryIds]);
 
-  const handleAddParameter = (parameterId: string | string[]) => {
-    const id = Array.isArray(parameterId) ? parameterId[0] : parameterId;
-    if (!id) return;
-    const param = allParameters.find((p) => p.id === id);
-    if (!param) return;
-    setRows((prev) => [
-      ...prev,
-      {
-        parameter: param,
-        selectedValueIds: [],
-        valueText: "",
-        valueNumber: "",
-        valueBool: false,
-        rangeMin: "",
-        rangeMax: "",
-        isNew: true,
-      },
-    ]);
-  };
+  const handleAddParameter = useCallback(
+    (parameterId: string | string[]) => {
+      const id = Array.isArray(parameterId) ? parameterId[0] : parameterId;
+      if (!id) return;
+      const param = allParameters.find((p) => p.id === id);
+      if (!param) return;
+      setRows((prev) => [
+        ...prev,
+        {
+          parameter: param,
+          selectedValueIds: [],
+          valueText: "",
+          valueNumber: "",
+          valueBool: false,
+          rangeMin: "",
+          rangeMax: "",
+          isNew: true,
+        },
+      ]);
+    },
+    [allParameters],
+  );
 
-  const handleRemoveRow = (index: number) => {
-    const row = rows[index];
-    if (!row) return;
-    if (!row.isNew) {
-      deleteChar.mutate(row.parameter.id);
-    }
-    setRows((prev) => prev.filter((_, i) => i !== index));
-  };
+  const handleRemoveRow = useCallback(
+    (index: number) => {
+      const row = rows[index];
+      if (!row) return;
+      if (!row.isNew) {
+        deleteChar.mutate(row.parameter.id);
+      }
+      setRows((prev) => prev.filter((_, i) => i !== index));
+    },
+    [rows, deleteChar],
+  );
 
-  const updateRow = (index: number, updates: Partial<CharRow>) => {
-    setRows((prev) => prev.map((r, i) => (i === index ? { ...r, ...updates } : r)));
-  };
+  const updateRow = useCallback(
+    (index: number, updates: Partial<CharRow>) => {
+      setRows((prev) =>
+        prev.map((r, i) => (i === index ? { ...r, ...updates } : r)),
+      );
+    },
+    [],
+  );
 
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     const items: ProductCharacteristicBulkItem[] = rows
-      .map((row) => {
+      .map((row): ProductCharacteristicBulkItem => {
         const item: ProductCharacteristicBulkItem = {
           parameter_id: row.parameter.id,
         };
@@ -167,7 +209,8 @@ export function ProductCharsEditor({ productId, productCategoryIds = [] }: Produ
             item.parameter_value_ids = row.selectedValueIds;
             break;
           case "number":
-            if (row.valueNumber !== "") item.value_number = parseFloat(row.valueNumber);
+            if (row.valueNumber !== "")
+              item.value_number = parseFloat(row.valueNumber);
             break;
           case "string":
             if (row.valueText) item.value_text = row.valueText;
@@ -176,19 +219,19 @@ export function ProductCharsEditor({ productId, productCategoryIds = [] }: Produ
             item.value_bool = row.valueBool;
             break;
           case "range":
-            // Range stores the product's value; constraints on the parameter define bounds
-            if (row.rangeMin !== "") item.value_number = parseFloat(row.rangeMin);
-            if (row.rangeMax !== "" && !item.value_number) item.value_number = parseFloat(row.rangeMax);
+            if (row.rangeMin !== "")
+              item.value_number = parseFloat(row.rangeMin);
+            else if (row.rangeMax !== "")
+              item.value_number = parseFloat(row.rangeMax);
             break;
         }
         return item;
       })
-      .filter((item) => {
-        if (item.parameter_value_ids?.length) return true;
-        if (item.value_text) return true;
-        if (item.value_number != null) return true;
-        if (item.value_bool != null) return true;
-        return false;
+      .filter((_item, idx) => {
+        const row = rows[idx];
+        if (!row) return false;
+        if (!row.isNew) return true;
+        return rowHasValue(row);
       });
 
     bulkUpdate.mutate(
@@ -199,7 +242,7 @@ export function ProductCharsEditor({ productId, productCategoryIds = [] }: Produ
         },
       },
     );
-  };
+  }, [rows, bulkUpdate]);
 
   const renderValueWidget = (row: CharRow, index: number) => {
     switch (row.parameter.value_type) {
@@ -235,7 +278,7 @@ export function ProductCharsEditor({ productId, productCategoryIds = [] }: Produ
             })}
             {values.length === 0 && (
               <span className="text-sm text-[var(--color-text-muted)] italic">
-                Нет значений
+                Нет значений в справочнике
               </span>
             )}
           </div>
@@ -272,7 +315,9 @@ export function ProductCharsEditor({ productId, productCategoryIds = [] }: Produ
           <div className="flex items-center gap-2">
             <Switch
               checked={row.valueBool}
-              onChange={(checked: boolean) => updateRow(index, { valueBool: checked })}
+              onChange={(checked: boolean) =>
+                updateRow(index, { valueBool: checked })
+              }
             />
             <span className="text-sm">{row.valueBool ? "Да" : "Нет"}</span>
           </div>
@@ -345,7 +390,10 @@ export function ProductCharsEditor({ productId, productCategoryIds = [] }: Produ
           </p>
           <p className="mt-1 text-sm text-[var(--color-text-muted)]">
             Сначала создайте параметры в разделе{" "}
-            <a href="/catalog/parameters" className="text-[var(--color-accent-primary)] underline">
+            <a
+              href="/catalog/parameters"
+              className="text-[var(--color-accent-primary)] underline"
+            >
               Каталог → Параметры
             </a>
             , затем возвращайтесь сюда для привязки характеристик к товару.
@@ -367,7 +415,9 @@ export function ProductCharsEditor({ productId, productCategoryIds = [] }: Produ
                 {PARAMETER_VALUE_TYPE_LABELS[row.parameter.value_type]}
               </Badge>
               {row.isNew && (
-                <Badge variant="warning" className="text-xs">Новая</Badge>
+                <Badge variant="warning" className="text-xs">
+                  Новая
+                </Badge>
               )}
             </div>
             {renderValueWidget(row, index)}
