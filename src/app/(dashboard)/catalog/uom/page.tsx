@@ -9,6 +9,8 @@ import {
   Input,
   Switch,
   Modal,
+  ModalBody,
+  ModalFooter,
   Spinner,
   type Column,
   Table,
@@ -168,46 +170,48 @@ export default function UomPage() {
         title={editingId ? "Редактировать единицу" : "Новая единица измерения"}
         size="sm"
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
-            label="Название *"
-            placeholder="Килограмм"
-            value={form.name}
-            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-            required
-          />
-          <div className="grid gap-4 grid-cols-2">
+        <form onSubmit={handleSubmit}>
+          <ModalBody className="space-y-4">
             <Input
-              label="Код *"
-              placeholder="kg"
-              value={form.code}
-              onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))}
+              label="Название *"
+              placeholder="Килограмм"
+              value={form.name}
+              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
               required
             />
-            <Input
-              label="Символ"
-              placeholder="кг"
-              value={form.symbol}
-              onChange={(e) => setForm((f) => ({ ...f, symbol: e.target.value }))}
-            />
-          </div>
-          {editingId && (
-            <div className="flex items-center gap-3">
-              <Switch
-                checked={form.is_active}
-                onChange={(checked: boolean) => setForm((f) => ({ ...f, is_active: checked }))}
+            <div className="grid gap-4 grid-cols-2">
+              <Input
+                label="Код *"
+                placeholder="kg"
+                value={form.code}
+                onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))}
+                required
               />
-              <span className="text-sm text-[var(--color-text-primary)]">Активна</span>
+              <Input
+                label="Символ"
+                placeholder="кг"
+                value={form.symbol}
+                onChange={(e) => setForm((f) => ({ ...f, symbol: e.target.value }))}
+              />
             </div>
-          )}
-          <div className="flex justify-end gap-3 pt-2">
+            {editingId && (
+              <div className="flex items-center gap-3">
+                <Switch
+                  checked={form.is_active}
+                  onChange={(checked: boolean) => setForm((f) => ({ ...f, is_active: checked }))}
+                />
+                <span className="text-sm text-[var(--color-text-primary)]">Активна</span>
+              </div>
+            )}
+          </ModalBody>
+          <ModalFooter>
             <Button type="button" variant="secondary" onClick={() => setModalOpen(false)}>
               Отмена
             </Button>
             <Button type="submit" isLoading={isSaving}>
               {editingId ? "Сохранить" : "Создать"}
             </Button>
-          </div>
+          </ModalFooter>
         </form>
       </Modal>
     </div>
