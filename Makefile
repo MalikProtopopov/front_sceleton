@@ -114,10 +114,16 @@ deploy:
 deploy-build:
 	npm run deploy:build-only
 
-# Перезапуск prod: остановить и поднять с пересборкой
-restart: compose-prod-down compose-prod-build
+# Перезапуск prod: остановить, собрать, поднять, почистить мусор
+restart:
+	docker compose -f docker-compose.prod.yml down
+	docker compose -f docker-compose.prod.yml up -d --build
+	@echo "Очистка dangling-образов и build-кэша..."
+	-docker image prune -f 2>/dev/null || true
+	-docker builder prune -f --filter "until=24h" 2>/dev/null || true
+	@echo "Готово."
 
-# Быстрый перезапуск с использованием кэша (без --no-cache)
+# Быстрый перезапуск без пересборки (контейнер уже собран)
 restart-fast:
 	docker compose -f docker-compose.prod.yml down
 	docker compose -f docker-compose.prod.yml up -d
