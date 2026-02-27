@@ -212,6 +212,7 @@ export default function ParametersPage() {
               })),
             ]}
             className="w-40 flex-shrink-0"
+            minWidth="10rem"
           />
           <Select
             value={filters.scope || ""}
@@ -228,6 +229,7 @@ export default function ParametersPage() {
               })),
             ]}
             className="w-40 flex-shrink-0"
+            minWidth="10rem"
           />
         </div>
       </FilterBar>
