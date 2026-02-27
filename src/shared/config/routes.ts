@@ -61,7 +61,7 @@ export const ROUTES = {
   MEDIA: "/media",
   
   // SEO
-  SEO: "/seo",
+  SEO: "/seo/paths",
   SEO_REDIRECTS: "/seo/redirects",
   
   // Users & Security

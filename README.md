@@ -1,5 +1,10 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## 📚 Документация
+
+- [Оптимизация производительности и сборки](./docs/PERFORMANCE_OPTIMIZATION.md) - команды для ускорения деплоя и очистки кэша
+- [Команды деплоя](./DEPLOY_COMMANDS.md) - инструкции по развертыванию
+
 ## Getting Started
 
 First, run the development server:

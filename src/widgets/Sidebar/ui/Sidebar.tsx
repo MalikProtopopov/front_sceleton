@@ -113,7 +113,7 @@ const navigation: NavSection[] = [
         label: "SEO",
         feature: "seo_advanced",
         items: [
-          { href: ROUTES.SEO, icon: Globe, label: "Маршруты" },
+          { href: ROUTES.SEO, icon: Globe, label: "Paths" },
           { href: ROUTES.SEO_REDIRECTS, icon: ArrowRight, label: "Редиректы" },
         ],
       },

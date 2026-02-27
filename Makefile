@@ -4,7 +4,7 @@
 .PHONY: help dev build start install lint \
 	compose-dev compose-dev-build compose-dev-down \
 	compose-prod compose-prod-build compose-prod-down compose-prod-logs \
-	docker-prune docker-clean deploy deploy-build restart
+	docker-prune docker-clean docker-clean-all clean-cache deploy deploy-build restart restart-fast
 
 # По умолчанию — показать справку
 help:
@@ -28,11 +28,14 @@ help:
 	@echo "    make compose-prod-logs  — логи prod контейнера"
 	@echo "    make docker-prune       — очистить весь кэш сборки BuildKit (если ошибка parent snapshot)"
 	@echo "    make docker-clean       — остановить админку, удалить образ и кэш сборки фронта (быстрый чистый пересбор)"
+	@echo "    make docker-clean-all   — полная очистка (остановка + удаление образов + кэш + volumes)"
+	@echo "    make clean-cache        — очистить только кэш Next.js и npm (без остановки контейнеров)"
 	@echo ""
 	@echo "  Деплой и перезапуск:"
 	@echo "    make deploy       — запустить скрипт деплоя"
 	@echo "    make deploy-build — деплой только сборки"
 	@echo "    make restart      — перезапуск prod (down + up --build)"
+	@echo "    make restart-fast — быстрый перезапуск с кэшем (используется если код не сильно изменился)"
 	@echo ""
 	@echo "  Прочее:"
 	@echo "    make lint        — проверка линтером"
@@ -87,6 +90,23 @@ docker-clean:
 	docker builder prune -f
 	@echo "Готово. Запустите: make restart"
 
+# Полная очистка: остановка + удаление образов + кэш + volumes
+docker-clean-all:
+	@echo "⚠️  ПОЛНАЯ ОЧИСТКА: остановка контейнеров, удаление образов, кэша и volumes..."
+	docker compose -f docker-compose.prod.yml down -v
+	-docker rmi mediann-admin:latest 2>/dev/null || true
+	docker builder prune -af
+	docker system prune -f
+	@echo "✅ Полная очистка завершена. Следующая сборка будет с нуля."
+
+# Очистить кэш Next.js и npm без остановки контейнеров
+clean-cache:
+	@echo "🧹 Очистка кэша Next.js и npm..."
+	rm -rf .next
+	rm -rf node_modules/.cache
+	rm -rf .turbo
+	@echo "✅ Кэш очищен"
+
 # Деплой
 deploy:
 	npm run deploy
@@ -96,3 +116,8 @@ deploy-build:
 
 # Перезапуск prod: остановить и поднять с пересборкой
 restart: compose-prod-down compose-prod-build
+
+# Быстрый перезапуск с использованием кэша (без --no-cache)
+restart-fast:
+	docker compose -f docker-compose.prod.yml down
+	docker compose -f docker-compose.prod.yml up -d
