@@ -10,6 +10,11 @@ const nextConfig: NextConfig = {
   // Use standalone output for Docker deployment in production
   output: isProduction ? "standalone" : undefined,
 
+  // Skip type-checking and linting during build — saves ~5-10 min on low-memory servers.
+  // Types and lint are checked locally / in CI instead.
+  typescript: { ignoreBuildErrors: true },
+  eslint: { ignoreDuringBuilds: true },
+
   // Block search engine indexing for admin panel
   async headers() {
     return [
