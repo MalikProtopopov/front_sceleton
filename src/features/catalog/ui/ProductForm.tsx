@@ -6,12 +6,14 @@ import { Button, Input, Textarea, Select, Switch, Combobox } from "@/shared/ui";
 import { transliterate } from "@/shared/lib";
 import { useCategoriesTree } from "../model/useCategories";
 import { useUomsList } from "../model/useUoms";
-import type { Product, CreateProductDto, UpdateProductDto } from "@/entities/product";
+import type { Product, CreateProductDto, UpdateProductDto, ProductType } from "@/entities/product";
+import { PRODUCT_TYPE_LABELS } from "@/entities/product";
 
 interface ProductFormProps {
   product?: Product;
   onSubmit: (data: CreateProductDto | UpdateProductDto) => void;
   isSubmitting?: boolean;
+  isVariantsEnabled?: boolean;
 }
 
 interface FormValues {
@@ -22,11 +24,13 @@ interface FormValues {
   model: string;
   description: string;
   uom_id: string;
+  product_type: ProductType;
+  has_variants: boolean;
   is_active: boolean;
   category_ids: string[];
 }
 
-export function ProductForm({ product, onSubmit, isSubmitting }: ProductFormProps) {
+export function ProductForm({ product, onSubmit, isSubmitting, isVariantsEnabled }: ProductFormProps) {
   const [autoSlug, setAutoSlug] = useState(!product);
   const { data: categoriesData } = useCategoriesTree();
   const { data: uoms } = useUomsList();
@@ -46,6 +50,8 @@ export function ProductForm({ product, onSubmit, isSubmitting }: ProductFormProp
       model: product?.model || "",
       description: product?.description || "",
       uom_id: product?.uom_id || "",
+      product_type: product?.product_type || "physical",
+      has_variants: product?.has_variants ?? false,
       is_active: product?.is_active ?? true,
       category_ids: [],
     },
@@ -72,6 +78,10 @@ export function ProductForm({ product, onSubmit, isSubmitting }: ProductFormProp
       if (values.description !== (product.description || ""))
         dto.description = values.description || null;
       if (values.uom_id !== (product.uom_id || "")) dto.uom_id = values.uom_id || null;
+      if (isVariantsEnabled) {
+        if (values.product_type !== product.product_type) dto.product_type = values.product_type;
+        if (values.has_variants !== product.has_variants) dto.has_variants = values.has_variants;
+      }
       if (values.is_active !== product.is_active) dto.is_active = values.is_active;
       onSubmit(dto);
     } else {
@@ -83,6 +93,10 @@ export function ProductForm({ product, onSubmit, isSubmitting }: ProductFormProp
         model: values.model || undefined,
         description: values.description || undefined,
         uom_id: values.uom_id || undefined,
+        ...(isVariantsEnabled && {
+          product_type: values.product_type,
+          has_variants: values.has_variants,
+        }),
         is_active: values.is_active,
         category_ids: values.category_ids.length ? values.category_ids : undefined,
       };
@@ -96,6 +110,10 @@ export function ProductForm({ product, onSubmit, isSubmitting }: ProductFormProp
     { value: "", label: "Не указана" },
     ...(uoms || []).filter((u) => u.is_active).map((u) => ({ value: u.id, label: `${u.name} (${u.symbol || u.code})` })),
   ];
+  const productTypeOptions = Object.entries(PRODUCT_TYPE_LABELS).map(([value, label]) => ({
+    value,
+    label,
+  }));
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
@@ -151,6 +169,34 @@ export function ProductForm({ product, onSubmit, isSubmitting }: ProductFormProp
           />
         )}
       </div>
+
+      {isVariantsEnabled && (
+        <div className="grid gap-6 sm:grid-cols-2">
+          <Select
+            label="Тип продукта"
+            options={productTypeOptions}
+            {...register("product_type")}
+          />
+          <div className="flex items-center gap-3 sm:pt-7">
+            <Switch
+              checked={watch("has_variants")}
+              onChange={(checked: boolean) => setValue("has_variants", checked)}
+            />
+            <span className="text-sm text-[var(--color-text-primary)]">Товар с вариантами</span>
+          </div>
+        </div>
+      )}
+
+      {product && product.has_variants && product.price_from != null && (
+        <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-bg-secondary)] px-4 py-3">
+          <span className="text-sm text-[var(--color-text-muted)]">Диапазон цен вариантов: </span>
+          <span className="text-sm font-medium text-[var(--color-text-primary)]">
+            {product.price_from}
+            {product.price_to && product.price_to !== product.price_from && ` — ${product.price_to}`}
+            {" ₽"}
+          </span>
+        </div>
+      )}
 
       <div className="flex items-center gap-3">
         <Switch

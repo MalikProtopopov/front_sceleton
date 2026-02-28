@@ -11,6 +11,11 @@ import {
   ProductPricesEditor,
   ProductAliasesEditor,
   ProductAnalogsEditor,
+  OptionGroupsEditor,
+  VariantsManager,
+  VariantPricesEditor,
+  VariantInclusionsEditor,
+  VariantImagesManager,
   useProduct,
   useUpdateProduct,
   useDeleteProduct,
@@ -24,6 +29,7 @@ import {
   useDeleteProductContentBlock,
   useReorderProductContentBlocks,
 } from "@/features/catalog";
+import { useEnabledFeatures } from "@/features/tenants";
 import { useLeadsList } from "@/features/leads";
 import {
   Button,
@@ -70,6 +76,11 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   const [activeTab, setActiveTab] = useState(0);
 
   const [selectedBlocksLocale, setSelectedBlocksLocale] = useState("ru");
+
+  const { data: featuresData } = useEnabledFeatures();
+  const enabledFeatures = featuresData?.enabled_features ?? [];
+  const allFeaturesEnabled = featuresData?.all_features_enabled ?? false;
+  const isVariantsEnabled = allFeaturesEnabled || enabledFeatures.includes("variants_module");
 
   const { data: product, isLoading, error } = useProduct(id);
   const { mutate: updateProduct, isPending: isUpdating } = useUpdateProduct(id);
@@ -212,7 +223,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
         <Tab label="Основное">
           <Card>
             <CardContent className="pt-6">
-              <ProductForm product={product} onSubmit={handleSubmit} isSubmitting={isUpdating} />
+              <ProductForm product={product} onSubmit={handleSubmit} isSubmitting={isUpdating} isVariantsEnabled={isVariantsEnabled} />
             </CardContent>
           </Card>
         </Tab>
@@ -239,16 +250,18 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           </Card>
         </Tab>
 
-        <Tab label="Цены">
-          <Card>
-            <CardHeader>
-              <CardTitle>Цены товара</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ProductPricesEditor productId={id} prices={product.prices || []} />
-            </CardContent>
-          </Card>
-        </Tab>
+        {!product.has_variants && (
+          <Tab label="Цены">
+            <Card>
+              <CardHeader>
+                <CardTitle>Цены товара</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ProductPricesEditor productId={id} prices={product.prices || []} />
+              </CardContent>
+            </Card>
+          </Tab>
+        )}
 
         <Tab label="Контент">
           <Card>
@@ -377,6 +390,75 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
             </CardContent>
           </Card>
         </Tab>
+
+        {product.has_variants && isVariantsEnabled && (
+          <Tab label="Группы опций">
+            <Card>
+              <CardHeader>
+                <CardTitle>Группы опций</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <OptionGroupsEditor productId={id} canEdit={can("catalog", "update")} />
+              </CardContent>
+            </Card>
+          </Tab>
+        )}
+
+        {product.has_variants && isVariantsEnabled && (
+          <Tab label="Вариации">
+            <Card>
+              <CardHeader>
+                <CardTitle>Вариации товара</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <VariantsManager productId={id} canEdit={can("catalog", "update")} />
+              </CardContent>
+            </Card>
+          </Tab>
+        )}
+
+        {product.has_variants && isVariantsEnabled && (
+          <Tab label="Цены вариантов">
+            <Card>
+              <CardHeader>
+                <CardTitle>Цены вариантов</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <VariantPricesEditor productId={id} canEdit={can("catalog", "update")} />
+              </CardContent>
+            </Card>
+          </Tab>
+        )}
+
+        {product.has_variants && isVariantsEnabled && (
+          <Tab label="Включения">
+            <Card>
+              <CardHeader>
+                <CardTitle>Включения / сравнение тарифов</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <VariantInclusionsEditor productId={id} canEdit={can("catalog", "update")} />
+              </CardContent>
+            </Card>
+          </Tab>
+        )}
+
+        {product.has_variants && isVariantsEnabled && (
+          <Tab label="Изобр. вариантов">
+            <Card>
+              <CardHeader>
+                <CardTitle>Изображения вариантов</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <VariantImagesManager
+                  productId={id}
+                  productImages={product.images || []}
+                  canEdit={can("catalog", "update")}
+                />
+              </CardContent>
+            </Card>
+          </Tab>
+        )}
 
         <Tab label={<span className="flex items-center gap-1.5"><MessageSquare className="h-3.5 w-3.5" />Заявки{inquiriesData?.total ? ` (${inquiriesData.total})` : ""}</span>}>
           <Card>

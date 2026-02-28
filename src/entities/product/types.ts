@@ -161,6 +161,8 @@ export interface ProductAnalog {
   notes: string | null;
 }
 
+export type ProductType = "physical" | "digital" | "service" | "course" | "subscription";
+
 export interface Product {
   id: string;
   tenant_id: string;
@@ -171,6 +173,10 @@ export interface Product {
   model: string | null;
   description: string | null;
   uom_id: string | null;
+  product_type: ProductType;
+  has_variants: boolean;
+  price_from: string | null;
+  price_to: string | null;
   is_active: boolean;
   version: number;
   images: ProductImage[];
@@ -194,6 +200,8 @@ export interface CreateProductDto {
   model?: string;
   description?: string;
   uom_id?: string | null;
+  product_type?: ProductType;
+  has_variants?: boolean;
   is_active?: boolean;
   category_ids?: string[];
 }
@@ -206,6 +214,8 @@ export interface UpdateProductDto {
   model?: string | null;
   description?: string | null;
   uom_id?: string | null;
+  product_type?: ProductType;
+  has_variants?: boolean;
   is_active?: boolean;
   version: number;
 }
@@ -420,3 +430,211 @@ export const PARAMETER_SCOPE_LABELS: Record<ParameterScope, string> = {
   global: "Глобальный",
   category: "По категориям",
 };
+
+export const PRODUCT_TYPE_LABELS: Record<ProductType, string> = {
+  physical: "Физический товар",
+  digital: "Цифровой продукт",
+  service: "Услуга",
+  course: "Курс",
+  subscription: "Подписка",
+};
+
+// ---------- Option Groups & Values ----------
+
+export type OptionDisplayType = "dropdown" | "buttons" | "color_swatch" | "cards";
+
+export const OPTION_DISPLAY_TYPE_LABELS: Record<OptionDisplayType, string> = {
+  dropdown: "Выпадающий список",
+  buttons: "Кнопки",
+  color_swatch: "Цвета",
+  cards: "Карточки",
+};
+
+export interface OptionValue {
+  id: string;
+  title: string;
+  slug: string;
+  sort_order: number;
+  color_hex: string | null;
+  image_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OptionGroup {
+  id: string;
+  product_id: string;
+  title: string;
+  slug: string;
+  display_type: OptionDisplayType;
+  sort_order: number;
+  is_required: boolean;
+  parameter_id: string | null;
+  values: OptionValue[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OptionGroupCreate {
+  title: string;
+  slug: string;
+  display_type?: OptionDisplayType;
+  sort_order?: number;
+  is_required?: boolean;
+  parameter_id?: string | null;
+  values?: OptionValueCreate[];
+}
+
+export interface OptionGroupUpdate {
+  title?: string;
+  slug?: string;
+  display_type?: OptionDisplayType;
+  sort_order?: number;
+  is_required?: boolean;
+  parameter_id?: string | null;
+}
+
+export interface OptionValueCreate {
+  title: string;
+  slug?: string;
+  sort_order?: number;
+  color_hex?: string | null;
+  image_url?: string | null;
+}
+
+export interface OptionValueUpdate {
+  title?: string;
+  slug?: string;
+  sort_order?: number;
+  color_hex?: string | null;
+  image_url?: string | null;
+}
+
+// ---------- Variants ----------
+
+export interface VariantPrice {
+  id: string;
+  price_type: PriceType;
+  amount: string;
+  currency: string;
+  valid_from: string | null;
+  valid_to: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface VariantInclusion {
+  id: string;
+  title: string;
+  description: string | null;
+  is_included: boolean;
+  sort_order: number;
+  icon: string | null;
+  group: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface VariantImage {
+  id: string;
+  url: string;
+  alt: string | null;
+  width: number | null;
+  height: number | null;
+  size_bytes: number | null;
+  mime_type: string | null;
+  sort_order: number;
+  is_cover: boolean;
+  created_at: string;
+}
+
+export interface ProductVariant {
+  id: string;
+  product_id: string;
+  tenant_id: string;
+  sku: string;
+  slug: string;
+  title: string;
+  description: string | null;
+  is_default: boolean;
+  is_active: boolean;
+  sort_order: number;
+  stock_quantity: number | null;
+  weight: string | null;
+  prices: VariantPrice[];
+  option_values: OptionValue[];
+  inclusions: VariantInclusion[];
+  images: VariantImage[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface VariantCreate {
+  sku: string;
+  slug: string;
+  title: string;
+  description?: string | null;
+  is_default?: boolean;
+  is_active?: boolean;
+  sort_order?: number;
+  stock_quantity?: number | null;
+  weight?: number | null;
+  option_value_ids?: string[];
+}
+
+export interface VariantUpdate {
+  sku?: string;
+  slug?: string;
+  title?: string;
+  description?: string | null;
+  is_default?: boolean;
+  is_active?: boolean;
+  sort_order?: number;
+  stock_quantity?: number | null;
+  weight?: number | null;
+  option_value_ids?: string[];
+}
+
+export interface VariantGenerateRequest {
+  option_group_ids: string[];
+  base_price?: number | null;
+}
+
+export interface VariantGenerateResponse {
+  created_count: number;
+  variants: ProductVariant[];
+}
+
+export interface VariantPriceCreate {
+  price_type?: PriceType;
+  amount: number;
+  currency?: string;
+  valid_from?: string | null;
+  valid_to?: string | null;
+}
+
+export interface VariantPriceUpdate {
+  price_type?: PriceType;
+  amount?: number;
+  currency?: string;
+  valid_from?: string | null;
+  valid_to?: string | null;
+}
+
+export interface VariantInclusionCreate {
+  title: string;
+  description?: string | null;
+  is_included?: boolean;
+  sort_order?: number;
+  icon?: string | null;
+  group?: string | null;
+}
+
+export interface VariantInclusionUpdate {
+  title?: string;
+  description?: string | null;
+  is_included?: boolean;
+  sort_order?: number;
+  icon?: string | null;
+  group?: string | null;
+}

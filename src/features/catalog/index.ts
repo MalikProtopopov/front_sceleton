@@ -2,6 +2,7 @@ export { productsApi, productsKeys } from "./api/productsApi";
 export { categoriesApi, categoriesKeys } from "./api/categoriesApi";
 export { uomsApi, uomsKeys } from "./api/uomsApi";
 export { parametersApi, parametersKeys } from "./api/parametersApi";
+export { variantsApi, variantsKeys } from "./api/variantsApi";
 
 export {
   useProductsList,
@@ -62,6 +63,32 @@ export {
   useSetParameterCategories,
 } from "./model/useParameters";
 
+export {
+  useOptionGroups,
+  useCreateOptionGroup,
+  useUpdateOptionGroup,
+  useDeleteOptionGroup,
+  useCreateOptionValue,
+  useUpdateOptionValue,
+  useDeleteOptionValue,
+  useVariantsList,
+  useCreateVariant,
+  useUpdateVariant,
+  useDeleteVariant,
+  useGenerateVariants,
+  useVariantPrices,
+  useCreateVariantPrice,
+  useUpdateVariantPrice,
+  useDeleteVariantPrice,
+  useVariantInclusions,
+  useCreateVariantInclusion,
+  useUpdateVariantInclusion,
+  useDeleteVariantInclusion,
+  useVariantImages,
+  useUploadVariantImage,
+  useDeleteVariantImage,
+} from "./model/useVariants";
+
 export { ProductForm } from "./ui/ProductForm";
 export { ProductCharsEditor } from "./ui/ProductCharsEditor";
 export { ProductImagesManager } from "./ui/ProductImagesManager";
@@ -73,3 +100,8 @@ export { CategoryTree } from "./ui/CategoryTree";
 export { ParameterForm } from "./ui/ParameterForm";
 export { ParameterValuesEditor } from "./ui/ParameterValuesEditor";
 export { ParameterCategoriesEditor } from "./ui/ParameterCategoriesEditor";
+export { OptionGroupsEditor } from "./ui/OptionGroupsEditor";
+export { VariantsManager } from "./ui/VariantsManager";
+export { VariantPricesEditor } from "./ui/VariantPricesEditor";
+export { VariantInclusionsEditor } from "./ui/VariantInclusionsEditor";
+export { VariantImagesManager } from "./ui/VariantImagesManager";

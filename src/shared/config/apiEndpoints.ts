@@ -264,6 +264,29 @@ export const API_ENDPOINTS = {
     CONTENT_BLOCKS: (id: string) => `/admin/products/${id}/content-blocks`,
     CONTENT_BLOCK_BY_ID: (productId: string, blockId: string) => `/admin/products/${productId}/content-blocks/${blockId}`,
     CONTENT_BLOCKS_REORDER: (id: string) => `/admin/products/${id}/content-blocks/reorder`,
+    OPTION_GROUPS: (productId: string) => `/admin/products/${productId}/option-groups`,
+    OPTION_GROUP_BY_ID: (productId: string, groupId: string) =>
+      `/admin/products/${productId}/option-groups/${groupId}`,
+    OPTION_VALUES: (productId: string, groupId: string) =>
+      `/admin/products/${productId}/option-groups/${groupId}/values`,
+    OPTION_VALUE_BY_ID: (productId: string, groupId: string, valueId: string) =>
+      `/admin/products/${productId}/option-groups/${groupId}/values/${valueId}`,
+    VARIANTS: (productId: string) => `/admin/products/${productId}/variants`,
+    VARIANT_BY_ID: (productId: string, variantId: string) =>
+      `/admin/products/${productId}/variants/${variantId}`,
+    VARIANTS_GENERATE: (productId: string) => `/admin/products/${productId}/variants/generate`,
+    VARIANT_PRICES: (productId: string, variantId: string) =>
+      `/admin/products/${productId}/variants/${variantId}/prices`,
+    VARIANT_PRICE_BY_ID: (productId: string, variantId: string, priceId: string) =>
+      `/admin/products/${productId}/variants/${variantId}/prices/${priceId}`,
+    VARIANT_INCLUSIONS: (productId: string, variantId: string) =>
+      `/admin/products/${productId}/variants/${variantId}/inclusions`,
+    VARIANT_INCLUSION_BY_ID: (productId: string, variantId: string, inclusionId: string) =>
+      `/admin/products/${productId}/variants/${variantId}/inclusions/${inclusionId}`,
+    VARIANT_IMAGES: (productId: string, variantId: string) =>
+      `/admin/products/${productId}/variants/${variantId}/images`,
+    VARIANT_IMAGE_BY_ID: (productId: string, variantId: string, imageId: string) =>
+      `/admin/products/${productId}/variants/${variantId}/images/${imageId}`,
   },
 
   // Categories (Catalog)
