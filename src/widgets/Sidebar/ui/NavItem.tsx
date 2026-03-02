@@ -19,6 +19,8 @@ export interface NavItemProps {
   reason?: SidebarItemReason;
   /** Click handler for locked billing items (redirect to billing) */
   onLockedClick?: () => void;
+  /** Код права RBAC при reason role/billing+role, для подсказки */
+  requiredPermission?: string | null;
 }
 
 const REASON_TOOLTIPS: Record<string, string> = {
@@ -36,19 +38,25 @@ export function NavItem({
   locked,
   reason,
   onLockedClick,
+  requiredPermission,
 }: NavItemProps) {
   const pathname = usePathname();
+  const roleTooltip = reason === "role" || reason === "billing+role"
+    ? requiredPermission
+      ? `Нет права «${requiredPermission}». Обратитесь к администратору`
+      : REASON_TOOLTIPS[reason] ?? "Нет прав. Обратитесь к администратору"
+    : undefined;
+  const tooltip = roleTooltip ?? (reason ? REASON_TOOLTIPS[reason] : undefined);
   const isActive =
     !locked &&
     (exact
       ? pathname === href
       : pathname === href || pathname.startsWith(href + "/"));
 
-  const tooltip = reason ? REASON_TOOLTIPS[reason] : undefined;
   const isBillingLocked = locked && (reason === "billing" || reason === "billing+role");
   const isRoleLocked = locked && reason === "role";
 
-  // ── Billing-locked: gold accent, clickable → billing ──
+  // ── Billing-locked: gold accent, clickable → billing (читаемый контраст) ──
   if (isBillingLocked && onLockedClick) {
     return (
       <button
@@ -56,22 +64,22 @@ export function NavItem({
         onClick={onLockedClick}
         className={cn(
           "group relative flex w-full items-center gap-3 rounded-[var(--radius-md)] px-3 py-2.5 text-left",
-          "border border-amber-400/40 bg-amber-50/50 transition-all duration-200",
-          "hover:border-amber-400/70 hover:bg-amber-50/80 hover:shadow-[0_0_8px_rgba(251,191,36,0.15)]",
-          "dark:border-amber-500/30 dark:bg-amber-950/20",
-          "dark:hover:border-amber-500/50 dark:hover:bg-amber-950/30",
+          "border-2 border-amber-500 bg-amber-100 transition-all duration-200",
+          "hover:border-amber-600 hover:bg-amber-200 hover:shadow-md hover:shadow-amber-200/40",
+          "dark:border-amber-500 dark:bg-amber-950/50 dark:text-amber-200",
+          "dark:hover:border-amber-400 dark:hover:bg-amber-900/40",
           collapsed && "justify-center px-2",
         )}
         title={collapsed ? `${label} — ${tooltip}` : tooltip}
       >
         <div className="relative flex-shrink-0">
-          <Icon className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-          <Lock className="absolute -bottom-1 -right-1.5 h-3 w-3 text-amber-500 dark:text-amber-400" />
+          <Icon className="h-5 w-5 text-amber-800 dark:text-amber-300" />
+          <Lock className="absolute -bottom-1 -right-1.5 h-3 w-3 text-amber-700 dark:text-amber-400" />
         </div>
         {!collapsed && (
-          <span className="flex flex-1 items-center gap-2 text-sm font-medium text-amber-700 dark:text-amber-300">
+          <span className="flex flex-1 items-center gap-2 text-sm font-semibold text-amber-900 dark:text-amber-200">
             {label}
-            <span className="ml-auto flex h-5 items-center rounded-full bg-amber-100 px-1.5 text-[10px] font-semibold uppercase tracking-wide text-amber-600 dark:bg-amber-900/40 dark:text-amber-400">
+            <span className="ml-auto flex h-5 items-center rounded-full border border-amber-600/50 bg-amber-200 px-2 text-[10px] font-bold uppercase tracking-wide text-amber-800 dark:border-amber-500/50 dark:bg-amber-800/60 dark:text-amber-100">
               Pro
             </span>
           </span>

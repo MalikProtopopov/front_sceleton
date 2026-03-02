@@ -15,6 +15,15 @@ const nextConfig: NextConfig = {
   typescript: { ignoreBuildErrors: true },
   eslint: { ignoreDuringBuilds: true },
 
+  // /employees — алиас для /team (раздел «Команда»)
+  async redirects() {
+    return [
+      { source: "/employees", destination: "/team", permanent: true },
+      { source: "/employees/new", destination: "/team/new", permanent: true },
+      { source: "/employees/:id", destination: "/team/:id", permanent: true },
+    ];
+  },
+
   // Block search engine indexing for admin panel
   async headers() {
     return [

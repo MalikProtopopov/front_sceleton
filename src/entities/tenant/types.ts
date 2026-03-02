@@ -371,12 +371,13 @@ export interface SidebarItem {
   visible: boolean;
   accessible: boolean;
   reason: SidebarItemReason;
+  /** Код права RBAC при reason role/billing+role, например articles:read, catalog:read */
   required_permission: string | null;
 }
 
 export interface SidebarResponse {
   tenant_id: string;
-  role: string;
+  role: string | null;
   all_access: boolean;
   sections: SidebarItem[];
 }
