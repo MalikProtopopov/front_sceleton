@@ -27,6 +27,7 @@ export {
   useUpdateBundle,
   usePlatformUpgradeRequests,
   useReviewUpgradeRequest,
+  useTenantModules,
   useAddTenantModule,
   useRemoveTenantModule,
 } from "./model/useBillingPlatform";

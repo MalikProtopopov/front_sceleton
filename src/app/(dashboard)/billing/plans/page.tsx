@@ -61,7 +61,7 @@ export default function BillingPlansPage() {
         plans={plans ?? []}
         allModules={modules ?? []}
         bundles={bundles ?? []}
-        currentPlanSlug={myPlan?.plan.slug}
+        currentPlanSlug={myPlan?.plan?.slug}
         onUpgradePlan={(planId) => {
           const plan = plans?.find((p) => p.id === planId);
           if (plan) openUpgradeModal("plan_upgrade", plan.id, plan.name_ru);

@@ -57,6 +57,9 @@ export const billingPlatformApi = {
     apiClient.patch<UpgradeRequest>(API_ENDPOINTS.BILLING_PLATFORM.UPGRADE_REQUEST_BY_ID(id), data),
 
   // Tenant modules
+  listTenantModules: (tenantId: string) =>
+    apiClient.get<TenantModule[]>(API_ENDPOINTS.BILLING_PLATFORM.TENANT_MODULES(tenantId)),
+
   addTenantModule: (tenantId: string, data: AddTenantModuleDto) =>
     apiClient.post<TenantModule>(API_ENDPOINTS.BILLING_PLATFORM.TENANT_MODULES(tenantId), data),
 

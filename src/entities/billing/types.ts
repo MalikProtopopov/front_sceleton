@@ -64,7 +64,7 @@ export interface TenantModule {
 }
 
 export interface MyPlanResponse {
-  plan: PlanResponse;
+  plan: PlanResponse | null;
   modules: TenantModule[];
   usage: UsageMap;
 }

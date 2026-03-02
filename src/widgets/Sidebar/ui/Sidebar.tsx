@@ -45,7 +45,8 @@ interface NavItemData {
   href: string;
   icon: React.ComponentType<{ className?: string }>;
   label: string;
-  feature?: string; // Optional feature flag requirement
+  feature?: string;
+  exact?: boolean;
 }
 
 interface NavGroupData {
@@ -68,7 +69,7 @@ function isNavGroup(item: NavItemData | NavGroupData): item is NavGroupData {
 const platformNavigation: NavSection = {
   label: "Платформа",
   items: [
-    { href: ROUTES.PLATFORM_DASHBOARD, icon: LayoutDashboard, label: "Дашборд" },
+    { href: ROUTES.PLATFORM_DASHBOARD, icon: LayoutDashboard, label: "Дашборд", exact: true },
     { href: ROUTES.TENANTS, icon: Building2, label: "Проекты" },
     { href: ROUTES.PLATFORM_PLANS, icon: CreditCard, label: "Тарифы" },
     { href: ROUTES.PLATFORM_MODULES, icon: Puzzle, label: "Модули" },
@@ -261,6 +262,7 @@ export function Sidebar() {
                     collapsed={collapsed}
                     disabled={!!isDisabled}
                     badge={isDisabled ? "По запросу" : undefined}
+                    exact={item.exact}
                   />
                 );
               })}

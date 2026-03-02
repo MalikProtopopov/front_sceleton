@@ -6,11 +6,40 @@ import type { PlanResponse } from "@/entities/billing";
 import { formatPrice } from "../lib/billingConstants";
 
 interface PlanCardProps {
-  plan: PlanResponse;
+  plan: PlanResponse | null;
   onChangePlan?: () => void;
 }
 
 export function PlanCard({ plan, onChangePlan }: PlanCardProps) {
+  if (!plan) {
+    return (
+      <Card>
+        <CardContent>
+          <div className="flex items-start justify-between">
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--color-bg-elevated)]">
+                <CreditCard className="h-6 w-6 text-[var(--color-text-muted)]" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-[var(--color-text-primary)]">
+                  Тариф не назначен
+                </h2>
+                <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                  Для вашей организации ещё не выбран тарифный план
+                </p>
+              </div>
+            </div>
+            {onChangePlan && (
+              <Button onClick={onChangePlan}>
+                Выбрать тариф
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardContent>

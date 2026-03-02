@@ -13,11 +13,13 @@ export interface NavItemProps {
   disabled?: boolean;
   /** Optional badge text shown next to the label */
   badge?: string;
+  /** Only highlight on exact pathname match (no prefix matching) */
+  exact?: boolean;
 }
 
-export function NavItem({ href, icon: Icon, label, collapsed, disabled, badge }: NavItemProps) {
+export function NavItem({ href, icon: Icon, label, collapsed, disabled, badge, exact }: NavItemProps) {
   const pathname = usePathname();
-  const isActive = !disabled && (pathname === href || pathname.startsWith(href + "/"));
+  const isActive = !disabled && (exact ? pathname === href : pathname === href || pathname.startsWith(href + "/"));
 
   if (disabled) {
     return (

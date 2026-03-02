@@ -29,8 +29,8 @@ import {
 import { useTenantDetail, useDeleteTenant, useUploadTenantLogo, useDeleteTenantLogo, TenantDomainsTab, TenantSettingsTab } from "@/features/tenants";
 import { TenantUsersTab } from "@/features/tenants/ui/TenantUsersTab";
 import { useFeatureFlags, useUpdateFeatureFlag } from "@/features/settings";
-import { useAddTenantModule, useRemoveTenantModule, usePlatformModules } from "@/features/billing";
-import type { ModuleSource } from "@/entities/billing";
+import { useTenantModules, useAddTenantModule, useRemoveTenantModule, usePlatformModules, sourceLabels } from "@/features/billing";
+import type { ModuleSource, TenantModule as TenantModuleType } from "@/entities/billing";
 import {
   Button,
   Badge,
@@ -46,7 +46,9 @@ import {
   TabsContent,
   Switch,
   Select,
+  Table,
 } from "@/shared/ui";
+import type { Column } from "@/shared/ui/Table/Table";
 import { ROUTES, COPY_FEEDBACK_DURATION } from "@/shared/config";
 import { formatDateTime } from "@/shared/lib";
 
@@ -89,10 +91,12 @@ export default function TenantDetailPage() {
   const { data: flagsData, isLoading: isFlagsLoading } = useFeatureFlags(tenantId);
   const { mutate: updateFlag, isPending: isUpdatingFlag } = useUpdateFeatureFlag(tenantId);
 
+  const { data: tenantBillingModules, isLoading: isBillingModulesLoading } = useTenantModules(tenantId);
   const { data: allPlatformModules } = usePlatformModules();
   const { mutate: addBillingModule, isPending: isAddingBillingModule } = useAddTenantModule(tenantId);
   const { mutate: removeBillingModule, isPending: isRemovingBillingModule } = useRemoveTenantModule(tenantId);
-  const [selectedModuleSlug, setSelectedModuleSlug] = useState("");
+  const [addModuleSlug, setAddModuleSlug] = useState("");
+  const [removeConfirm, setRemoveConfirm] = useState<{ slug: string; name: string } | null>(null);
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("details");
@@ -519,75 +523,143 @@ export default function TenantDetailPage() {
 
         {/* Billing modules */}
         <TabsContent value="billing-modules">
-          <div className="space-y-4">
+          <div className="space-y-6">
+            {/* Active modules table */}
             <Card>
               <CardHeader>
-                <CardTitle>Добавить модуль вручную</CardTitle>
+                <CardTitle>Подключённые модули</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex items-end gap-3">
-                  <Select
-                    label="Модуль"
-                    options={(allPlatformModules ?? []).map((m) => ({
-                      value: m.slug,
-                      label: `${m.name_ru} (${m.slug})`,
-                    }))}
-                    value={selectedModuleSlug}
-                    onChange={(e) => setSelectedModuleSlug(e.target.value)}
-                    placeholder="Выберите модуль..."
-                  />
-                  <Button
-                    onClick={() => {
-                      if (selectedModuleSlug) {
-                        addBillingModule(
-                          { module_slug: selectedModuleSlug, source: "manual" as ModuleSource, enabled: true },
-                          { onSuccess: () => setSelectedModuleSlug("") }
-                        );
-                      }
-                    }}
-                    disabled={!selectedModuleSlug || isAddingBillingModule}
-                    isLoading={isAddingBillingModule}
-                  >
-                    Добавить
-                  </Button>
-                </div>
+                <Table<TenantModuleType>
+                  data={tenantBillingModules ?? []}
+                  columns={[
+                    {
+                      key: "module_name_ru",
+                      header: "Модуль",
+                      render: (row) => (
+                        <div>
+                          <span className="font-medium">{row.module_name_ru}</span>
+                          <span className="ml-2 text-xs text-[var(--color-text-muted)]">{row.module_slug}</span>
+                        </div>
+                      ),
+                    },
+                    {
+                      key: "source",
+                      header: "Источник",
+                      render: (row) => (
+                        <Badge variant={row.source === "plan" ? "primary" : row.source === "bundle" ? "info" : "default"}>
+                          {sourceLabels[row.source] ?? row.source}
+                        </Badge>
+                      ),
+                    },
+                    {
+                      key: "enabled",
+                      header: "Статус",
+                      render: (row) => (
+                        <span className="flex items-center gap-2">
+                          <span className={`inline-block h-2 w-2 rounded-full ${row.enabled ? "bg-[var(--color-success)]" : "bg-[var(--color-text-muted)]"}`} />
+                          {row.enabled ? "Активен" : "Неактивен"}
+                        </span>
+                      ),
+                    },
+                    {
+                      key: "activated_at",
+                      header: "Подключён",
+                      render: (row) => formatDateTime(row.activated_at),
+                    },
+                    {
+                      key: "actions",
+                      header: "",
+                      render: (row) => (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-[var(--color-error)] hover:text-[var(--color-error)]"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setRemoveConfirm({ slug: row.module_slug, name: row.module_name_ru });
+                          }}
+                        >
+                          <Trash2 className="mr-1 h-3.5 w-3.5" />
+                          Убрать
+                        </Button>
+                      ),
+                    },
+                  ] satisfies Column<TenantModuleType>[]}
+                  keyExtractor={(row) => row.id}
+                  isLoading={isBillingModulesLoading}
+                  emptyMessage="У тенанта нет подключённых биллинг-модулей"
+                />
               </CardContent>
             </Card>
+
+            {/* Add module */}
             <Card>
               <CardHeader>
-                <CardTitle>Удалить модуль</CardTitle>
+                <CardTitle>Добавить модуль</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex items-end gap-3">
-                  <Select
-                    label="Модуль для удаления"
-                    options={(allPlatformModules ?? []).map((m) => ({
-                      value: m.slug,
-                      label: `${m.name_ru} (${m.slug})`,
-                    }))}
-                    value={selectedModuleSlug}
-                    onChange={(e) => setSelectedModuleSlug(e.target.value)}
-                    placeholder="Выберите модуль..."
-                  />
-                  <Button
-                    variant="danger"
-                    onClick={() => {
-                      if (selectedModuleSlug) {
-                        removeBillingModule(
-                          { module_slug: selectedModuleSlug },
-                          { onSuccess: () => setSelectedModuleSlug("") }
-                        );
-                      }
-                    }}
-                    disabled={!selectedModuleSlug || isRemovingBillingModule}
-                    isLoading={isRemovingBillingModule}
-                  >
-                    Удалить
-                  </Button>
-                </div>
+                {(() => {
+                  const activeSlugs = new Set((tenantBillingModules ?? []).map((m) => m.module_slug));
+                  const available = (allPlatformModules ?? []).filter((m) => !activeSlugs.has(m.slug));
+                  if (available.length === 0) {
+                    return (
+                      <p className="text-sm text-[var(--color-text-muted)]">
+                        Все доступные модули уже подключены
+                      </p>
+                    );
+                  }
+                  return (
+                    <div className="flex items-end gap-3">
+                      <Select
+                        label="Модуль"
+                        options={available.map((m) => ({
+                          value: m.slug,
+                          label: `${m.name_ru} (${m.slug})`,
+                        }))}
+                        value={addModuleSlug}
+                        onChange={(e) => setAddModuleSlug(e.target.value)}
+                        placeholder="Выберите модуль..."
+                      />
+                      <Button
+                        onClick={() => {
+                          if (addModuleSlug) {
+                            addBillingModule(
+                              { module_slug: addModuleSlug, source: "manual" as ModuleSource, enabled: true },
+                              { onSuccess: () => setAddModuleSlug("") },
+                            );
+                          }
+                        }}
+                        disabled={!addModuleSlug || isAddingBillingModule}
+                        isLoading={isAddingBillingModule}
+                      >
+                        Добавить
+                      </Button>
+                    </div>
+                  );
+                })()}
               </CardContent>
             </Card>
           </div>
+
+          {/* Remove confirmation */}
+          <ConfirmModal
+            isOpen={!!removeConfirm}
+            onClose={() => setRemoveConfirm(null)}
+            onConfirm={() => {
+              if (removeConfirm) {
+                removeBillingModule(
+                  { module_slug: removeConfirm.slug },
+                  { onSuccess: () => setRemoveConfirm(null) },
+                );
+              }
+            }}
+            title={`Убрать модуль «${removeConfirm?.name}»?`}
+            description="Модуль будет отключён для этого тенанта. Вы сможете добавить его снова позже."
+            confirmText="Убрать"
+            variant="danger"
+            isLoading={isRemovingBillingModule}
+          />
         </TabsContent>
 
         {/* Users */}

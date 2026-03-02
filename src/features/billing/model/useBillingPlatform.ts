@@ -124,6 +124,14 @@ export function useReviewUpgradeRequest() {
 
 // ─── Tenant Modules ───
 
+export function useTenantModules(tenantId: string) {
+  return useQuery({
+    queryKey: billingPlatformKeys.tenantModules(tenantId),
+    queryFn: () => billingPlatformApi.listTenantModules(tenantId),
+    enabled: !!tenantId,
+  });
+}
+
 export function useAddTenantModule(tenantId: string) {
   return useAppMutation({
     mutationFn: (data: AddTenantModuleDto) =>
