@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Plus, Pencil, Trash2, GripVertical, X } from "lucide-react";
-import { useTopics, useDeleteTopic } from "../model/useTopics";
+import { useTopicsList, useDeleteTopic } from "../model/useTopics";
 import { TopicModal } from "./TopicModal";
 import { Button, Spinner, ConfirmModal } from "@/shared/ui";
 import { cn } from "@/shared/lib";
@@ -21,7 +21,7 @@ export function TopicsSidebar({ isOpen, onClose, selectedTopicId, onSelectTopic 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [topicToDelete, setTopicToDelete] = useState<Topic | null>(null);
 
-  const { data, isLoading, isError } = useTopics({ pageSize: 100 });
+  const { data, isLoading, isError } = useTopicsList({ pageSize: 100 });
   const { mutate: deleteTopic, isPending: isDeleting } = useDeleteTopic();
 
   const handleDeleteClick = (topic: Topic) => {

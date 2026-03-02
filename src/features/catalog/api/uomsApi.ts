@@ -14,5 +14,6 @@ export const uomsApi = {
 
 export const uomsKeys = {
   all: ["uoms"] as const,
+  lists: () => [...uomsKeys.all, "list"] as const,
   list: () => [...uomsKeys.all, "list"] as const,
 };

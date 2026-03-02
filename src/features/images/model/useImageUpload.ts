@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAppMutation } from "@/shared/lib";
 import {
   articleImageApi,
   caseImageApi,
@@ -20,197 +20,120 @@ import { usersKeys } from "@/features/users";
 
 // Article cover image hooks
 export function useUploadArticleCoverImage(articleId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (file: File) => articleImageApi.upload(articleId, file),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: articlesKeys.detail(articleId) });
-      queryClient.invalidateQueries({ queryKey: articlesKeys.lists() });
-    },
+    invalidateKeys: [articlesKeys.detail(articleId), articlesKeys.lists()],
   });
 }
 
 export function useDeleteArticleCoverImage(articleId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: () => articleImageApi.delete(articleId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: articlesKeys.detail(articleId) });
-      queryClient.invalidateQueries({ queryKey: articlesKeys.lists() });
-    },
+    invalidateKeys: [articlesKeys.detail(articleId), articlesKeys.lists()],
   });
 }
 
 // Case cover image hooks
 export function useUploadCaseCoverImage(caseId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (file: File) => caseImageApi.upload(caseId, file),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: casesKeys.detail(caseId) });
-      queryClient.invalidateQueries({ queryKey: casesKeys.lists() });
-    },
+    invalidateKeys: [casesKeys.detail(caseId), casesKeys.lists()],
   });
 }
 
 export function useDeleteCaseCoverImage(caseId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: () => caseImageApi.delete(caseId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: casesKeys.detail(caseId) });
-      queryClient.invalidateQueries({ queryKey: casesKeys.lists() });
-    },
+    invalidateKeys: [casesKeys.detail(caseId), casesKeys.lists()],
   });
 }
 
 // Service image hooks
 export function useUploadServiceImage(serviceId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (file: File) => serviceImageApi.upload(serviceId, file),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: servicesKeys.detail(serviceId) });
-      queryClient.invalidateQueries({ queryKey: servicesKeys.lists() });
-    },
+    invalidateKeys: [servicesKeys.detail(serviceId), servicesKeys.lists()],
   });
 }
 
 export function useDeleteServiceImage(serviceId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: () => serviceImageApi.delete(serviceId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: servicesKeys.detail(serviceId) });
-      queryClient.invalidateQueries({ queryKey: servicesKeys.lists() });
-    },
+    invalidateKeys: [servicesKeys.detail(serviceId), servicesKeys.lists()],
   });
 }
 
 // Employee photo hooks
 export function useUploadEmployeePhoto(employeeId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (file: File) => employeeImageApi.upload(employeeId, file),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: employeesKeys.detail(employeeId) });
-      queryClient.invalidateQueries({ queryKey: employeesKeys.lists() });
-    },
+    invalidateKeys: [employeesKeys.detail(employeeId), employeesKeys.lists()],
   });
 }
 
 export function useDeleteEmployeePhoto(employeeId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: () => employeeImageApi.delete(employeeId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: employeesKeys.detail(employeeId) });
-      queryClient.invalidateQueries({ queryKey: employeesKeys.lists() });
-    },
+    invalidateKeys: [employeesKeys.detail(employeeId), employeesKeys.lists()],
   });
 }
 
 // Review author photo hooks
 export function useUploadReviewAuthorPhoto(reviewId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (file: File) => reviewImageApi.upload(reviewId, file),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: reviewsKeys.detail(reviewId) });
-      queryClient.invalidateQueries({ queryKey: reviewsKeys.lists() });
-    },
+    invalidateKeys: [reviewsKeys.detail(reviewId), reviewsKeys.lists()],
   });
 }
 
 export function useDeleteReviewAuthorPhoto(reviewId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: () => reviewImageApi.delete(reviewId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: reviewsKeys.detail(reviewId) });
-      queryClient.invalidateQueries({ queryKey: reviewsKeys.lists() });
-    },
+    invalidateKeys: [reviewsKeys.detail(reviewId), reviewsKeys.lists()],
   });
 }
 
 // User avatar hooks (admin)
 export function useUploadUserAvatar(userId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (file: File) => userImageApi.upload(userId, file),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: usersKeys.detail(userId) });
-      queryClient.invalidateQueries({ queryKey: usersKeys.lists() });
-    },
+    invalidateKeys: [usersKeys.detail(userId), usersKeys.lists()],
   });
 }
 
 export function useDeleteUserAvatar(userId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: () => userImageApi.delete(userId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: usersKeys.detail(userId) });
-      queryClient.invalidateQueries({ queryKey: usersKeys.lists() });
-    },
+    invalidateKeys: [usersKeys.detail(userId), usersKeys.lists()],
   });
 }
 
 // Current user (me) avatar hooks
 export function useUploadMyAvatar() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (file: File) => meImageApi.upload(file),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
-    },
+    invalidateKeys: [["auth", "me"]],
   });
 }
 
 export function useDeleteMyAvatar() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: () => meImageApi.delete(),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
-    },
+    invalidateKeys: [["auth", "me"]],
   });
 }
 
 // Tenant logo hooks
 export function useUploadTenantLogo(tenantId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (file: File) => tenantImageApi.upload(tenantId, file),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tenants", tenantId] });
-    },
+    invalidateKeys: [["tenants", tenantId]],
   });
 }
 
 export function useDeleteTenantLogo(tenantId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: () => tenantImageApi.delete(tenantId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tenants", tenantId] });
-    },
+    invalidateKeys: [["tenants", tenantId]],
   });
 }
-

@@ -1,6 +1,6 @@
 export { casesApi, casesKeys } from "./api/casesApi";
 export { 
-  useCases, 
+  useCasesList, 
   useCase, 
   useCreateCase, 
   useUpdateCase, 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCreatePracticeArea, PracticeAreaForm } from "@/features/company";
+import type { CreatePracticeAreaDto } from "@/entities/company";
 
 export default function NewPracticeAreaPage() {
   const { mutate: create, isPending } = useCreatePracticeArea();
@@ -12,7 +13,7 @@ export default function NewPracticeAreaPage() {
         <p className="text-[var(--color-text-secondary)]">Создайте новое направление деятельности</p>
       </div>
 
-      <PracticeAreaForm onSubmit={create} isSubmitting={isPending} />
+      <PracticeAreaForm onSubmit={(data) => create(data as CreatePracticeAreaDto)} isSubmitting={isPending} />
     </div>
   );
 }

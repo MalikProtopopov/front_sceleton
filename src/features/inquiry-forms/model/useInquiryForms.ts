@@ -1,8 +1,8 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { useAppMutation } from "@/shared/lib";
 import { inquiryFormsApi, inquiryFormsKeys } from "../api/inquiryFormsApi";
 import { ROUTES } from "@/shared/config";
 import type { CreateInquiryFormDto, UpdateInquiryFormDto } from "@/entities/inquiry-form";
@@ -24,54 +24,37 @@ export function useInquiryForm(id: string) {
 
 export function useCreateInquiryForm() {
   const router = useRouter();
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: CreateInquiryFormDto) => inquiryFormsApi.create(data),
+    successMessage: "Форма создана",
+    errorMessage: "Не удалось создать форму",
+    invalidateKeys: [inquiryFormsKeys.lists()],
     onSuccess: (form) => {
-      queryClient.invalidateQueries({ queryKey: inquiryFormsKeys.lists() });
-      toast.success("Форма создана");
       router.push(ROUTES.LEAD_FORM_EDIT(form.id));
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось создать форму";
-      toast.error(message);
     },
   });
 }
 
 export function useUpdateInquiryForm(id: string) {
   const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: UpdateInquiryFormDto) => inquiryFormsApi.update(id, data),
+    successMessage: "Форма обновлена",
+    errorMessage: "Не удалось обновить форму",
+    invalidateKeys: [inquiryFormsKeys.lists()],
     onSuccess: (form) => {
       queryClient.setQueryData(inquiryFormsKeys.detail(id), form);
-      queryClient.invalidateQueries({ queryKey: inquiryFormsKeys.lists() });
-      toast.success("Форма обновлена");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось обновить форму";
-      toast.error(message);
     },
   });
 }
 
 export function useDeleteInquiryForm() {
   const router = useRouter();
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (id: string) => inquiryFormsApi.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: inquiryFormsKeys.lists() });
-      toast.success("Форма удалена");
-      router.push(ROUTES.LEAD_FORMS);
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось удалить форму";
-      toast.error(message);
-    },
+    successMessage: "Форма удалена",
+    errorMessage: "Не удалось удалить форму",
+    invalidateKeys: [inquiryFormsKeys.lists()],
+    onSuccess: () => router.push(ROUTES.LEAD_FORMS),
   });
 }
-

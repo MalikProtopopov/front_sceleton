@@ -1,13 +1,11 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { useAppMutation, createLocaleHooks } from "@/shared/lib";
 import { faqApi, faqKeys } from "../api/faqApi";
 import { ROUTES } from "@/shared/config";
 import type { FAQFilterParams, CreateFAQDto, UpdateFAQDto, CreateFAQLocaleDto, UpdateFAQLocaleDto } from "@/entities/faq";
-import { handleLocaleError } from "@/shared/lib/localeErrors";
-import { handleVersionConflict, getErrorMessage } from "@/shared/lib/versionConflict";
 
 export function useFAQList(params?: FAQFilterParams) {
   return useQuery({
@@ -26,77 +24,54 @@ export function useFAQ(id: string) {
 
 export function useCreateFAQ() {
   const router = useRouter();
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: CreateFAQDto) => faqApi.create(data),
+    successMessage: "FAQ создан",
+    errorMessage: "Не удалось создать FAQ",
+    invalidateKeys: [faqKeys.lists()],
     onSuccess: (faq) => {
-      queryClient.invalidateQueries({ queryKey: faqKeys.lists() });
-      toast.success("FAQ создан");
       router.push(ROUTES.FAQ_EDIT(faq.id));
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось создать FAQ";
-      toast.error(message);
     },
   });
 }
 
 export function useUpdateFAQ(id: string) {
   const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: UpdateFAQDto) => faqApi.update(id, data),
+    successMessage: "FAQ обновлен",
+    errorMessage: "Не удалось обновить FAQ",
+    invalidateKeys: [faqKeys.lists()],
+    versionConflictKey: faqKeys.detail(id),
     onSuccess: (faq) => {
       queryClient.setQueryData(faqKeys.detail(id), faq);
-      queryClient.invalidateQueries({ queryKey: faqKeys.lists() });
-      toast.success("FAQ обновлен");
-    },
-    onError: (error) => {
-      if (handleVersionConflict(error, queryClient, faqKeys.detail(id))) {
-        return;
-      }
-      const message = getErrorMessage(error, "Не удалось обновить FAQ");
-      toast.error(message);
     },
   });
 }
 
 export function useDeleteFAQ() {
   const router = useRouter();
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (id: string) => faqApi.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: faqKeys.lists() });
-      toast.success("FAQ удален");
-      router.push(ROUTES.FAQ);
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось удалить FAQ";
-      toast.error(message);
-    },
+    successMessage: "FAQ удален",
+    errorMessage: "Не удалось удалить FAQ",
+    invalidateKeys: [faqKeys.lists()],
+    onSuccess: () => router.push(ROUTES.FAQ),
   });
 }
 
 export function useToggleFAQPublished(id: string) {
   const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: ({ isPublished, version }: { isPublished: boolean; version: number }) =>
       faqApi.update(id, { is_published: isPublished, version }),
+    successMessage: (faq) =>
+      faq.is_published ? "FAQ опубликован" : "FAQ снят с публикации",
+    errorMessage: "Не удалось изменить статус",
+    invalidateKeys: [faqKeys.lists()],
+    versionConflictKey: faqKeys.detail(id),
     onSuccess: (faq) => {
       queryClient.setQueryData(faqKeys.detail(id), faq);
-      queryClient.invalidateQueries({ queryKey: faqKeys.lists() });
-      toast.success(faq.is_published ? "FAQ опубликован" : "FAQ снят с публикации");
-    },
-    onError: (error) => {
-      if (handleVersionConflict(error, queryClient, faqKeys.detail(id))) {
-        return;
-      }
-      const message = getErrorMessage(error, "Не удалось изменить статус");
-      toast.error(message);
     },
   });
 }
@@ -105,49 +80,8 @@ export function useToggleFAQPublished(id: string) {
 // Locale Hooks
 // =====================
 
-export function useCreateFAQLocale(faqId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (data: CreateFAQLocaleDto) => faqApi.createLocale(faqId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: faqKeys.detail(faqId) });
-      toast.success("Локаль добавлена");
-    },
-    onError: (error) => {
-      handleLocaleError(error);
-    },
-  });
-}
-
-export function useUpdateFAQLocale(faqId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ localeId, data }: { localeId: string; data: UpdateFAQLocaleDto }) =>
-      faqApi.updateLocale(faqId, localeId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: faqKeys.detail(faqId) });
-      toast.success("Локаль обновлена");
-    },
-    onError: (error) => {
-      handleLocaleError(error);
-    },
-  });
-}
-
-export function useDeleteFAQLocale(faqId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (localeId: string) => faqApi.deleteLocale(faqId, localeId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: faqKeys.detail(faqId) });
-      toast.success("Локаль удалена");
-    },
-    onError: (error) => {
-      handleLocaleError(error);
-    },
-  });
-}
-
+export const {
+  useCreateLocale: useCreateFAQLocale,
+  useUpdateLocale: useUpdateFAQLocale,
+  useDeleteLocale: useDeleteFAQLocale,
+} = createLocaleHooks<CreateFAQLocaleDto, UpdateFAQLocaleDto>(faqApi, faqKeys.detail);

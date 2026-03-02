@@ -1,8 +1,8 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { useAppMutation } from "@/shared/lib";
 import { reviewsApi, reviewsKeys } from "../api/reviewsApi";
 import { ROUTES } from "@/shared/config";
 import type { ReviewFilterParams, CreateReviewDto, UpdateReviewDto } from "@/entities/review";
@@ -25,105 +25,78 @@ export function useReview(id: string) {
 
 export function useCreateReview() {
   const router = useRouter();
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: CreateReviewDto) => reviewsApi.create(data),
+    successMessage: "Отзыв создан",
+    errorMessage: "Не удалось создать отзыв",
+    invalidateKeys: [reviewsKeys.lists()],
     onSuccess: (review) => {
-      queryClient.invalidateQueries({ queryKey: reviewsKeys.lists() });
-      toast.success("Отзыв создан");
       router.push(ROUTES.REVIEW_EDIT(review.id));
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось создать отзыв";
-      toast.error(message);
     },
   });
 }
 
 export function useUpdateReview(id: string) {
   const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: UpdateReviewDto) => reviewsApi.update(id, data),
+    successMessage: "Отзыв обновлен",
+    errorMessage: "Не удалось обновить отзыв",
+    invalidateKeys: [reviewsKeys.lists()],
     onSuccess: (review) => {
       queryClient.setQueryData(reviewsKeys.detail(id), review);
-      queryClient.invalidateQueries({ queryKey: reviewsKeys.lists() });
-      toast.success("Отзыв обновлен");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось обновить отзыв";
-      toast.error(message);
     },
   });
 }
 
 export function useDeleteReview() {
   const router = useRouter();
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (id: string) => reviewsApi.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: reviewsKeys.lists() });
-      toast.success("Отзыв удален");
-      router.push(ROUTES.REVIEWS);
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось удалить отзыв";
-      toast.error(message);
-    },
+    successMessage: "Отзыв удален",
+    errorMessage: "Не удалось удалить отзыв",
+    invalidateKeys: [reviewsKeys.lists()],
+    onSuccess: () => router.push(ROUTES.REVIEWS),
   });
 }
 
 export function useApproveReview() {
   const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (id: string) => reviewsApi.approve(id),
+    successMessage: "Отзыв одобрен",
+    errorMessage: "Не удалось одобрить отзыв",
+    invalidateKeys: [reviewsKeys.lists()],
     onSuccess: (review) => {
       queryClient.setQueryData(reviewsKeys.detail(review.id), review);
-      queryClient.invalidateQueries({ queryKey: reviewsKeys.lists() });
-      toast.success("Отзыв одобрен");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось одобрить отзыв";
-      toast.error(message);
     },
   });
 }
 
 export function useRejectReview() {
   const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (id: string) => reviewsApi.reject(id),
+    successMessage: "Отзыв отклонен",
+    errorMessage: "Не удалось отклонить отзыв",
+    invalidateKeys: [reviewsKeys.lists()],
     onSuccess: (review) => {
       queryClient.setQueryData(reviewsKeys.detail(review.id), review);
-      queryClient.invalidateQueries({ queryKey: reviewsKeys.lists() });
-      toast.success("Отзыв отклонен");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось отклонить отзыв";
-      toast.error(message);
     },
   });
 }
 
 export function useToggleReviewFeatured(id: string) {
   const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: ({ isFeatured, version }: { isFeatured: boolean; version: number }) =>
       reviewsApi.update(id, { is_featured: isFeatured, version }),
+    successMessage: (review) =>
+      review.is_featured ? "Отзыв добавлен в избранное" : "Отзыв удален из избранного",
+    errorMessage: "Не удалось изменить статус",
+    invalidateKeys: [reviewsKeys.lists()],
     onSuccess: (review) => {
       queryClient.setQueryData(reviewsKeys.detail(id), review);
-      queryClient.invalidateQueries({ queryKey: reviewsKeys.lists() });
-      toast.success(review.is_featured ? "Отзыв добавлен в избранное" : "Отзыв удален из избранного");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось изменить статус";
-      toast.error(message);
     },
   });
 }
@@ -133,51 +106,29 @@ export function useToggleReviewFeatured(id: string) {
 // =====================
 
 export function useCreateAuthorContact(reviewId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: CreateContactDto) => reviewsApi.createAuthorContact(reviewId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: reviewsKeys.detail(reviewId) });
-      toast.success("Контакт автора добавлен");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось добавить контакт";
-      toast.error(message);
-    },
+    successMessage: "Контакт автора добавлен",
+    errorMessage: "Не удалось добавить контакт",
+    invalidateKeys: [reviewsKeys.detail(reviewId)],
   });
 }
 
 export function useUpdateAuthorContact(reviewId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: ({ contactId, data }: { contactId: string; data: UpdateContactDto }) =>
       reviewsApi.updateAuthorContact(reviewId, contactId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: reviewsKeys.detail(reviewId) });
-      toast.success("Контакт автора обновлен");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось обновить контакт";
-      toast.error(message);
-    },
+    successMessage: "Контакт автора обновлен",
+    errorMessage: "Не удалось обновить контакт",
+    invalidateKeys: [reviewsKeys.detail(reviewId)],
   });
 }
 
 export function useDeleteAuthorContact(reviewId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (contactId: string) => reviewsApi.deleteAuthorContact(reviewId, contactId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: reviewsKeys.detail(reviewId) });
-      toast.success("Контакт автора удален");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось удалить контакт";
-      toast.error(message);
-    },
+    successMessage: "Контакт автора удален",
+    errorMessage: "Не удалось удалить контакт",
+    invalidateKeys: [reviewsKeys.detail(reviewId)],
   });
 }
-

@@ -1,11 +1,10 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { useAppMutation } from "@/shared/lib";
 import { categoriesApi, categoriesKeys } from "../api/categoriesApi";
 import { ROUTES } from "@/shared/config";
-import { handleVersionConflict, getErrorMessage } from "@/shared/lib/versionConflict";
 import type {
   CategoryFilterParams,
   CreateCategoryDto,
@@ -37,57 +36,40 @@ export function useCategory(id: string) {
 
 export function useCreateCategory() {
   const router = useRouter();
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: CreateCategoryDto) => categoriesApi.create(data),
+    successMessage: "Категория создана",
+    errorMessage: "Не удалось создать категорию",
+    invalidateKeys: [categoriesKeys.lists(), categoriesKeys.tree()],
     onSuccess: (category) => {
-      queryClient.invalidateQueries({ queryKey: categoriesKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: categoriesKeys.tree() });
-      toast.success("Категория создана");
       router.push(ROUTES.CATEGORY_EDIT(category.id));
-    },
-    onError: (error) => {
-      const message = getErrorMessage(error, "Не удалось создать категорию");
-      toast.error(message);
     },
   });
 }
 
 export function useUpdateCategory(id: string) {
   const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: UpdateCategoryDto) => categoriesApi.update(id, data),
+    successMessage: "Категория обновлена",
+    errorMessage: "Не удалось обновить категорию",
+    invalidateKeys: [categoriesKeys.lists(), categoriesKeys.tree()],
+    versionConflictKey: categoriesKeys.detail(id),
     onSuccess: (category) => {
       queryClient.setQueryData(categoriesKeys.detail(id), category);
-      queryClient.invalidateQueries({ queryKey: categoriesKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: categoriesKeys.tree() });
-      toast.success("Категория обновлена");
-    },
-    onError: (error) => {
-      if (handleVersionConflict(error, queryClient, categoriesKeys.detail(id))) return;
-      const message = getErrorMessage(error, "Не удалось обновить категорию");
-      toast.error(message);
     },
   });
 }
 
 export function useDeleteCategory() {
   const router = useRouter();
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (id: string) => categoriesApi.delete(id),
+    successMessage: "Категория удалена",
+    errorMessage: "Не удалось удалить категорию",
+    invalidateKeys: [categoriesKeys.lists(), categoriesKeys.tree()],
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: categoriesKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: categoriesKeys.tree() });
-      toast.success("Категория удалена");
       router.push(ROUTES.CATEGORIES);
-    },
-    onError: (error) => {
-      const message = getErrorMessage(error, "Не удалось удалить категорию");
-      toast.error(message);
     },
   });
 }

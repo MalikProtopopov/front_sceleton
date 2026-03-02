@@ -1,16 +1,16 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useAppMutation, createLocaleHooks, createContentBlockHooks } from "@/shared/lib";
 import { casesApi, casesKeys } from "../api/casesApi";
 import { ROUTES } from "@/shared/config";
 import type { CaseFilterParams, CreateCaseDto, UpdateCaseDto, CreateCaseLocaleDto, UpdateCaseLocaleDto, CreateContactDto, UpdateContactDto } from "@/entities/case";
-import type { CreateContentBlockDto, UpdateContentBlockDto, ReorderContentBlocksDto } from "@/entities/content-block";
-import { handleLocaleError } from "@/shared/lib/localeErrors";
+
 import { handleVersionConflict, getErrorMessage } from "@/shared/lib/versionConflict";
 
-export function useCases(params?: CaseFilterParams) {
+export function useCasesList(params?: CaseFilterParams) {
   return useQuery({
     queryKey: casesKeys.list(params),
     queryFn: () => casesApi.getAll(params),
@@ -27,96 +27,72 @@ export function useCase(id: string) {
 
 export function useCreateCase() {
   const router = useRouter();
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: CreateCaseDto) => casesApi.create(data),
+    successMessage: "Кейс создан",
+    errorMessage: "Не удалось создать кейс",
+    invalidateKeys: [casesKeys.lists()],
     onSuccess: (caseItem) => {
-      queryClient.invalidateQueries({ queryKey: casesKeys.lists() });
-      toast.success("Кейс создан");
       router.push(ROUTES.CASE_EDIT(caseItem.id));
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось создать кейс";
-      toast.error(message);
     },
   });
 }
 
 export function useUpdateCase(id: string) {
   const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: UpdateCaseDto) => casesApi.update(id, data),
+    successMessage: "Кейс обновлен",
+    errorMessage: "Не удалось обновить кейс",
+    invalidateKeys: [casesKeys.lists()],
+    versionConflictKey: casesKeys.detail(id),
     onSuccess: (caseItem) => {
       queryClient.setQueryData(casesKeys.detail(id), caseItem);
-      queryClient.invalidateQueries({ queryKey: casesKeys.lists() });
-      toast.success("Кейс обновлен");
-    },
-    onError: (error) => {
-      if (handleVersionConflict(error, queryClient, casesKeys.detail(id))) {
-        return;
-      }
-      const message = getErrorMessage(error, "Не удалось обновить кейс");
-      toast.error(message);
     },
   });
 }
 
 export function useDeleteCase() {
   const router = useRouter();
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (id: string) => casesApi.delete(id),
+    successMessage: "Кейс удален",
+    errorMessage: "Не удалось удалить кейс",
+    invalidateKeys: [casesKeys.lists()],
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: casesKeys.lists() });
-      toast.success("Кейс удален");
       router.push(ROUTES.CASES);
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось удалить кейс";
-      toast.error(message);
     },
   });
 }
 
 export function usePublishCase() {
   const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (id: string) => casesApi.publish(id),
+    successMessage: "Кейс опубликован",
+    invalidateKeys: [casesKeys.lists()],
     onSuccess: (caseItem) => {
       queryClient.setQueryData(casesKeys.detail(caseItem.id), caseItem);
-      queryClient.invalidateQueries({ queryKey: casesKeys.lists() });
-      toast.success("Кейс опубликован");
     },
     onError: (error, id) => {
-      if (handleVersionConflict(error, queryClient, casesKeys.detail(id))) {
-        return;
-      }
-      const message = getErrorMessage(error, "Не удалось опубликовать кейс");
-      toast.error(message);
+      if (handleVersionConflict(error, queryClient, casesKeys.detail(id))) return;
+      toast.error(getErrorMessage(error, "Не удалось опубликовать кейс"));
     },
   });
 }
 
 export function useUnpublishCase() {
   const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (id: string) => casesApi.unpublish(id),
+    successMessage: "Кейс снят с публикации",
+    invalidateKeys: [casesKeys.lists()],
     onSuccess: (caseItem) => {
       queryClient.setQueryData(casesKeys.detail(caseItem.id), caseItem);
-      queryClient.invalidateQueries({ queryKey: casesKeys.lists() });
-      toast.success("Кейс снят с публикации");
     },
     onError: (error, id) => {
-      if (handleVersionConflict(error, queryClient, casesKeys.detail(id))) {
-        return;
-      }
-      const message = getErrorMessage(error, "Не удалось снять кейс с публикации");
-      toast.error(message);
+      if (handleVersionConflict(error, queryClient, casesKeys.detail(id))) return;
+      toast.error(getErrorMessage(error, "Не удалось снять кейс с публикации"));
     },
   });
 }
@@ -125,102 +101,41 @@ export function useUnpublishCase() {
 // Locale Hooks
 // =====================
 
-export function useCreateCaseLocale(caseId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (data: CreateCaseLocaleDto) => casesApi.createLocale(caseId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: casesKeys.detail(caseId) });
-      toast.success("Локаль добавлена");
-    },
-    onError: (error) => {
-      handleLocaleError(error);
-    },
-  });
-}
-
-export function useUpdateCaseLocale(caseId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ localeId, data }: { localeId: string; data: UpdateCaseLocaleDto }) =>
-      casesApi.updateLocale(caseId, localeId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: casesKeys.detail(caseId) });
-      toast.success("Локаль обновлена");
-    },
-    onError: (error) => {
-      handleLocaleError(error);
-    },
-  });
-}
-
-export function useDeleteCaseLocale(caseId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (localeId: string) => casesApi.deleteLocale(caseId, localeId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: casesKeys.detail(caseId) });
-      toast.success("Локаль удалена");
-    },
-    onError: (error) => {
-      handleLocaleError(error);
-    },
-  });
-}
+export const {
+  useCreateLocale: useCreateCaseLocale,
+  useUpdateLocale: useUpdateCaseLocale,
+  useDeleteLocale: useDeleteCaseLocale,
+} = createLocaleHooks<CreateCaseLocaleDto, UpdateCaseLocaleDto>(casesApi, casesKeys.detail);
 
 // =====================
 // Contact Hooks
 // =====================
 
 export function useCreateCaseContact(caseId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: CreateContactDto) => casesApi.createContact(caseId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: casesKeys.detail(caseId) });
-      toast.success("Контакт добавлен");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось добавить контакт";
-      toast.error(message);
-    },
+    successMessage: "Контакт добавлен",
+    errorMessage: "Не удалось добавить контакт",
+    invalidateKeys: [casesKeys.detail(caseId)],
   });
 }
 
 export function useUpdateCaseContact(caseId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: ({ contactId, data }: { contactId: string; data: UpdateContactDto }) =>
       casesApi.updateContact(caseId, contactId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: casesKeys.detail(caseId) });
-      toast.success("Контакт обновлен");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось обновить контакт";
-      toast.error(message);
-    },
+    successMessage: "Контакт обновлен",
+    errorMessage: "Не удалось обновить контакт",
+    invalidateKeys: [casesKeys.detail(caseId)],
   });
 }
 
 export function useDeleteCaseContact(caseId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (contactId: string) => casesApi.deleteContact(caseId, contactId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: casesKeys.detail(caseId) });
-      toast.success("Контакт удален");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось удалить контакт";
-      toast.error(message);
-    },
+    successMessage: "Контакт удален",
+    errorMessage: "Не удалось удалить контакт",
+    invalidateKeys: [casesKeys.detail(caseId)],
   });
 }
 
@@ -228,76 +143,10 @@ export function useDeleteCaseContact(caseId: string) {
 // Content Block Hooks
 // =====================
 
-export function useCaseContentBlocks(caseId: string, locale?: string) {
-  return useQuery({
-    queryKey: casesKeys.contentBlocks(caseId, locale),
-    queryFn: () => casesApi.getContentBlocks(caseId, locale),
-    enabled: !!caseId,
-  });
-}
-
-export function useCreateCaseContentBlock(caseId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (data: CreateContentBlockDto) => casesApi.createContentBlock(caseId, data),
-    onSuccess: () => {
-      // Invalidate all content blocks queries for this case (any locale)
-      queryClient.invalidateQueries({ queryKey: [...casesKeys.all, "content-blocks", caseId] });
-      toast.success("Блок добавлен");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось добавить блок";
-      toast.error(message);
-    },
-  });
-}
-
-export function useUpdateCaseContentBlock(caseId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ blockId, data }: { blockId: string; data: UpdateContentBlockDto }) =>
-      casesApi.updateContentBlock(caseId, blockId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [...casesKeys.all, "content-blocks", caseId] });
-      toast.success("Блок обновлен");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось обновить блок";
-      toast.error(message);
-    },
-  });
-}
-
-export function useDeleteCaseContentBlock(caseId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (blockId: string) => casesApi.deleteContentBlock(caseId, blockId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [...casesKeys.all, "content-blocks", caseId] });
-      toast.success("Блок удален");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось удалить блок";
-      toast.error(message);
-    },
-  });
-}
-
-export function useReorderCaseContentBlocks(caseId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (data: ReorderContentBlocksDto) => casesApi.reorderContentBlocks(caseId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [...casesKeys.all, "content-blocks", caseId] });
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось изменить порядок блоков";
-      toast.error(message);
-    },
-  });
-}
-
+export const {
+  useContentBlocks: useCaseContentBlocks,
+  useCreateContentBlock: useCreateCaseContentBlock,
+  useUpdateContentBlock: useUpdateCaseContentBlock,
+  useDeleteContentBlock: useDeleteCaseContentBlock,
+  useReorderContentBlocks: useReorderCaseContentBlocks,
+} = createContentBlockHooks(casesApi, casesKeys);

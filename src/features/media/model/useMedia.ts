@@ -1,7 +1,7 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAppMutation } from "@/shared/lib";
 import { mediaApi, mediaKeys } from "../api/mediaApi";
 import type { FileFilterParams, FileAsset } from "@/entities/file";
 
@@ -21,54 +21,35 @@ export function useFile(id: string) {
 }
 
 export function useUploadFile() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: async ({ file, folder }: { file: File; folder?: string }) => {
       return mediaApi.uploadFile(file, folder);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: mediaKeys.lists() });
-      toast.success("Файл загружен");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось загрузить файл";
-      toast.error(message);
-    },
+    successMessage: "Файл загружен",
+    errorMessage: "Не удалось загрузить файл",
+    invalidateKeys: [mediaKeys.lists()],
   });
 }
 
 export function useUpdateFile(id: string) {
   const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: Partial<Pick<FileAsset, "alt_text" | "folder">>) =>
       mediaApi.update(id, data),
+    successMessage: "Файл обновлен",
+    errorMessage: "Не удалось обновить файл",
+    invalidateKeys: [mediaKeys.lists()],
     onSuccess: (file) => {
       queryClient.setQueryData(mediaKeys.detail(id), file);
-      queryClient.invalidateQueries({ queryKey: mediaKeys.lists() });
-      toast.success("Файл обновлен");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось обновить файл";
-      toast.error(message);
     },
   });
 }
 
 export function useDeleteFile() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (id: string) => mediaApi.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: mediaKeys.lists() });
-      toast.success("Файл удален");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось удалить файл";
-      toast.error(message);
-    },
+    successMessage: "Файл удален",
+    errorMessage: "Не удалось удалить файл",
+    invalidateKeys: [mediaKeys.lists()],
   });
 }
-

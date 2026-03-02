@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
@@ -85,7 +85,6 @@ const editCaseSchema = z.object({
 });
 
 type CreateCaseFormValues = z.infer<typeof createCaseSchema>;
-type EditCaseFormValues = z.infer<typeof editCaseSchema>;
 
 interface CaseFormProps {
   caseItem?: Case;
@@ -198,33 +197,28 @@ export function CaseForm({ caseItem, services = [], onSubmit, isSubmitting = fal
   const deleteContentBlock = useDeleteCaseContentBlock(caseItem?.id || "");
   const reorderContentBlocks = useReorderCaseContentBlocks(caseItem?.id || "");
 
-  const createForm = useForm<CreateCaseFormValues>({
-    resolver: zodResolver(createCaseSchema),
-    defaultValues: {
-      status: "draft", client_name: "", project_year: null, project_duration: "",
-      is_featured: false, sort_order: null, service_ids: [],
-      locales: [{ locale: "ru", title: "", slug: "", excerpt: "" }],
-    },
+  const form = useForm<CreateCaseFormValues>({
+    resolver: zodResolver(isEditing ? editCaseSchema : createCaseSchema) as unknown as Resolver<CreateCaseFormValues>,
+    defaultValues: isEditing
+      ? {
+          status: caseItem?.status || "draft", client_name: caseItem?.client_name || "",
+          project_year: caseItem?.project_year || null, project_duration: caseItem?.project_duration || "",
+          is_featured: caseItem?.is_featured || false, sort_order: caseItem?.sort_order ?? null,
+          service_ids: caseItem?.services?.map((s) => s.service_id) || [], locales: [],
+        }
+      : {
+          status: "draft", client_name: "", project_year: null, project_duration: "",
+          is_featured: false, sort_order: null, service_ids: [],
+          locales: [{ locale: "ru", title: "", slug: "", excerpt: "" }],
+        },
   });
 
-  const editForm = useForm<EditCaseFormValues>({
-    resolver: zodResolver(editCaseSchema),
-    defaultValues: {
-      status: caseItem?.status || "draft", client_name: caseItem?.client_name || "",
-      project_year: caseItem?.project_year || null, project_duration: caseItem?.project_duration || "",
-      is_featured: caseItem?.is_featured || false, sort_order: caseItem?.sort_order ?? null,
-      service_ids: caseItem?.services?.map((s) => s.service_id) || [],
-    },
-  });
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const form = (isEditing ? editForm : createForm) as any;
-  const locales = isEditing ? [] : createForm.watch("locales");
+  const locales = isEditing ? [] : form.watch("locales");
 
   // Sync form values when caseItem loads/changes (for edit mode)
   useEffect(() => {
     if (isEditing && caseItem) {
-      editForm.reset({
+      form.reset({
         status: caseItem.status || "draft",
         client_name: caseItem.client_name || "",
         project_year: caseItem.project_year || null,
@@ -232,9 +226,10 @@ export function CaseForm({ caseItem, services = [], onSubmit, isSubmitting = fal
         is_featured: caseItem.is_featured || false,
         sort_order: caseItem.sort_order ?? null,
         service_ids: caseItem.services?.map((s) => s.service_id) || [],
+        locales: [],
       });
     }
-  }, [caseItem, isEditing, editForm]);
+  }, [caseItem, isEditing, form]);
 
   // Sync coverImageUrl when caseItem changes
   useEffect(() => {
@@ -243,44 +238,42 @@ export function CaseForm({ caseItem, services = [], onSubmit, isSubmitting = fal
     }
   }, [caseItem?.cover_image_url, coverImageUrl]);
 
-  const handleFormSubmit = isEditing
-    ? (data: EditCaseFormValues) => {
-        const payload: UpdateCaseDto = {
-          status: data.status,
-          client_name: data.client_name || undefined,
-          project_year: data.project_year || undefined,
-          project_duration: data.project_duration || undefined,
-          is_featured: data.is_featured,
-          service_ids: data.service_ids,
-          version: caseItem!.version,
-        };
-        // Only include sort_order if it's a number (not null)
-        if (data.sort_order !== null && data.sort_order !== undefined) {
-          payload.sort_order = data.sort_order;
-        }
-        onSubmit(payload);
-      }
-    : (data: CreateCaseFormValues) => {
-        const payload: CreateCaseDto = {
-          status: data.status,
-          client_name: data.client_name || undefined,
-          project_year: data.project_year || undefined,
-          project_duration: data.project_duration || undefined,
-          is_featured: data.is_featured,
-          service_ids: data.service_ids,
-          locales: data.locales.map((l) => ({
-            locale: l.locale,
-            title: l.title,
-            slug: l.slug,
-            excerpt: l.excerpt || undefined,
-          })),
-        };
-        // Only include sort_order if it's a number (not null)
-        if (data.sort_order !== null && data.sort_order !== undefined) {
-          payload.sort_order = data.sort_order;
-        }
-        onSubmit(payload);
+  const handleFormSubmit = (data: CreateCaseFormValues) => {
+    if (isEditing) {
+      const payload: UpdateCaseDto = {
+        status: data.status,
+        client_name: data.client_name || undefined,
+        project_year: data.project_year || undefined,
+        project_duration: data.project_duration || undefined,
+        is_featured: data.is_featured,
+        service_ids: data.service_ids,
+        version: caseItem!.version,
       };
+      if (data.sort_order !== null && data.sort_order !== undefined) {
+        payload.sort_order = data.sort_order;
+      }
+      onSubmit(payload);
+    } else {
+      const payload: CreateCaseDto = {
+        status: data.status,
+        client_name: data.client_name || undefined,
+        project_year: data.project_year || undefined,
+        project_duration: data.project_duration || undefined,
+        is_featured: data.is_featured,
+        service_ids: data.service_ids,
+        locales: data.locales.map((l) => ({
+          locale: l.locale,
+          title: l.title,
+          slug: l.slug,
+          excerpt: l.excerpt || undefined,
+        })),
+      };
+      if (data.sort_order !== null && data.sort_order !== undefined) {
+        payload.sort_order = data.sort_order;
+      }
+      onSubmit(payload);
+    }
+  };
 
   const handleImageUpload = async (file: File) => { const result = await uploadCoverImage.mutateAsync(file); setCoverImageUrl(result.cover_image_url); };
   const handleImageDelete = async () => { await deleteCoverImage.mutateAsync(); setCoverImageUrl(null); };
@@ -326,16 +319,16 @@ export function CaseForm({ caseItem, services = [], onSubmit, isSubmitting = fal
 
   const addLocale = (locale: string) => {
     if (!locales.map((l) => l.locale).includes(locale)) {
-      createForm.setValue("locales", [...locales, { locale, title: "", slug: "", excerpt: "" }]);
+      form.setValue("locales", [...locales, { locale, title: "", slug: "", excerpt: "" }]);
     }
   };
-  const removeLocale = (index: number) => { if (locales.length > 1) createForm.setValue("locales", locales.filter((_, i) => i !== index)); };
+  const removeLocale = (index: number) => { if (locales.length > 1) form.setValue("locales", locales.filter((_, i) => i !== index)); };
 
   const availableLocales = SUPPORTED_LOCALES.filter((l) => !locales.map((loc) => loc.locale).includes(l.value));
   const serviceOptions = services.map((service) => ({ value: service.id, label: service.locales.find((l) => l.locale === "ru")?.title || service.id }));
 
   return (
-    <form onSubmit={form.handleSubmit(handleFormSubmit as any)} className="space-y-6">
+    <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
       <Card>
         <CardHeader><CardTitle>Основные настройки</CardTitle></CardHeader>
         <CardContent className="space-y-4">
@@ -448,10 +441,10 @@ export function CaseForm({ caseItem, services = [], onSubmit, isSubmitting = fal
               {locales.map((locale, index) => (
                 <TabsContent key={locale.locale} value={locale.locale}>
                   <div className="space-y-4">
-                    <input type="hidden" {...createForm.register(`locales.${index}.locale`)} />
-                    <Input label="Заголовок" placeholder="Введите заголовок" {...createForm.register(`locales.${index}.title`, { onChange: (e) => createForm.setValue(`locales.${index}.slug`, generateSlug(e.target.value)) })} error={createForm.formState.errors.locales?.[index]?.title?.message} required />
-                    <Input label="Slug" placeholder="case-slug" {...createForm.register(`locales.${index}.slug`)} error={createForm.formState.errors.locales?.[index]?.slug?.message} required />
-                    <Textarea label="Краткое описание" placeholder="Краткое описание кейса..." {...createForm.register(`locales.${index}.excerpt`)} error={createForm.formState.errors.locales?.[index]?.excerpt?.message} />
+                    <input type="hidden" {...form.register(`locales.${index}.locale`)} />
+                    <Input label="Заголовок" placeholder="Введите заголовок" {...form.register(`locales.${index}.title`, { onChange: (e) => form.setValue(`locales.${index}.slug`, generateSlug(e.target.value)) })} error={form.formState.errors.locales?.[index]?.title?.message} required />
+                    <Input label="Slug" placeholder="case-slug" {...form.register(`locales.${index}.slug`)} error={form.formState.errors.locales?.[index]?.slug?.message} required />
+                    <Textarea label="Краткое описание" placeholder="Краткое описание кейса..." {...form.register(`locales.${index}.excerpt`)} error={form.formState.errors.locales?.[index]?.excerpt?.message} />
                   </div>
                 </TabsContent>
               ))}

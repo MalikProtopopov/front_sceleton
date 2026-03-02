@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Plus, Pencil, Trash2, Star, Check, X, User, Briefcase } from "lucide-react";
 import { useReviewsList, useDeleteReview, useApproveReview, useRejectReview } from "@/features/reviews";
-import { useCases } from "@/features/cases";
+import { useCasesList } from "@/features/cases";
 import { Button, Table, Pagination, Badge, ConfirmModal, Select, BulkActionsToolbar, FilterBar, type Column } from "@/shared/ui";
 import { ROUTES } from "@/shared/config";
 import { formatDate, getMediaUrl } from "@/shared/lib";
@@ -28,7 +28,7 @@ export default function ReviewsPage() {
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
 
   const { data, isLoading } = useReviewsList(filters);
-  const { data: casesData } = useCases({ pageSize: 100 });
+  const { data: casesData } = useCasesList({ pageSize: 100 });
   const { mutate: deleteReview, isPending: isDeleting } = useDeleteReview();
   const { mutate: approveReview, isPending: isApproving } = useApproveReview();
   const { mutate: rejectReview, isPending: isRejecting } = useRejectReview();

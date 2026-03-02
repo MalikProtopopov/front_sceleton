@@ -1,11 +1,10 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { useAppMutation, createContentBlockHooks } from "@/shared/lib";
 import { productsApi, productsKeys } from "../api/productsApi";
 import { ROUTES } from "@/shared/config";
-import { handleVersionConflict, getErrorMessage } from "@/shared/lib/versionConflict";
 import type {
   ProductFilterParams,
   CreateProductDto,
@@ -19,7 +18,7 @@ import type {
   CreateProductAliasesDto,
   CreateProductAnalogDto,
 } from "@/entities/product";
-import type { CreateContentBlockDto, UpdateContentBlockDto, ReorderContentBlocksDto } from "@/entities/content-block";
+
 
 // --- Product CRUD ---
 
@@ -40,57 +39,39 @@ export function useProduct(id: string) {
 
 export function useCreateProduct() {
   const router = useRouter();
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: CreateProductDto) => productsApi.create(data),
-    onSuccess: (product) => {
-      queryClient.invalidateQueries({ queryKey: productsKeys.lists() });
-      toast.success("Товар создан");
-      router.push(ROUTES.PRODUCT_EDIT(product.id));
-    },
-    onError: (error) => {
-      const message = getErrorMessage(error, "Не удалось создать товар");
-      toast.error(message);
-    },
+    successMessage: "Товар создан",
+    errorMessage: "Не удалось создать товар",
+    invalidateKeys: [productsKeys.lists()],
+    onSuccess: (product) => router.push(ROUTES.PRODUCT_EDIT(product.id)),
   });
 }
 
 export function useUpdateProduct(id: string) {
   const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: UpdateProductDto) => productsApi.update(id, data),
+    successMessage: "Товар обновлён",
+    errorMessage: "Не удалось обновить товар",
+    invalidateKeys: [productsKeys.lists()],
+    versionConflictKey: productsKeys.detail(id),
     onSuccess: (product) => {
       queryClient.setQueryData(productsKeys.detail(id), (old: unknown) =>
         old ? { ...old, ...product } : product,
       );
-      queryClient.invalidateQueries({ queryKey: productsKeys.lists() });
-      toast.success("Товар обновлён");
-    },
-    onError: (error) => {
-      if (handleVersionConflict(error, queryClient, productsKeys.detail(id))) return;
-      const message = getErrorMessage(error, "Не удалось обновить товар");
-      toast.error(message);
     },
   });
 }
 
 export function useDeleteProduct() {
   const router = useRouter();
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (id: string) => productsApi.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: productsKeys.lists() });
-      toast.success("Товар удалён");
-      router.push(ROUTES.PRODUCTS);
-    },
-    onError: (error) => {
-      const message = getErrorMessage(error, "Не удалось удалить товар");
-      toast.error(message);
-    },
+    successMessage: "Товар удалён",
+    errorMessage: "Не удалось удалить товар",
+    invalidateKeys: [productsKeys.lists()],
+    onSuccess: () => router.push(ROUTES.PRODUCTS),
   });
 }
 
@@ -105,19 +86,11 @@ export function useProductChars(productId: string) {
 }
 
 export function useBulkUpdateChars(productId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: BulkCharsDto) => productsApi.bulkUpdateChars(productId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: productsKeys.chars(productId) });
-      queryClient.invalidateQueries({ queryKey: productsKeys.detail(productId) });
-      toast.success("Характеристики сохранены");
-    },
-    onError: (error) => {
-      const message = getErrorMessage(error, "Не удалось сохранить характеристики");
-      toast.error(message);
-    },
+    successMessage: "Характеристики сохранены",
+    errorMessage: "Не удалось сохранить характеристики",
+    invalidateKeys: [productsKeys.chars(productId), productsKeys.detail(productId)],
   });
 }
 
@@ -132,229 +105,130 @@ export function useProductCharacteristics(productId: string) {
 }
 
 export function useAddCharacteristic(productId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: ProductCharacteristicCreate) =>
       productsApi.addCharacteristic(productId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: productsKeys.characteristics(productId) });
-      queryClient.invalidateQueries({ queryKey: productsKeys.detail(productId) });
-      toast.success("Характеристика добавлена");
-    },
-    onError: (error) => {
-      const message = getErrorMessage(error, "Не удалось добавить характеристику");
-      toast.error(message);
-    },
+    successMessage: "Характеристика добавлена",
+    errorMessage: "Не удалось добавить характеристику",
+    invalidateKeys: [productsKeys.characteristics(productId), productsKeys.detail(productId)],
   });
 }
 
 export function useBulkUpdateCharacteristics(productId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: ProductCharacteristicBulkCreate) =>
       productsApi.bulkUpdateCharacteristics(productId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: productsKeys.characteristics(productId) });
-      queryClient.invalidateQueries({ queryKey: productsKeys.detail(productId) });
-      toast.success("Характеристики сохранены");
-    },
-    onError: (error) => {
-      const message = getErrorMessage(error, "Не удалось сохранить характеристики");
-      toast.error(message);
-    },
+    successMessage: "Характеристики сохранены",
+    errorMessage: "Не удалось сохранить характеристики",
+    invalidateKeys: [productsKeys.characteristics(productId), productsKeys.detail(productId)],
   });
 }
 
 export function useDeleteCharacteristic(productId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (parameterId: string) =>
       productsApi.deleteCharacteristic(productId, parameterId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: productsKeys.characteristics(productId) });
-      queryClient.invalidateQueries({ queryKey: productsKeys.detail(productId) });
-      toast.success("Характеристика удалена");
-    },
-    onError: (error) => {
-      const message = getErrorMessage(error, "Не удалось удалить характеристику");
-      toast.error(message);
-    },
+    successMessage: "Характеристика удалена",
+    errorMessage: "Не удалось удалить характеристику",
+    invalidateKeys: [productsKeys.characteristics(productId), productsKeys.detail(productId)],
   });
 }
 
 // --- Images ---
 
 export function useUploadProductImage(productId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: ({ file, alt, isCover }: { file: File; alt?: string; isCover?: boolean }) =>
       productsApi.uploadImage(productId, file, alt, isCover),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: productsKeys.detail(productId) });
-      toast.success("Изображение загружено");
-    },
-    onError: (error) => {
-      const message = getErrorMessage(error, "Не удалось загрузить изображение");
-      toast.error(message);
-    },
+    successMessage: "Изображение загружено",
+    errorMessage: "Не удалось загрузить изображение",
+    invalidateKeys: [productsKeys.detail(productId)],
   });
 }
 
 export function useUpdateProductImage(productId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({
-      imageId,
-      data,
-    }: {
-      imageId: string;
-      data: { alt?: string; sort_order?: number };
-    }) => productsApi.updateImage(productId, imageId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: productsKeys.detail(productId) });
-      toast.success("Изображение обновлено");
-    },
-    onError: (error) => {
-      const message = getErrorMessage(error, "Не удалось обновить изображение");
-      toast.error(message);
-    },
+  return useAppMutation({
+    mutationFn: ({ imageId, data }: { imageId: string; data: { alt?: string; sort_order?: number } }) =>
+      productsApi.updateImage(productId, imageId, data),
+    successMessage: "Изображение обновлено",
+    errorMessage: "Не удалось обновить изображение",
+    invalidateKeys: [productsKeys.detail(productId)],
   });
 }
 
 export function useDeleteProductImage(productId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (imageId: string) => productsApi.deleteImage(productId, imageId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: productsKeys.detail(productId) });
-      toast.success("Изображение удалено");
-    },
-    onError: (error) => {
-      const message = getErrorMessage(error, "Не удалось удалить изображение");
-      toast.error(message);
-    },
+    successMessage: "Изображение удалено",
+    errorMessage: "Не удалось удалить изображение",
+    invalidateKeys: [productsKeys.detail(productId)],
   });
 }
 
 export function useReorderProductImages(productId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (orderedIds: string[]) => productsApi.reorderImages(productId, orderedIds),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: productsKeys.detail(productId) });
-    },
-    onError: (error) => {
-      const message = getErrorMessage(error, "Не удалось изменить порядок изображений");
-      toast.error(message);
-    },
+    errorMessage: "Не удалось изменить порядок изображений",
+    invalidateKeys: [productsKeys.detail(productId)],
   });
 }
 
 export function useSetCoverImage(productId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (imageId: string) => productsApi.setCoverImage(productId, imageId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: productsKeys.detail(productId) });
-      toast.success("Обложка установлена");
-    },
-    onError: (error) => {
-      const message = getErrorMessage(error, "Не удалось установить обложку");
-      toast.error(message);
-    },
+    successMessage: "Обложка установлена",
+    errorMessage: "Не удалось установить обложку",
+    invalidateKeys: [productsKeys.detail(productId)],
   });
 }
 
 // --- Prices ---
 
 export function useCreateProductPrice(productId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: CreateProductPriceDto) => productsApi.createPrice(productId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: productsKeys.detail(productId) });
-      toast.success("Цена добавлена");
-    },
-    onError: (error) => {
-      const message = getErrorMessage(error, "Не удалось добавить цену");
-      toast.error(message);
-    },
+    successMessage: "Цена добавлена",
+    errorMessage: "Не удалось добавить цену",
+    invalidateKeys: [productsKeys.detail(productId)],
   });
 }
 
 export function useUpdateProductPrice(productId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: ({ priceId, data }: { priceId: string; data: UpdateProductPriceDto }) =>
       productsApi.updatePrice(productId, priceId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: productsKeys.detail(productId) });
-      toast.success("Цена обновлена");
-    },
-    onError: (error) => {
-      const message = getErrorMessage(error, "Не удалось обновить цену");
-      toast.error(message);
-    },
+    successMessage: "Цена обновлена",
+    errorMessage: "Не удалось обновить цену",
+    invalidateKeys: [productsKeys.detail(productId)],
   });
 }
 
 export function useDeleteProductPrice(productId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (priceId: string) => productsApi.deletePrice(productId, priceId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: productsKeys.detail(productId) });
-      toast.success("Цена удалена");
-    },
-    onError: (error) => {
-      const message = getErrorMessage(error, "Не удалось удалить цену");
-      toast.error(message);
-    },
+    successMessage: "Цена удалена",
+    errorMessage: "Не удалось удалить цену",
+    invalidateKeys: [productsKeys.detail(productId)],
   });
 }
 
 // --- Aliases ---
 
 export function useCreateProductAliases(productId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: CreateProductAliasesDto) => productsApi.createAliases(productId, data),
-    onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: productsKeys.detail(productId) });
-      toast.success(`Добавлено псевдонимов: ${result.created}`);
-    },
-    onError: (error) => {
-      const message = getErrorMessage(error, "Не удалось добавить псевдонимы");
-      toast.error(message);
-    },
+    successMessage: (result) => `Добавлено псевдонимов: ${result.created}`,
+    errorMessage: "Не удалось добавить псевдонимы",
+    invalidateKeys: [productsKeys.detail(productId)],
   });
 }
 
 export function useDeleteProductAlias(productId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (aliasId: string) => productsApi.deleteAlias(productId, aliasId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: productsKeys.detail(productId) });
-      toast.success("Псевдоним удалён");
-    },
-    onError: (error) => {
-      const message = getErrorMessage(error, "Не удалось удалить псевдоним");
-      toast.error(message);
-    },
+    successMessage: "Псевдоним удалён",
+    errorMessage: "Не удалось удалить псевдоним",
+    invalidateKeys: [productsKeys.detail(productId)],
   });
 }
 
@@ -369,35 +243,21 @@ export function useProductAnalogs(productId: string) {
 }
 
 export function useCreateProductAnalog(productId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: CreateProductAnalogDto) => productsApi.createAnalog(productId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: productsKeys.analogs(productId) });
-      toast.success("Аналог добавлен");
-    },
-    onError: (error) => {
-      const message = getErrorMessage(error, "Не удалось добавить аналог");
-      toast.error(message);
-    },
+    successMessage: "Аналог добавлен",
+    errorMessage: "Не удалось добавить аналог",
+    invalidateKeys: [productsKeys.analogs(productId)],
   });
 }
 
 export function useDeleteProductAnalog(productId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (analogProductId: string) =>
       productsApi.deleteAnalog(productId, analogProductId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: productsKeys.analogs(productId) });
-      toast.success("Аналог удалён");
-    },
-    onError: (error) => {
-      const message = getErrorMessage(error, "Не удалось удалить аналог");
-      toast.error(message);
-    },
+    successMessage: "Аналог удалён",
+    errorMessage: "Не удалось удалить аналог",
+    invalidateKeys: [productsKeys.analogs(productId)],
   });
 }
 
@@ -412,129 +272,39 @@ export function useProductCategories(productId: string) {
 }
 
 export function useAddProductCategory(productId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (data: AddProductCategoryDto) =>
-      productsApi.addCategory(productId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: productsKeys.categories(productId) });
-      queryClient.invalidateQueries({ queryKey: productsKeys.detail(productId) });
-      toast.success("Категория привязана");
-    },
-    onError: (error) => {
-      const message = getErrorMessage(error, "Не удалось привязать категорию");
-      toast.error(message);
-    },
+  return useAppMutation({
+    mutationFn: (data: AddProductCategoryDto) => productsApi.addCategory(productId, data),
+    successMessage: "Категория привязана",
+    errorMessage: "Не удалось привязать категорию",
+    invalidateKeys: [productsKeys.categories(productId), productsKeys.detail(productId)],
   });
 }
 
 export function useRemoveProductCategory(productId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (linkId: string) =>
-      productsApi.removeCategory(productId, linkId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: productsKeys.categories(productId) });
-      queryClient.invalidateQueries({ queryKey: productsKeys.detail(productId) });
-      toast.success("Категория откреплена");
-    },
-    onError: (error) => {
-      const message = getErrorMessage(error, "Не удалось открепить категорию");
-      toast.error(message);
-    },
+  return useAppMutation({
+    mutationFn: (linkId: string) => productsApi.removeCategory(productId, linkId),
+    successMessage: "Категория откреплена",
+    errorMessage: "Не удалось открепить категорию",
+    invalidateKeys: [productsKeys.categories(productId), productsKeys.detail(productId)],
   });
 }
 
 export function useUpdateProductCategories(productId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (categoryIds: string[]) =>
       productsApi.updateCategories(productId, categoryIds),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: productsKeys.detail(productId) });
-      queryClient.invalidateQueries({ queryKey: productsKeys.categories(productId) });
-      toast.success("Категории обновлены");
-    },
-    onError: (error) => {
-      const message = getErrorMessage(error, "Не удалось обновить категории");
-      toast.error(message);
-    },
+    successMessage: "Категории обновлены",
+    errorMessage: "Не удалось обновить категории",
+    invalidateKeys: [productsKeys.detail(productId), productsKeys.categories(productId)],
   });
 }
 
 // --- Content Blocks ---
 
-export function useProductContentBlocks(productId: string, locale?: string) {
-  return useQuery({
-    queryKey: productsKeys.contentBlocks(productId, locale),
-    queryFn: () => productsApi.getContentBlocks(productId, locale),
-    enabled: !!productId,
-  });
-}
-
-export function useCreateProductContentBlock(productId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (data: CreateContentBlockDto) => productsApi.createContentBlock(productId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [...productsKeys.all, "content-blocks", productId] });
-      toast.success("Блок добавлен");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось добавить блок";
-      toast.error(message);
-    },
-  });
-}
-
-export function useUpdateProductContentBlock(productId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ blockId, data }: { blockId: string; data: UpdateContentBlockDto }) =>
-      productsApi.updateContentBlock(productId, blockId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [...productsKeys.all, "content-blocks", productId] });
-      toast.success("Блок обновлён");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось обновить блок";
-      toast.error(message);
-    },
-  });
-}
-
-export function useDeleteProductContentBlock(productId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (blockId: string) => productsApi.deleteContentBlock(productId, blockId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [...productsKeys.all, "content-blocks", productId] });
-      toast.success("Блок удалён");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось удалить блок";
-      toast.error(message);
-    },
-  });
-}
-
-export function useReorderProductContentBlocks(productId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (data: ReorderContentBlocksDto) => productsApi.reorderContentBlocks(productId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [...productsKeys.all, "content-blocks", productId] });
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось изменить порядок блоков";
-      toast.error(message);
-    },
-  });
-}
+export const {
+  useContentBlocks: useProductContentBlocks,
+  useCreateContentBlock: useCreateProductContentBlock,
+  useUpdateContentBlock: useUpdateProductContentBlock,
+  useDeleteContentBlock: useDeleteProductContentBlock,
+  useReorderContentBlocks: useReorderProductContentBlocks,
+} = createContentBlockHooks(productsApi, productsKeys);

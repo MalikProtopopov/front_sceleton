@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Eye, Pencil, Trash2, Tags } from "lucide-react";
 import {
-  useArticles,
+  useArticlesList,
   useDeleteArticle,
   usePublishArticle,
   useUnpublishArticle,
@@ -27,7 +27,7 @@ export default function ArticlesPage() {
   const [topicsSidebarOpen, setTopicsSidebarOpen] = useState(false);
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
 
-  const { data, isLoading } = useArticles(filters);
+  const { data, isLoading } = useArticlesList(filters);
   const { mutate: deleteArticle, isPending: isDeleting } = useDeleteArticle();
   const { mutate: publishArticle } = usePublishArticle();
   const { mutate: unpublishArticle } = useUnpublishArticle();

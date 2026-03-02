@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { Combobox, type ComboboxOption } from "@/shared/ui";
-import { useCases } from "@/features/cases";
+import { useCasesList } from "@/features/cases";
 
 interface CaseSelectorProps {
   value?: string | null;
@@ -19,7 +19,7 @@ export function CaseSelector({
   disabled,
   className,
 }: CaseSelectorProps) {
-  const { data: casesData, isLoading } = useCases({ pageSize: 100 });
+  const { data: casesData, isLoading } = useCasesList({ pageSize: 100 });
 
   const options: ComboboxOption[] = useMemo(() => {
     if (!casesData?.items) return [];

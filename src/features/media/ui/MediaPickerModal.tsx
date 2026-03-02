@@ -20,6 +20,7 @@ import {
 import { cn } from "@/shared/lib";
 import type { FileAsset, FileFilterParams } from "@/entities/file";
 import { SUPPORTED_IMAGE_TYPES } from "@/entities/file";
+import { MAX_IMAGE_SIZE } from "@/shared/config";
 
 interface MediaPickerModalProps {
   isOpen: boolean;
@@ -90,7 +91,7 @@ export function MediaPickerModal({
       "image/*": [".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"],
     },
     maxFiles: 1,
-    maxSize: 10 * 1024 * 1024, // 10MB
+    maxSize: MAX_IMAGE_SIZE,
     disabled: isUploading,
   });
 

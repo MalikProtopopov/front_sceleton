@@ -7,6 +7,7 @@ import { cn, formatFileSize, formatDate, getMediaUrl } from "@/shared/lib";
 import { Button } from "@/shared/ui";
 import type { FileAsset } from "@/entities/file";
 import { SUPPORTED_IMAGE_TYPES } from "@/entities/file";
+import { COPY_FEEDBACK_DURATION } from "@/shared/config";
 
 interface FileCardProps {
   file: FileAsset;
@@ -37,7 +38,7 @@ export function FileCard({
     e.stopPropagation();
     navigator.clipboard.writeText(absoluteUrl);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setCopied(false), COPY_FEEDBACK_DURATION);
   };
 
   const handleClick = () => {

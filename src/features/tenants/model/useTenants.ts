@@ -1,9 +1,9 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useAppMutation } from "@/shared/lib";
 import { tenantsApi, tenantsKeys } from "../api/tenantsApi";
-import { getErrorMessage, handleVersionConflict } from "@/shared/lib/versionConflict";
 import type {
   TenantListParams,
   CreateTenantDto,
@@ -14,7 +14,6 @@ import type {
   EmailLogParams,
 } from "@/entities/tenant";
 
-// List all tenants (platform owner only)
 export function useTenantsList(params?: TenantListParams) {
   return useQuery({
     queryKey: tenantsKeys.list(params),
@@ -22,7 +21,6 @@ export function useTenantsList(params?: TenantListParams) {
   });
 }
 
-// Get single tenant
 export function useTenantDetail(tenantId: string) {
   return useQuery({
     queryKey: tenantsKeys.detail(tenantId),
@@ -31,94 +29,57 @@ export function useTenantDetail(tenantId: string) {
   });
 }
 
-// Create tenant
 export function useCreateTenant() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: CreateTenantDto) => tenantsApi.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: tenantsKeys.lists() });
-      toast.success("Проект создан");
-    },
-    onError: (error) => {
-      const message = getErrorMessage(error, "Не удалось создать проект");
-      toast.error(message);
-    },
+    successMessage: "Проект создан",
+    errorMessage: "Не удалось создать проект",
+    invalidateKeys: [tenantsKeys.lists()],
   });
 }
 
-// Update tenant
 export function useUpdateTenant(tenantId: string) {
   const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: UpdateTenantDto) => tenantsApi.update(tenantId, data),
+    successMessage: "Проект обновлен",
+    errorMessage: "Не удалось обновить проект",
+    invalidateKeys: [tenantsKeys.lists()],
+    versionConflictKey: tenantsKeys.detail(tenantId),
     onSuccess: (tenant) => {
       queryClient.setQueryData(tenantsKeys.detail(tenantId), tenant);
-      queryClient.invalidateQueries({ queryKey: tenantsKeys.lists() });
-      toast.success("Проект обновлен");
-    },
-    onError: (error) => {
-      if (handleVersionConflict(error, queryClient, tenantsKeys.detail(tenantId))) {
-        return;
-      }
-      const message = getErrorMessage(error, "Не удалось обновить проект");
-      toast.error(message);
     },
   });
 }
 
-// Delete tenant
 export function useDeleteTenant() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (tenantId: string) => tenantsApi.delete(tenantId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: tenantsKeys.lists() });
-      toast.success("Проект удален");
-    },
-    onError: (error) => {
-      const message = getErrorMessage(error, "Не удалось удалить проект");
-      toast.error(message);
-    },
+    successMessage: "Проект удален",
+    errorMessage: "Не удалось удалить проект",
+    invalidateKeys: [tenantsKeys.lists()],
   });
 }
 
-// Upload tenant logo
 export function useUploadTenantLogo(tenantId: string) {
   const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (file: File) => tenantsApi.uploadLogo(tenantId, file),
+    successMessage: "Логотип загружен",
+    errorMessage: "Не удалось загрузить логотип",
+    invalidateKeys: [tenantsKeys.lists()],
     onSuccess: (tenant) => {
       queryClient.setQueryData(tenantsKeys.detail(tenantId), tenant);
-      queryClient.invalidateQueries({ queryKey: tenantsKeys.lists() });
-      toast.success("Логотип загружен");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось загрузить логотип";
-      toast.error(message);
     },
   });
 }
 
-// Delete tenant logo
 export function useDeleteTenantLogo(tenantId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: () => tenantsApi.deleteLogo(tenantId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: tenantsKeys.detail(tenantId) });
-      queryClient.invalidateQueries({ queryKey: tenantsKeys.lists() });
-      toast.success("Логотип удален");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось удалить логотип";
-      toast.error(message);
-    },
+    successMessage: "Логотип удален",
+    errorMessage: "Не удалось удалить логотип",
+    invalidateKeys: [tenantsKeys.detail(tenantId), tenantsKeys.lists()],
   });
 }
 
@@ -142,68 +103,43 @@ export function useTenantDomains(tenantId: string) {
 }
 
 export function useCreateTenantDomain(tenantId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: TenantDomainCreate) => tenantsApi.createDomain(tenantId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: tenantsKeys.domains(tenantId) });
-      toast.success("Домен добавлен");
-    },
-    onError: (error) => {
-      const message = getErrorMessage(error, "Не удалось добавить домен");
-      toast.error(message);
-    },
+    successMessage: "Домен добавлен",
+    errorMessage: "Не удалось добавить домен",
+    invalidateKeys: [tenantsKeys.domains(tenantId)],
   });
 }
 
 export function useUpdateTenantDomain(tenantId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: ({ domainId, data }: { domainId: string; data: TenantDomainUpdate }) =>
       tenantsApi.updateDomain(tenantId, domainId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: tenantsKeys.domains(tenantId) });
-      toast.success("Домен обновлён");
-    },
-    onError: (error) => {
-      const message = getErrorMessage(error, "Не удалось обновить домен");
-      toast.error(message);
-    },
+    successMessage: "Домен обновлён",
+    errorMessage: "Не удалось обновить домен",
+    invalidateKeys: [tenantsKeys.domains(tenantId)],
   });
 }
 
 export function useDeleteTenantDomain(tenantId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (domainId: string) => tenantsApi.deleteDomain(tenantId, domainId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: tenantsKeys.domains(tenantId) });
-      toast.success("Домен удалён");
-    },
-    onError: (error) => {
-      const message = getErrorMessage(error, "Не удалось удалить домен");
-      toast.error(message);
-    },
+    successMessage: "Домен удалён",
+    errorMessage: "Не удалось удалить домен",
+    invalidateKeys: [tenantsKeys.domains(tenantId)],
   });
 }
 
 export function useVerifyTenantDomain(tenantId: string) {
   const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (domainId: string) => tenantsApi.verifyDomain(tenantId, domainId),
+    errorMessage: "Не удалось проверить DNS",
     onSuccess: (result) => {
       if (result.ok) {
         queryClient.invalidateQueries({ queryKey: tenantsKeys.domains(tenantId) });
         toast.success("DNS подтверждён, получаем SSL-сертификат...");
       }
-    },
-    onError: (error) => {
-      const message = getErrorMessage(error, "Не удалось проверить DNS");
-      toast.error(message);
     },
   });
 }
@@ -251,18 +187,15 @@ export function useDomainSSLPolling(tenantId: string, domainId: string, enabled:
 // --- Email ---
 
 export function useSendTestEmail(tenantId: string) {
-  return useMutation({
+  return useAppMutation({
     mutationFn: (toEmail: string) => tenantsApi.sendTestEmail(tenantId, toEmail),
+    errorMessage: "Не удалось отправить тестовое письмо",
     onSuccess: (result) => {
       if (result.success) {
         toast.success("Тестовое письмо отправлено");
       } else {
         toast.error(`Ошибка отправки: ${result.error || "Неизвестная ошибка"}`);
       }
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось отправить тестовое письмо";
-      toast.error(message);
     },
   });
 }

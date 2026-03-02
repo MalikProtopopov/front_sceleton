@@ -1,8 +1,8 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { useAppMutation, createContentBlockHooks, createLocaleHooks } from "@/shared/lib";
 import { servicesApi, servicesKeys } from "../api/servicesApi";
 import { ROUTES } from "@/shared/config";
 import type {
@@ -16,9 +16,7 @@ import type {
   CreateServiceTagDto,
   UpdateServiceTagDto,
 } from "@/entities/service";
-import type { CreateContentBlockDto, UpdateContentBlockDto, ReorderContentBlocksDto } from "@/entities/content-block";
-import { handleLocaleError } from "@/shared/lib/localeErrors";
-import { handleVersionConflict, getErrorMessage } from "@/shared/lib/versionConflict";
+
 
 export function useServicesList(params?: ServiceFilterParams) {
   return useQuery({
@@ -37,77 +35,56 @@ export function useService(id: string) {
 
 export function useCreateService() {
   const router = useRouter();
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: CreateServiceDto) => servicesApi.create(data),
+    successMessage: "Услуга создана",
+    errorMessage: "Не удалось создать услугу",
+    invalidateKeys: [servicesKeys.lists()],
     onSuccess: (service) => {
-      queryClient.invalidateQueries({ queryKey: servicesKeys.lists() });
-      toast.success("Услуга создана");
       router.push(ROUTES.SERVICE_EDIT(service.id));
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось создать услугу";
-      toast.error(message);
     },
   });
 }
 
 export function useUpdateService(id: string) {
   const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: UpdateServiceDto) => servicesApi.update(id, data),
+    successMessage: "Услуга обновлена",
+    errorMessage: "Не удалось обновить услугу",
+    invalidateKeys: [servicesKeys.lists()],
+    versionConflictKey: servicesKeys.detail(id),
     onSuccess: (service) => {
       queryClient.setQueryData(servicesKeys.detail(id), service);
-      queryClient.invalidateQueries({ queryKey: servicesKeys.lists() });
-      toast.success("Услуга обновлена");
-    },
-    onError: (error) => {
-      if (handleVersionConflict(error, queryClient, servicesKeys.detail(id))) {
-        return;
-      }
-      const message = getErrorMessage(error, "Не удалось обновить услугу");
-      toast.error(message);
     },
   });
 }
 
 export function useDeleteService() {
   const router = useRouter();
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (id: string) => servicesApi.delete(id),
+    successMessage: "Услуга удалена",
+    errorMessage: "Не удалось удалить услугу",
+    invalidateKeys: [servicesKeys.lists()],
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: servicesKeys.lists() });
-      toast.success("Услуга удалена");
       router.push(ROUTES.SERVICES);
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось удалить услугу";
-      toast.error(message);
     },
   });
 }
 
 export function useToggleServicePublished(id: string) {
   const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: ({ isPublished, version }: { isPublished: boolean; version: number }) =>
       servicesApi.update(id, { is_published: isPublished, version }),
+    successMessage: (service) =>
+      service.is_published ? "Услуга опубликована" : "Услуга снята с публикации",
+    errorMessage: "Не удалось изменить статус",
+    invalidateKeys: [servicesKeys.lists()],
+    versionConflictKey: servicesKeys.detail(id),
     onSuccess: (service) => {
       queryClient.setQueryData(servicesKeys.detail(id), service);
-      queryClient.invalidateQueries({ queryKey: servicesKeys.lists() });
-      toast.success(service.is_published ? "Услуга опубликована" : "Услуга снята с публикации");
-    },
-    onError: (error) => {
-      if (handleVersionConflict(error, queryClient, servicesKeys.detail(id))) {
-        return;
-      }
-      const message = getErrorMessage(error, "Не удалось изменить статус");
-      toast.error(message);
     },
   });
 }
@@ -117,51 +94,30 @@ export function useToggleServicePublished(id: string) {
 // =====================
 
 export function useAddServicePrice(serviceId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: CreateServicePriceDto) => servicesApi.addPrice(serviceId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: servicesKeys.detail(serviceId) });
-      toast.success("Цена добавлена");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось добавить цену";
-      toast.error(message);
-    },
+    successMessage: "Цена добавлена",
+    errorMessage: "Не удалось добавить цену",
+    invalidateKeys: [servicesKeys.detail(serviceId)],
   });
 }
 
 export function useUpdateServicePrice(serviceId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: ({ priceId, data }: { priceId: string; data: UpdateServicePriceDto }) =>
       servicesApi.updatePrice(serviceId, priceId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: servicesKeys.detail(serviceId) });
-      toast.success("Цена обновлена");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось обновить цену";
-      toast.error(message);
-    },
+    successMessage: "Цена обновлена",
+    errorMessage: "Не удалось обновить цену",
+    invalidateKeys: [servicesKeys.detail(serviceId)],
   });
 }
 
 export function useDeleteServicePrice(serviceId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (priceId: string) => servicesApi.deletePrice(serviceId, priceId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: servicesKeys.detail(serviceId) });
-      toast.success("Цена удалена");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось удалить цену";
-      toast.error(message);
-    },
+    successMessage: "Цена удалена",
+    errorMessage: "Не удалось удалить цену",
+    invalidateKeys: [servicesKeys.detail(serviceId)],
   });
 }
 
@@ -170,51 +126,30 @@ export function useDeleteServicePrice(serviceId: string) {
 // =====================
 
 export function useAddServiceTag(serviceId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: CreateServiceTagDto) => servicesApi.addTag(serviceId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: servicesKeys.detail(serviceId) });
-      toast.success("Тег добавлен");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось добавить тег";
-      toast.error(message);
-    },
+    successMessage: "Тег добавлен",
+    errorMessage: "Не удалось добавить тег",
+    invalidateKeys: [servicesKeys.detail(serviceId)],
   });
 }
 
 export function useUpdateServiceTag(serviceId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: ({ tagId, data }: { tagId: string; data: UpdateServiceTagDto }) =>
       servicesApi.updateTag(serviceId, tagId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: servicesKeys.detail(serviceId) });
-      toast.success("Тег обновлен");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось обновить тег";
-      toast.error(message);
-    },
+    successMessage: "Тег обновлен",
+    errorMessage: "Не удалось обновить тег",
+    invalidateKeys: [servicesKeys.detail(serviceId)],
   });
 }
 
 export function useDeleteServiceTag(serviceId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (tagId: string) => servicesApi.deleteTag(serviceId, tagId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: servicesKeys.detail(serviceId) });
-      toast.success("Тег удален");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось удалить тег";
-      toast.error(message);
-    },
+    successMessage: "Тег удален",
+    errorMessage: "Не удалось удалить тег",
+    invalidateKeys: [servicesKeys.detail(serviceId)],
   });
 }
 
@@ -222,125 +157,20 @@ export function useDeleteServiceTag(serviceId: string) {
 // Locale Hooks
 // =====================
 
-export function useCreateServiceLocale(serviceId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (data: CreateServiceLocaleDto) => servicesApi.createLocale(serviceId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: servicesKeys.detail(serviceId) });
-      toast.success("Локаль добавлена");
-    },
-    onError: (error) => {
-      handleLocaleError(error);
-    },
-  });
-}
-
-export function useUpdateServiceLocale(serviceId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ localeId, data }: { localeId: string; data: UpdateServiceLocaleDto }) =>
-      servicesApi.updateLocale(serviceId, localeId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: servicesKeys.detail(serviceId) });
-      toast.success("Локаль обновлена");
-    },
-    onError: (error) => {
-      handleLocaleError(error);
-    },
-  });
-}
-
-export function useDeleteServiceLocale(serviceId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (localeId: string) => servicesApi.deleteLocale(serviceId, localeId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: servicesKeys.detail(serviceId) });
-      toast.success("Локаль удалена");
-    },
-    onError: (error) => {
-      handleLocaleError(error);
-    },
-  });
-}
+export const {
+  useCreateLocale: useCreateServiceLocale,
+  useUpdateLocale: useUpdateServiceLocale,
+  useDeleteLocale: useDeleteServiceLocale,
+} = createLocaleHooks<CreateServiceLocaleDto, UpdateServiceLocaleDto>(servicesApi, servicesKeys.detail);
 
 // =====================
 // Content Block Hooks
 // =====================
 
-export function useServiceContentBlocks(serviceId: string, locale?: string) {
-  return useQuery({
-    queryKey: servicesKeys.contentBlocks(serviceId, locale),
-    queryFn: () => servicesApi.getContentBlocks(serviceId, locale),
-    enabled: !!serviceId,
-  });
-}
-
-export function useCreateServiceContentBlock(serviceId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (data: CreateContentBlockDto) => servicesApi.createContentBlock(serviceId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [...servicesKeys.all, "content-blocks", serviceId] });
-      toast.success("Блок добавлен");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось добавить блок";
-      toast.error(message);
-    },
-  });
-}
-
-export function useUpdateServiceContentBlock(serviceId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ blockId, data }: { blockId: string; data: UpdateContentBlockDto }) =>
-      servicesApi.updateContentBlock(serviceId, blockId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [...servicesKeys.all, "content-blocks", serviceId] });
-      toast.success("Блок обновлен");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось обновить блок";
-      toast.error(message);
-    },
-  });
-}
-
-export function useDeleteServiceContentBlock(serviceId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (blockId: string) => servicesApi.deleteContentBlock(serviceId, blockId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [...servicesKeys.all, "content-blocks", serviceId] });
-      toast.success("Блок удален");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось удалить блок";
-      toast.error(message);
-    },
-  });
-}
-
-export function useReorderServiceContentBlocks(serviceId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (data: ReorderContentBlocksDto) => servicesApi.reorderContentBlocks(serviceId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [...servicesKeys.all, "content-blocks", serviceId] });
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось изменить порядок блоков";
-      toast.error(message);
-    },
-  });
-}
-
+export const {
+  useContentBlocks: useServiceContentBlocks,
+  useCreateContentBlock: useCreateServiceContentBlock,
+  useUpdateContentBlock: useUpdateServiceContentBlock,
+  useDeleteContentBlock: useDeleteServiceContentBlock,
+  useReorderContentBlocks: useReorderServiceContentBlocks,
+} = createContentBlockHooks(servicesApi, servicesKeys);

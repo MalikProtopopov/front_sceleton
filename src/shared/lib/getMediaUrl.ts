@@ -1,4 +1,5 @@
 import type { FileAsset } from "@/entities/file";
+import { DEV_BACKEND_URL } from "../config/constants";
 
 /**
  * Converts a relative media URL to an absolute URL for Next.js Image component
@@ -26,7 +27,7 @@ export function getMediaUrl(url: string | null | undefined): string {
   
   // Fallback to localhost:8000 for development if no env var
   if (!backendBaseUrl && typeof window !== "undefined") {
-    backendBaseUrl = "http://localhost:8000";
+    backendBaseUrl = DEV_BACKEND_URL;
   }
   
   // If still no base URL, return relative (will work with rewrites)

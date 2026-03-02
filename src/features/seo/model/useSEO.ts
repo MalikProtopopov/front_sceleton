@@ -1,7 +1,7 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAppMutation } from "@/shared/lib";
 import { seoApi, seoKeys } from "../api/seoApi";
 import type { 
   CreateSEORouteDto, 
@@ -29,51 +29,33 @@ export function useSEORoute(id: string) {
 }
 
 export function useUpsertSEORoute() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: CreateSEORouteDto) => seoApi.upsertRoute(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: seoKeys.routes() });
-      toast.success("SEO настройки сохранены");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось сохранить SEO настройки";
-      toast.error(message);
-    },
+    successMessage: "SEO настройки сохранены",
+    errorMessage: "Не удалось сохранить SEO настройки",
+    invalidateKeys: [seoKeys.routes()],
   });
 }
 
 export function useUpdateSEORoute(id: string) {
   const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: UpdateSEORouteDto) => seoApi.updateRoute(id, data),
+    successMessage: "SEO настройки обновлены",
+    errorMessage: "Не удалось обновить SEO настройки",
+    invalidateKeys: [seoKeys.routes()],
     onSuccess: (route) => {
       queryClient.setQueryData(seoKeys.route(id), route);
-      queryClient.invalidateQueries({ queryKey: seoKeys.routes() });
-      toast.success("SEO настройки обновлены");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось обновить SEO настройки";
-      toast.error(message);
     },
   });
 }
 
 export function useDeleteSEORoute() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (id: string) => seoApi.deleteRoute(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: seoKeys.routes() });
-      toast.success("SEO настройки удалены");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось удалить SEO настройки";
-      toast.error(message);
-    },
+    successMessage: "SEO настройки удалены",
+    errorMessage: "Не удалось удалить SEO настройки",
+    invalidateKeys: [seoKeys.routes()],
   });
 }
 
@@ -94,68 +76,42 @@ export function useRedirect(id: string) {
 }
 
 export function useCreateRedirect() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: CreateRedirectDto) => seoApi.createRedirect(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: seoKeys.redirects() });
-      toast.success("Редирект создан");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось создать редирект";
-      toast.error(message);
-    },
+    successMessage: "Редирект создан",
+    errorMessage: "Не удалось создать редирект",
+    invalidateKeys: [seoKeys.redirects()],
   });
 }
 
 export function useUpdateRedirect(id: string) {
   const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: UpdateRedirectDto) => seoApi.updateRedirect(id, data),
+    successMessage: "Редирект обновлен",
+    errorMessage: "Не удалось обновить редирект",
+    invalidateKeys: [seoKeys.redirects()],
     onSuccess: (redirect) => {
       queryClient.setQueryData(seoKeys.redirect(id), redirect);
-      queryClient.invalidateQueries({ queryKey: seoKeys.redirects() });
-      toast.success("Редирект обновлен");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось обновить редирект";
-      toast.error(message);
     },
   });
 }
 
 export function useDeleteRedirect() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (id: string) => seoApi.deleteRedirect(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: seoKeys.redirects() });
-      toast.success("Редирект удален");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось удалить редирект";
-      toast.error(message);
-    },
+    successMessage: "Редирект удален",
+    errorMessage: "Не удалось удалить редирект",
+    invalidateKeys: [seoKeys.redirects()],
   });
 }
 
 export function useToggleRedirect() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) => 
       seoApi.updateRedirect(id, { is_active: isActive }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: seoKeys.redirects() });
-      toast.success("Статус редиректа изменен");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось изменить статус";
-      toast.error(message);
-    },
+    successMessage: "Статус редиректа изменен",
+    errorMessage: "Не удалось изменить статус",
+    invalidateKeys: [seoKeys.redirects()],
   });
 }
-

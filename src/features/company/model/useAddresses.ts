@@ -1,12 +1,11 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { useAppMutation, createLocaleHooks } from "@/shared/lib";
 import { addressesApi, companyKeys } from "../api/companyApi";
 import { ROUTES } from "@/shared/config";
 import type { CreateAddressDto, UpdateAddressDto, CreateAddressLocaleDto, UpdateAddressLocaleDto } from "@/entities/company";
-import { handleLocaleError } from "@/shared/lib/localeErrors";
 
 export function useAddressesList() {
   return useQuery({
@@ -25,54 +24,38 @@ export function useAddress(id: string) {
 
 export function useCreateAddress() {
   const router = useRouter();
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: CreateAddressDto) => addressesApi.create(data),
+    successMessage: "Адрес создан",
+    errorMessage: "Не удалось создать адрес",
+    invalidateKeys: [companyKeys.addresses.list()],
     onSuccess: (item) => {
-      queryClient.invalidateQueries({ queryKey: companyKeys.addresses.list() });
-      toast.success("Адрес создан");
       router.push(ROUTES.ADDRESS_EDIT(item.id));
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось создать адрес";
-      toast.error(message);
     },
   });
 }
 
 export function useUpdateAddress(id: string) {
   const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: UpdateAddressDto) => addressesApi.update(id, data),
+    successMessage: "Адрес обновлен",
+    errorMessage: "Не удалось обновить адрес",
+    invalidateKeys: [companyKeys.addresses.list()],
     onSuccess: (item) => {
       queryClient.setQueryData(companyKeys.addresses.detail(id), item);
-      queryClient.invalidateQueries({ queryKey: companyKeys.addresses.list() });
-      toast.success("Адрес обновлен");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось обновить адрес";
-      toast.error(message);
     },
   });
 }
 
 export function useDeleteAddress() {
   const router = useRouter();
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (id: string) => addressesApi.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: companyKeys.addresses.list() });
-      toast.success("Адрес удален");
-      router.push(ROUTES.ADDRESSES);
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось удалить адрес";
-      toast.error(message);
-    },
+    successMessage: "Адрес удален",
+    errorMessage: "Не удалось удалить адрес",
+    invalidateKeys: [companyKeys.addresses.list()],
+    onSuccess: () => router.push(ROUTES.ADDRESSES),
   });
 }
 
@@ -80,49 +63,8 @@ export function useDeleteAddress() {
 // Locale Hooks
 // =====================
 
-export function useCreateAddressLocale(addressId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (data: CreateAddressLocaleDto) => addressesApi.createLocale(addressId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: companyKeys.addresses.detail(addressId) });
-      toast.success("Локаль добавлена");
-    },
-    onError: (error) => {
-      handleLocaleError(error);
-    },
-  });
-}
-
-export function useUpdateAddressLocale(addressId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ localeId, data }: { localeId: string; data: UpdateAddressLocaleDto }) =>
-      addressesApi.updateLocale(addressId, localeId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: companyKeys.addresses.detail(addressId) });
-      toast.success("Локаль обновлена");
-    },
-    onError: (error) => {
-      handleLocaleError(error);
-    },
-  });
-}
-
-export function useDeleteAddressLocale(addressId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (localeId: string) => addressesApi.deleteLocale(addressId, localeId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: companyKeys.addresses.detail(addressId) });
-      toast.success("Локаль удалена");
-    },
-    onError: (error) => {
-      handleLocaleError(error);
-    },
-  });
-}
-
+export const {
+  useCreateLocale: useCreateAddressLocale,
+  useUpdateLocale: useUpdateAddressLocale,
+  useDeleteLocale: useDeleteAddressLocale,
+} = createLocaleHooks<CreateAddressLocaleDto, UpdateAddressLocaleDto>(addressesApi, companyKeys.addresses.detail);

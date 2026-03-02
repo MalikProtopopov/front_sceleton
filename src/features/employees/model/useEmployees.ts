@@ -1,13 +1,12 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { useAppMutation, createLocaleHooks, createContentBlockHooks } from "@/shared/lib";
 import { employeesApi, employeesKeys } from "../api/employeesApi";
 import { ROUTES } from "@/shared/config";
 import type { EmployeeFilterParams, CreateEmployeeDto, UpdateEmployeeDto, CreateEmployeeLocaleDto, UpdateEmployeeLocaleDto } from "@/entities/employee";
-import type { CreateContentBlockDto, UpdateContentBlockDto, ReorderContentBlocksDto } from "@/entities/content-block";
-import { handleLocaleError } from "@/shared/lib/localeErrors";
+
 
 export function useEmployeesList(params?: EmployeeFilterParams) {
   return useQuery({
@@ -26,71 +25,52 @@ export function useEmployee(id: string) {
 
 export function useCreateEmployee() {
   const router = useRouter();
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: CreateEmployeeDto) => employeesApi.create(data),
+    successMessage: "Сотрудник создан",
+    errorMessage: "Не удалось создать сотрудника",
+    invalidateKeys: [employeesKeys.lists()],
     onSuccess: (employee) => {
-      queryClient.invalidateQueries({ queryKey: employeesKeys.lists() });
-      toast.success("Сотрудник создан");
       router.push(ROUTES.TEAM_EDIT(employee.id));
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось создать сотрудника";
-      toast.error(message);
     },
   });
 }
 
 export function useUpdateEmployee(id: string) {
   const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: UpdateEmployeeDto) => employeesApi.update(id, data),
+    successMessage: "Сотрудник обновлен",
+    errorMessage: "Не удалось обновить сотрудника",
+    invalidateKeys: [employeesKeys.lists()],
     onSuccess: (employee) => {
       queryClient.setQueryData(employeesKeys.detail(id), employee);
-      queryClient.invalidateQueries({ queryKey: employeesKeys.lists() });
-      toast.success("Сотрудник обновлен");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось обновить сотрудника";
-      toast.error(message);
     },
   });
 }
 
 export function useDeleteEmployee() {
   const router = useRouter();
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (id: string) => employeesApi.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: employeesKeys.lists() });
-      toast.success("Сотрудник удален");
-      router.push(ROUTES.TEAM);
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось удалить сотрудника";
-      toast.error(message);
-    },
+    successMessage: "Сотрудник удален",
+    errorMessage: "Не удалось удалить сотрудника",
+    invalidateKeys: [employeesKeys.lists()],
+    onSuccess: () => router.push(ROUTES.TEAM),
   });
 }
 
 export function useToggleEmployeePublished(id: string) {
   const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: ({ isPublished, version }: { isPublished: boolean; version: number }) =>
       employeesApi.update(id, { is_published: isPublished, version }),
+    successMessage: (employee) =>
+      employee.is_published ? "Сотрудник опубликован" : "Сотрудник снят с публикации",
+    errorMessage: "Не удалось изменить статус",
+    invalidateKeys: [employeesKeys.lists()],
     onSuccess: (employee) => {
       queryClient.setQueryData(employeesKeys.detail(id), employee);
-      queryClient.invalidateQueries({ queryKey: employeesKeys.lists() });
-      toast.success(employee.is_published ? "Сотрудник опубликован" : "Сотрудник снят с публикации");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось изменить статус";
-      toast.error(message);
     },
   });
 }
@@ -99,125 +79,20 @@ export function useToggleEmployeePublished(id: string) {
 // Locale Hooks
 // =====================
 
-export function useCreateEmployeeLocale(employeeId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (data: CreateEmployeeLocaleDto) => employeesApi.createLocale(employeeId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: employeesKeys.detail(employeeId) });
-      toast.success("Локаль добавлена");
-    },
-    onError: (error) => {
-      handleLocaleError(error);
-    },
-  });
-}
-
-export function useUpdateEmployeeLocale(employeeId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ localeId, data }: { localeId: string; data: UpdateEmployeeLocaleDto }) =>
-      employeesApi.updateLocale(employeeId, localeId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: employeesKeys.detail(employeeId) });
-      toast.success("Локаль обновлена");
-    },
-    onError: (error) => {
-      handleLocaleError(error);
-    },
-  });
-}
-
-export function useDeleteEmployeeLocale(employeeId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (localeId: string) => employeesApi.deleteLocale(employeeId, localeId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: employeesKeys.detail(employeeId) });
-      toast.success("Локаль удалена");
-    },
-    onError: (error) => {
-      handleLocaleError(error);
-    },
-  });
-}
+export const {
+  useCreateLocale: useCreateEmployeeLocale,
+  useUpdateLocale: useUpdateEmployeeLocale,
+  useDeleteLocale: useDeleteEmployeeLocale,
+} = createLocaleHooks<CreateEmployeeLocaleDto, UpdateEmployeeLocaleDto>(employeesApi, employeesKeys.detail);
 
 // =====================
 // Content Block Hooks
 // =====================
 
-export function useEmployeeContentBlocks(employeeId: string, locale?: string) {
-  return useQuery({
-    queryKey: employeesKeys.contentBlocks(employeeId, locale),
-    queryFn: () => employeesApi.getContentBlocks(employeeId, locale),
-    enabled: !!employeeId,
-  });
-}
-
-export function useCreateEmployeeContentBlock(employeeId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (data: CreateContentBlockDto) => employeesApi.createContentBlock(employeeId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [...employeesKeys.all, "content-blocks", employeeId] });
-      toast.success("Блок добавлен");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось добавить блок";
-      toast.error(message);
-    },
-  });
-}
-
-export function useUpdateEmployeeContentBlock(employeeId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ blockId, data }: { blockId: string; data: UpdateContentBlockDto }) =>
-      employeesApi.updateContentBlock(employeeId, blockId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [...employeesKeys.all, "content-blocks", employeeId] });
-      toast.success("Блок обновлен");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось обновить блок";
-      toast.error(message);
-    },
-  });
-}
-
-export function useDeleteEmployeeContentBlock(employeeId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (blockId: string) => employeesApi.deleteContentBlock(employeeId, blockId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [...employeesKeys.all, "content-blocks", employeeId] });
-      toast.success("Блок удален");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось удалить блок";
-      toast.error(message);
-    },
-  });
-}
-
-export function useReorderEmployeeContentBlocks(employeeId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (data: ReorderContentBlocksDto) => employeesApi.reorderContentBlocks(employeeId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [...employeesKeys.all, "content-blocks", employeeId] });
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось изменить порядок блоков";
-      toast.error(message);
-    },
-  });
-}
-
+export const {
+  useContentBlocks: useEmployeeContentBlocks,
+  useCreateContentBlock: useCreateEmployeeContentBlock,
+  useUpdateContentBlock: useUpdateEmployeeContentBlock,
+  useDeleteContentBlock: useDeleteEmployeeContentBlock,
+  useReorderContentBlocks: useReorderEmployeeContentBlocks,
+} = createContentBlockHooks(employeesApi, employeesKeys);

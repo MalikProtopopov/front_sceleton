@@ -1,5 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useAppMutation } from "@/shared/lib";
 import { documentsApi, documentsKeys } from "../api/documentsApi";
 import type {
   CreateDocumentDto,
@@ -8,7 +9,6 @@ import type {
 } from "@/entities/document";
 import { handleVersionConflict, getErrorMessage } from "@/shared/lib/versionConflict";
 
-// Hook for fetching documents list
 export function useDocuments(params?: DocumentFilterParams) {
   return useQuery({
     queryKey: documentsKeys.list(params),
@@ -16,7 +16,6 @@ export function useDocuments(params?: DocumentFilterParams) {
   });
 }
 
-// Hook for fetching single document
 export function useDocument(id: string) {
   return useQuery({
     queryKey: documentsKeys.detail(id),
@@ -25,29 +24,22 @@ export function useDocument(id: string) {
   });
 }
 
-// Hook for creating document
 export function useCreateDocument() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: CreateDocumentDto) => documentsApi.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: documentsKeys.lists() });
-    },
+    invalidateKeys: [documentsKeys.lists()],
   });
 }
 
-// Hook for updating document
 export function useUpdateDocument() {
   const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateDocumentDto }) =>
       documentsApi.update(id, data),
+    successMessage: "Документ обновлён",
+    invalidateKeys: [documentsKeys.lists()],
     onSuccess: (document, variables) => {
       queryClient.setQueryData(documentsKeys.detail(variables.id), document);
-      queryClient.invalidateQueries({ queryKey: documentsKeys.lists() });
-      toast.success("Документ обновлён");
     },
     onError: (error, variables) => {
       if (handleVersionConflict(error, queryClient, documentsKeys.detail(variables.id))) {
@@ -59,49 +51,38 @@ export function useUpdateDocument() {
   });
 }
 
-// Hook for deleting document
 export function useDeleteDocument() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (id: string) => documentsApi.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: documentsKeys.lists() });
-    },
+    invalidateKeys: [documentsKeys.lists()],
   });
 }
 
-// Hook for publishing document
 export function usePublishDocument() {
   const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (id: string) => documentsApi.publish(id),
+    invalidateKeys: [documentsKeys.lists()],
     onSuccess: (_, id) => {
-      queryClient.invalidateQueries({ queryKey: documentsKeys.lists() });
       queryClient.invalidateQueries({ queryKey: documentsKeys.detail(id) });
     },
   });
 }
 
-// Hook for unpublishing document
 export function useUnpublishDocument() {
   const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (id: string) => documentsApi.unpublish(id),
+    invalidateKeys: [documentsKeys.lists()],
     onSuccess: (_, id) => {
-      queryClient.invalidateQueries({ queryKey: documentsKeys.lists() });
       queryClient.invalidateQueries({ queryKey: documentsKeys.detail(id) });
     },
   });
 }
 
-// Hook for uploading document file
 export function useUploadDocumentFile() {
   const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: ({ id, file }: { id: string; file: File }) =>
       documentsApi.uploadFile(id, file),
     onSuccess: (_, variables) => {
@@ -110,15 +91,12 @@ export function useUploadDocumentFile() {
   });
 }
 
-// Hook for deleting document file
 export function useDeleteDocumentFile() {
   const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (id: string) => documentsApi.deleteFile(id),
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: documentsKeys.detail(id) });
     },
   });
 }
-

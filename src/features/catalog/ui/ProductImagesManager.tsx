@@ -12,6 +12,7 @@ import {
 } from "../model/useProducts";
 import type { ProductImage } from "@/entities/product";
 import { getMediaUrl } from "@/shared/lib";
+import { MAX_IMAGE_SIZE } from "@/shared/config";
 
 interface ProductImagesManagerProps {
   productId: string;
@@ -40,7 +41,7 @@ export function ProductImagesManager({ productId, images }: ProductImagesManager
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: { "image/*": [".jpeg", ".jpg", ".png", ".webp", ".gif"] },
-    maxSize: 10 * 1024 * 1024,
+    maxSize: MAX_IMAGE_SIZE,
   });
 
   const sorted = [...images].sort((a, b) => a.sort_order - b.sort_order);

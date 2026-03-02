@@ -6,6 +6,7 @@ import { Upload, X, FileUp } from "lucide-react";
 import { cn, formatFileSize } from "@/shared/lib";
 import { Button, Spinner } from "@/shared/ui";
 import { useUploadFile } from "../model/useMedia";
+import { MAX_IMAGE_SIZE } from "@/shared/config";
 
 interface UploadDropzoneProps {
   folder?: string;
@@ -25,7 +26,7 @@ export function UploadDropzone({
   folder,
   onUploadComplete,
   maxFiles = 10,
-  maxSize = 10 * 1024 * 1024, // 10MB default
+  maxSize = MAX_IMAGE_SIZE,
   accept = {
     "image/*": [".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"],
     "application/pdf": [".pdf"],

@@ -1,596 +1,38 @@
 "use client";
 
-import { use, useState } from "react";
-import { useRouter } from "next/navigation";
+import { use } from "react";
 import { notFound } from "next/navigation";
-import { 
-  Mail, 
-  Phone, 
-  Building2, 
-  Globe, 
-  MapPin, 
-  Monitor, 
-  Link as LinkIcon,
-  Clock,
-  User,
+import {
   MessageSquare,
-  ChevronDown,
-  ChevronUp,
-  ArrowLeft,
-  Trash2,
+  Package,
+  User,
   Bell,
   BellOff,
-  Hash,
-  Eye,
-  Smartphone,
-  Laptop,
-  Tablet,
-  Network,
-  Tag,
-  FileText,
-  CheckCircle2,
-  AlertCircle,
-  Lightbulb,
-  DollarSign,
-  Timer,
-  Send,
-  Layers,
-  Target,
-  Users,
-  Cpu,
-  Puzzle,
-  Copy,
-  Check,
-  Package,
 } from "lucide-react";
-import { useLead, useUpdateLead, useDeleteLead } from "@/features/leads";
+import { useLead, useDeleteLead } from "@/features/leads";
 import {
-  Button,
   Spinner,
-  Badge,
   Card,
   CardHeader,
   CardTitle,
   CardContent,
-  Select,
-  Textarea,
-  ConfirmModal,
 } from "@/shared/ui";
-import { formatDateTime, cn } from "@/shared/lib";
 import { ROUTES } from "@/shared/config";
-import type { InquiryStatus, MvpBriefFields } from "@/entities/inquiry";
-import {
-  INQUIRY_STATUS_CONFIG,
-  FORM_SLUG_CONFIG,
-  BRIEF_FIELD_LABELS,
-  MARKET_OPTIONS,
-  AUDIENCE_SIZE_OPTIONS,
-  AI_REQUIRED_OPTIONS,
-  APP_TYPES_OPTIONS,
-  BUDGET_OPTIONS,
-  URGENCY_OPTIONS,
-  SOURCE_OPTIONS,
-} from "@/entities/inquiry";
-
-// Helper function to format relative time
-function formatRelativeTime(dateString: string): string {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / (1000 * 60));
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffMins < 1) return "только что";
-  if (diffMins < 60) return `${diffMins} мин. назад`;
-  if (diffHours < 24) return `${diffHours} ч. назад`;
-  if (diffDays < 7) return `${diffDays} дн. назад`;
-  return formatDateTime(dateString);
-}
-
-// Device icon component
-function DeviceIcon({ deviceType }: { deviceType: string | null }) {
-  if (!deviceType) return <Monitor className="h-4 w-4" />;
-  const type = deviceType.toLowerCase();
-  if (type.includes("mobile") || type.includes("phone")) {
-    return <Smartphone className="h-4 w-4" />;
-  }
-  if (type.includes("tablet")) {
-    return <Tablet className="h-4 w-4" />;
-  }
-  return <Laptop className="h-4 w-4" />;
-}
-
-// Info row component for consistent styling
-function InfoRow({
-  icon: Icon,
-  label,
-  value,
-  href,
-  className,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: React.ReactNode;
-  href?: string;
-  className?: string;
-}) {
-  return (
-    <div className={cn("flex items-start gap-3 py-2", className)}>
-      <Icon className="h-4 w-4 text-[var(--color-text-muted)] mt-0.5 flex-shrink-0" />
-      <div className="min-w-0 flex-1">
-        <p className="text-xs text-[var(--color-text-muted)] mb-0.5">{label}</p>
-        {href ? (
-          <a
-            href={href}
-            target={href.startsWith("http") ? "_blank" : undefined}
-            rel={href.startsWith("http") ? "noopener noreferrer" : undefined}
-            className="text-sm text-[var(--color-accent-primary)] hover:underline break-all"
-          >
-            {value}
-          </a>
-        ) : (
-          <p className="text-sm text-[var(--color-text-primary)] break-words">{value}</p>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// Status timeline component
-function StatusTimeline({
-  status,
-  createdAt,
-  updatedAt,
-  contactedAt,
-}: {
-  status: InquiryStatus;
-  createdAt: string;
-  updatedAt: string;
-  contactedAt: string | null;
-}) {
-  const config = INQUIRY_STATUS_CONFIG[status];
-
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-3 p-3 rounded-lg bg-[var(--color-bg-secondary)]">
-        <div
-          className="h-10 w-10 rounded-full flex items-center justify-center"
-          style={{
-            backgroundColor:
-              status === "completed"
-                ? "var(--color-success-bg)"
-                : status === "spam"
-                  ? "var(--color-error-bg)"
-                  : "var(--color-info-bg)",
-          }}
-        >
-          {status === "completed" ? (
-            <CheckCircle2 className="h-5 w-5 text-[var(--color-success)]" />
-          ) : status === "spam" || status === "cancelled" ? (
-            <AlertCircle className="h-5 w-5 text-[var(--color-error)]" />
-          ) : (
-            <Clock className="h-5 w-5 text-[var(--color-info)]" />
-          )}
-        </div>
-        <div>
-          <Badge variant={config.variant} className="mb-1">
-            {config.label}
-          </Badge>
-          <p className="text-xs text-[var(--color-text-muted)]">
-            Обновлено {formatRelativeTime(updatedAt)}
-          </p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3 text-sm">
-        <div className="p-3 rounded-lg border border-[var(--color-border)]">
-          <p className="text-xs text-[var(--color-text-muted)] mb-1">Создана</p>
-          <p className="text-[var(--color-text-primary)] font-medium">
-            {formatDateTime(createdAt)}
-          </p>
-        </div>
-        {contactedAt && (
-          <div className="p-3 rounded-lg border border-[var(--color-border)]">
-            <p className="text-xs text-[var(--color-text-muted)] mb-1">Связались</p>
-            <p className="text-[var(--color-text-primary)] font-medium">
-              {formatDateTime(contactedAt)}
-            </p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// All known option maps for value interpretation
-const ALL_VALUE_MAPS: Record<string, Record<string, string>> = {
-  market: MARKET_OPTIONS,
-  audienceSize: AUDIENCE_SIZE_OPTIONS,
-  aiRequired: AI_REQUIRED_OPTIONS,
-  budget: BUDGET_OPTIONS,
-  urgency: URGENCY_OPTIONS,
-  source: SOURCE_OPTIONS,
-};
-
-// Interpret a custom field value to a human-readable string
-function interpretFieldValue(key: string, value: unknown): string {
-  // Boolean fields
-  if (key === "consent") {
-    return value ? "Да" : "Нет";
-  }
-  // Array fields (e.g. appTypes)
-  if (key === "appTypes" && Array.isArray(value)) {
-    return value.map((v) => APP_TYPES_OPTIONS[v] || v).join(", ");
-  }
-  // Select fields with known maps
-  if (typeof value === "string" && ALL_VALUE_MAPS[key]) {
-    return ALL_VALUE_MAPS[key][value] || value;
-  }
-  return String(value);
-}
-
-// Build copyable text from lead data
-function buildLeadCopyText(lead: import("@/entities/inquiry").Inquiry): string {
-  const lines: string[] = [];
-
-  // Basic contact info
-  lines.push(`Имя: ${lead.name}`);
-  if (lead.email) lines.push(`Email: ${lead.email}`);
-  if (lead.phone) lines.push(`Телефон: ${lead.phone}`);
-  if (lead.company) lines.push(`Компания: ${lead.company}`);
-
-  // Status
-  const statusLabel = INQUIRY_STATUS_CONFIG[lead.status]?.label || lead.status;
-  lines.push(`Статус: ${statusLabel}`);
-
-  // Form type
-  if (lead.form_slug) {
-    const formLabel = FORM_SLUG_CONFIG[lead.form_slug]?.label || lead.form_slug;
-    lines.push(`Тип заявки: ${formLabel}`);
-  }
-
-  // Product
-  if (lead.product) {
-    lines.push(`Товар: ${lead.product.name || lead.product.slug} (${lead.product.sku})`);
-  }
-
-  // Message
-  if (lead.message) {
-    lines.push(`Сообщение: ${lead.message}`);
-  }
-
-  // Brief fields (for mvp-brief)
-  if (lead.form_slug === "mvp-brief" && lead.custom_fields) {
-    const fields = lead.custom_fields as MvpBriefFields;
-    lines.push(""); // separator
-    lines.push("--- Данные брифа ---");
-    if (fields.idea) lines.push(`Идея продукта: ${fields.idea}`);
-    if (fields.market) lines.push(`Рынок: ${MARKET_OPTIONS[fields.market] || fields.market}`);
-    if (fields.audience) lines.push(`Целевая аудитория: ${fields.audience}`);
-    if (fields.audienceSize) lines.push(`Размер аудитории: ${AUDIENCE_SIZE_OPTIONS[fields.audienceSize] || fields.audienceSize}`);
-    if (fields.aiRequired) lines.push(`AI/ML: ${AI_REQUIRED_OPTIONS[fields.aiRequired] || fields.aiRequired}`);
-    if (fields.appTypes && fields.appTypes.length > 0) {
-      const appTypeLabels = fields.appTypes.map(t => APP_TYPES_OPTIONS[t] || t).join(", ");
-      lines.push(`Типы приложений: ${appTypeLabels}`);
-    }
-    if (fields.integrations) lines.push(`Интеграции: ${fields.integrations}`);
-    if (fields.budget) lines.push(`Бюджет: ${BUDGET_OPTIONS[fields.budget] || fields.budget}`);
-    if (fields.urgency) lines.push(`Сроки: ${URGENCY_OPTIONS[fields.urgency] || fields.urgency}`);
-    if (fields.telegram) lines.push(`Telegram: ${fields.telegram}`);
-    if (fields.source) lines.push(`Откуда узнали: ${SOURCE_OPTIONS[fields.source] || fields.source}`);
-  }
-
-  // Source / Analytics
-  if (lead.utm_source || lead.utm_medium || lead.utm_campaign || lead.source_url || lead.referrer_url || lead.page_path) {
-    lines.push(""); // separator
-    lines.push("--- Источник ---");
-    if (lead.utm_source) lines.push(`UTM Source: ${lead.utm_source}`);
-    if (lead.utm_medium) lines.push(`UTM Medium: ${lead.utm_medium}`);
-    if (lead.utm_campaign) lines.push(`UTM Campaign: ${lead.utm_campaign}`);
-    if (lead.utm_term) lines.push(`UTM Term: ${lead.utm_term}`);
-    if (lead.utm_content) lines.push(`UTM Content: ${lead.utm_content}`);
-    if (lead.source_url) lines.push(`Страница: ${lead.source_url}`);
-    if (lead.page_path) lines.push(`Путь: ${lead.page_path}`);
-    if (lead.referrer_url) lines.push(`Реферер: ${lead.referrer_url}`);
-  }
-
-  // Technical
-  if (lead.device_type || lead.browser || lead.os || lead.city || lead.country) {
-    lines.push(""); // separator
-    lines.push("--- Техническое ---");
-    if (lead.device_type) lines.push(`Устройство: ${lead.device_type}`);
-    if (lead.browser) lines.push(`Браузер: ${lead.browser}`);
-    if (lead.os) lines.push(`ОС: ${lead.os}`);
-    if (lead.city || lead.country) lines.push(`Локация: ${[lead.city, lead.country].filter(Boolean).join(", ")}`);
-    if (lead.ip_address) lines.push(`IP: ${lead.ip_address}`);
-  }
-
-  // Dates
-  lines.push(""); // separator
-  lines.push(`Дата создания: ${formatDateTime(lead.created_at)}`);
-  if (lead.contacted_at) lines.push(`Дата контакта: ${formatDateTime(lead.contacted_at)}`);
-
-  // Non-brief custom fields (for any form type, or extra fields not covered above)
-  if (lead.custom_fields) {
-    const briefKeys = new Set(["idea", "market", "audience", "audienceSize", "aiRequired", "appTypes", "integrations", "budget", "urgency", "telegram", "source", "consent"]);
-    const extraFields = Object.entries(lead.custom_fields).filter(([key, value]) => {
-      if (value === null || value === undefined || value === "") return false;
-      // For mvp-brief, these are already shown above
-      if (lead.form_slug === "mvp-brief" && briefKeys.has(key)) return false;
-      return true;
-    });
-    if (extraFields.length > 0) {
-      lines.push(""); // separator
-      lines.push("--- Дополнительные поля ---");
-      for (const [key, value] of extraFields) {
-        const label = BRIEF_FIELD_LABELS[key] || key;
-        lines.push(`${label}: ${interpretFieldValue(key, value)}`);
-      }
-    }
-  }
-
-  // Notes
-  if (lead.notes) {
-    lines.push(""); // separator
-    lines.push(`Заметки: ${lead.notes}`);
-  }
-
-  return lines.join("\n");
-}
-
-// Custom fields card with proper labels and interpreted values
-function CustomFieldsCard({ customFields, formSlug }: { customFields: Record<string, unknown>; formSlug: string | null }) {
-  // Fields that are already displayed in contact info or BriefDataCard for mvp-brief
-  const briefDisplayedInCard = new Set(["idea", "market", "audience", "audienceSize", "aiRequired", "appTypes", "integrations", "budget", "urgency", "telegram", "source", "consent"]);
-  
-  // For mvp-brief, check if BriefDataCard will render (it shows these fields)
-  const isMvpBrief = formSlug === "mvp-brief";
-  
-  // Filter entries: for mvp-brief, only show fields NOT covered by BriefDataCard
-  const entries = Object.entries(customFields).filter(([key, value]) => {
-    // Skip null/undefined/empty
-    if (value === null || value === undefined || value === "") return false;
-    // For mvp-brief, skip fields already shown in BriefDataCard
-    if (isMvpBrief && briefDisplayedInCard.has(key)) return false;
-    return true;
-  });
-
-  if (entries.length === 0) return null;
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Hash className="h-5 w-5" />
-          Дополнительные поля
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {entries.map(([key, value]) => (
-            <div
-              key={key}
-              className="p-2.5 rounded-lg bg-[var(--color-bg-secondary)]"
-            >
-              <p className="text-xs text-[var(--color-text-muted)]">
-                {BRIEF_FIELD_LABELS[key] || key.replace(/_/g, " ")}
-              </p>
-              <p className="text-sm font-medium text-[var(--color-text-primary)] break-words">
-                {interpretFieldValue(key, value)}
-              </p>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-// Brief data card for MVP Brief form type
-function BriefDataCard({ customFields }: { customFields: Record<string, unknown> }) {
-  const fields = customFields as MvpBriefFields;
-  
-  // Helper function to get label from options
-  const getOptionLabel = (value: string | undefined, options: Record<string, string>) => {
-    if (!value) return null;
-    return options[value] || value;
-  };
-
-  // Check if we have any brief data
-  const hasBriefData = fields.idea || fields.market || fields.audience || 
-    fields.budget || fields.urgency || fields.appTypes?.length;
-
-  if (!hasBriefData) return null;
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Lightbulb className="h-5 w-5" />
-          Данные брифа
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Consent status */}
-        {fields.consent !== undefined && (
-          <div className="flex items-center gap-2 text-sm">
-            <CheckCircle2 className="h-4 w-4 text-[var(--color-success)]" />
-            <span className="text-[var(--color-text-secondary)]">Согласие на обработку ПД получено</span>
-          </div>
-        )}
-        {/* Idea - Full width */}
-        {fields.idea && (
-          <div>
-            <h4 className="text-sm font-medium text-[var(--color-text-secondary)] mb-2 flex items-center gap-2">
-              <Lightbulb className="h-4 w-4" />
-              {BRIEF_FIELD_LABELS.idea}
-            </h4>
-            <p className="text-[var(--color-text-primary)] whitespace-pre-wrap leading-relaxed bg-[var(--color-bg-secondary)] p-3 rounded-lg">
-              {fields.idea}
-            </p>
-          </div>
-        )}
-
-        {/* Grid for other fields */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {/* Market */}
-          {fields.market && (
-            <div className="p-3 rounded-lg border border-[var(--color-border)]">
-              <h4 className="text-xs font-medium text-[var(--color-text-muted)] mb-1.5 flex items-center gap-1.5">
-                <Target className="h-3.5 w-3.5" />
-                {BRIEF_FIELD_LABELS.market}
-              </h4>
-              <p className="text-sm font-medium text-[var(--color-text-primary)]">
-                {getOptionLabel(fields.market, MARKET_OPTIONS)}
-              </p>
-            </div>
-          )}
-
-          {/* Audience */}
-          {fields.audience && (
-            <div className="p-3 rounded-lg border border-[var(--color-border)]">
-              <h4 className="text-xs font-medium text-[var(--color-text-muted)] mb-1.5 flex items-center gap-1.5">
-                <Users className="h-3.5 w-3.5" />
-                {BRIEF_FIELD_LABELS.audience}
-              </h4>
-              <p className="text-sm text-[var(--color-text-primary)]">
-                {fields.audience}
-              </p>
-            </div>
-          )}
-
-          {/* Audience Size */}
-          {fields.audienceSize && (
-            <div className="p-3 rounded-lg border border-[var(--color-border)]">
-              <h4 className="text-xs font-medium text-[var(--color-text-muted)] mb-1.5 flex items-center gap-1.5">
-                <Users className="h-3.5 w-3.5" />
-                {BRIEF_FIELD_LABELS.audienceSize}
-              </h4>
-              <p className="text-sm font-medium text-[var(--color-text-primary)]">
-                {getOptionLabel(fields.audienceSize, AUDIENCE_SIZE_OPTIONS)}
-              </p>
-            </div>
-          )}
-
-          {/* AI Required */}
-          {fields.aiRequired && (
-            <div className="p-3 rounded-lg border border-[var(--color-border)]">
-              <h4 className="text-xs font-medium text-[var(--color-text-muted)] mb-1.5 flex items-center gap-1.5">
-                <Cpu className="h-3.5 w-3.5" />
-                {BRIEF_FIELD_LABELS.aiRequired}
-              </h4>
-              <p className="text-sm font-medium text-[var(--color-text-primary)]">
-                {getOptionLabel(fields.aiRequired, AI_REQUIRED_OPTIONS)}
-              </p>
-            </div>
-          )}
-
-          {/* Budget */}
-          {fields.budget && (
-            <div className="p-3 rounded-lg border border-[var(--color-border)]">
-              <h4 className="text-xs font-medium text-[var(--color-text-muted)] mb-1.5 flex items-center gap-1.5">
-                <DollarSign className="h-3.5 w-3.5" />
-                {BRIEF_FIELD_LABELS.budget}
-              </h4>
-              <p className="text-sm font-medium text-[var(--color-text-primary)]">
-                {getOptionLabel(fields.budget, BUDGET_OPTIONS)}
-              </p>
-            </div>
-          )}
-
-          {/* Urgency */}
-          {fields.urgency && (
-            <div className="p-3 rounded-lg border border-[var(--color-border)]">
-              <h4 className="text-xs font-medium text-[var(--color-text-muted)] mb-1.5 flex items-center gap-1.5">
-                <Timer className="h-3.5 w-3.5" />
-                {BRIEF_FIELD_LABELS.urgency}
-              </h4>
-              <p className="text-sm font-medium text-[var(--color-text-primary)]">
-                {getOptionLabel(fields.urgency, URGENCY_OPTIONS)}
-              </p>
-            </div>
-          )}
-
-          {/* Telegram */}
-          {fields.telegram && (
-            <div className="p-3 rounded-lg border border-[var(--color-border)]">
-              <h4 className="text-xs font-medium text-[var(--color-text-muted)] mb-1.5 flex items-center gap-1.5">
-                <Send className="h-3.5 w-3.5" />
-                {BRIEF_FIELD_LABELS.telegram}
-              </h4>
-              <a 
-                href={fields.telegram.startsWith("@") ? `https://t.me/${fields.telegram.slice(1)}` : fields.telegram}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm font-medium text-[var(--color-accent-primary)] hover:underline"
-              >
-                {fields.telegram}
-              </a>
-            </div>
-          )}
-
-          {/* Source */}
-          {fields.source && (
-            <div className="p-3 rounded-lg border border-[var(--color-border)]">
-              <h4 className="text-xs font-medium text-[var(--color-text-muted)] mb-1.5 flex items-center gap-1.5">
-                <Globe className="h-3.5 w-3.5" />
-                {BRIEF_FIELD_LABELS.source}
-              </h4>
-              <p className="text-sm font-medium text-[var(--color-text-primary)]">
-                {getOptionLabel(fields.source, SOURCE_OPTIONS)}
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* App Types - as badges */}
-        {fields.appTypes && fields.appTypes.length > 0 && (
-          <div>
-            <h4 className="text-sm font-medium text-[var(--color-text-secondary)] mb-2 flex items-center gap-2">
-              <Layers className="h-4 w-4" />
-              {BRIEF_FIELD_LABELS.appTypes}
-            </h4>
-            <div className="flex flex-wrap gap-2">
-              {fields.appTypes.map((type) => (
-                <Badge key={type} variant="secondary">
-                  {APP_TYPES_OPTIONS[type] || type}
-                </Badge>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Integrations - Full width if present */}
-        {fields.integrations && (
-          <div>
-            <h4 className="text-sm font-medium text-[var(--color-text-secondary)] mb-2 flex items-center gap-2">
-              <Puzzle className="h-4 w-4" />
-              {BRIEF_FIELD_LABELS.integrations}
-            </h4>
-            <p className="text-[var(--color-text-primary)] bg-[var(--color-bg-secondary)] p-3 rounded-lg">
-              {fields.integrations}
-            </p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
+import type { InquiryStatus } from "@/entities/inquiry";
+import { useUpdateLead } from "@/features/leads";
+import { LeadDetailHeader } from "@/features/leads/ui/LeadDetailHeader";
+import { LeadContactInfo } from "@/features/leads/ui/LeadContactInfo";
+import { LeadBriefDataCard, LeadCustomFieldsCard } from "@/features/leads/ui/LeadBriefDataCard";
+import { LeadStatusTimeline } from "@/features/leads/ui/LeadStatusTimeline";
+import { LeadNotesCard } from "@/features/leads/ui/LeadNotesCard";
+import { LeadTechnicalData } from "@/features/leads/ui/LeadTechnicalData";
 
 export default function LeadDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const router = useRouter();
   const { id } = use(params);
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [notes, setNotes] = useState("");
-  const [isEditingNotes, setIsEditingNotes] = useState(false);
-  const [showTechnicalData, setShowTechnicalData] = useState(false);
-  const [copied, setCopied] = useState(false);
-
   const { data: lead, isLoading, error } = useLead(id);
   const { mutate: updateLead, isPending: isUpdating } = useUpdateLead(id);
   const { mutate: deleteLead, isPending: isDeleting } = useDeleteLead();
@@ -611,423 +53,92 @@ export default function LeadDetailPage({
     updateLead({ status });
   };
 
-  const handleSaveNotes = () => {
-    updateLead({ notes });
-    setIsEditingNotes(false);
-  };
-
   const handleDelete = () => {
     deleteLead(id);
-    setDeleteModalOpen(false);
   };
-
-  const handleCopyData = async () => {
-    if (!lead) return;
-    const text = buildLeadCopyText(lead);
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Fallback for older browsers
-      const textarea = document.createElement("textarea");
-      textarea.value = text;
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textarea);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
-
-  const statusConfig = INQUIRY_STATUS_CONFIG[lead.status];
-
-  // Check if we have any source/analytics data
-  const hasUtmData =
-    lead.utm_source || lead.utm_medium || lead.utm_campaign || lead.utm_term || lead.utm_content;
-  const hasSourceData = hasUtmData || lead.source_url || lead.referrer_url || lead.page_path;
-
-  // Check if we have any technical data
-  const hasTechnicalData =
-    lead.ip_address ||
-    lead.device_type ||
-    lead.browser ||
-    lead.os ||
-    lead.city ||
-    lead.country ||
-    lead.session_id ||
-    lead.session_page_views ||
-    lead.time_on_page;
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex items-start gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.back()}
-            className="mt-1 flex-shrink-0"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">
-              {lead.name}
-            </h1>
-            <Badge variant={statusConfig.variant}>{statusConfig.label}</Badge>
-            {lead.form_slug && FORM_SLUG_CONFIG[lead.form_slug] && (
-              <Badge variant={FORM_SLUG_CONFIG[lead.form_slug]!.variant}>
-                {FORM_SLUG_CONFIG[lead.form_slug]!.label}
-              </Badge>
-            )}
-          </div>
-          {lead.company && (
-            <p className="mt-1 text-[var(--color-text-secondary)]">{lead.company}</p>
-          )}
-          <p className="mt-1 text-sm text-[var(--color-text-muted)]">
-              Создана {formatRelativeTime(lead.created_at)}
-          </p>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
-          <Button
-            variant="secondary"
-            onClick={handleCopyData}
-            leftIcon={copied ? <Check className="h-4 w-4 text-[var(--color-success)]" /> : <Copy className="h-4 w-4" />}
-          >
-            {copied ? "Скопировано" : "Скопировать данные"}
-          </Button>
-          <Select
-            value={lead.status}
-            onChange={(e) => handleStatusChange(e.target.value as InquiryStatus)}
-            options={Object.entries(INQUIRY_STATUS_CONFIG).map(([value, { label }]) => ({
-              value,
-              label,
-            }))}
-            minWidth={140}
-            className="h-10"
-          />
-          <Button
-            variant="danger"
-            onClick={() => setDeleteModalOpen(true)}
-            leftIcon={<Trash2 className="h-4 w-4" />}
-          >
-            Удалить
-          </Button>
-        </div>
-      </div>
+      <LeadDetailHeader
+        lead={lead}
+        onStatusChange={handleStatusChange}
+        onDelete={handleDelete}
+        isUpdating={isUpdating}
+        isDeleting={isDeleting}
+      />
 
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Main Column - Contact & Message */}
+        {/* Main Column */}
         <div className="lg:col-span-2 space-y-6">
-        {/* Contact Info */}
-        <Card>
-          <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" />
-                Контактная информация
-              </CardTitle>
-          </CardHeader>
-            <CardContent>
-              <div className="grid gap-1 sm:grid-cols-2 lg:grid-cols-3">
-            {lead.email && (
-                  <InfoRow
-                    icon={Mail}
-                    label="Email"
-                    value={lead.email}
-                    href={`mailto:${lead.email}`}
-                  />
-            )}
-            {lead.phone && (
-                  <InfoRow
-                    icon={Phone}
-                    label="Телефон"
-                    value={lead.phone}
-                    href={`tel:${lead.phone}`}
-                  />
-            )}
-            {lead.company && (
-                  <InfoRow icon={Building2} label="Компания" value={lead.company} />
-                )}
-              </div>
-          </CardContent>
-        </Card>
+          <LeadContactInfo lead={lead} />
 
-        {/* Message */}
-        <Card>
-          <CardHeader>
+          <Card>
+            <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <MessageSquare className="h-5 w-5" />
                 Сообщение
               </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {lead.message ? (
+            </CardHeader>
+            <CardContent>
+              {lead.message ? (
                 <p className="text-[var(--color-text-primary)] whitespace-pre-wrap leading-relaxed">
                   {lead.message}
                 </p>
-            ) : (
+              ) : (
                 <p className="text-[var(--color-text-muted)] italic">Сообщение не указано</p>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Linked Product */}
-        {lead.product && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Package className="h-5 w-5" />
-                Товар
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <a
-                href={ROUTES.PRODUCT_EDIT(lead.product.id)}
-                className="flex items-center gap-3 rounded-lg border border-[var(--color-border)] p-3 transition-colors hover:bg-[var(--color-bg-hover)]"
-              >
-                <div className="flex h-10 w-10 items-center justify-center rounded bg-[var(--color-bg-secondary)]">
-                  <Package className="h-5 w-5 text-[var(--color-accent-primary)]" />
-                </div>
-                <div>
-                  <p className="font-medium text-[var(--color-text-primary)]">
-                    {lead.product.name || lead.product.slug}
-                  </p>
-                  <p className="text-xs text-[var(--color-text-muted)]">
-                    SKU: {lead.product.sku} · /{lead.product.slug}
-                  </p>
-                </div>
-              </a>
+              )}
             </CardContent>
           </Card>
-        )}
 
-        {/* Brief Data - only for mvp-brief form type */}
-        {lead.form_slug === "mvp-brief" && lead.custom_fields && (
-          <BriefDataCard customFields={lead.custom_fields} />
-        )}
-
-        {/* Source & Analytics */}
-          {hasSourceData && (
-        <Card>
-          <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Globe className="h-5 w-5" />
-                  Источник и аналитика
-                </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-                {/* UTM Tags */}
-                {hasUtmData && (
-                  <div>
-                    <h4 className="text-sm font-medium text-[var(--color-text-secondary)] mb-3 flex items-center gap-2">
-                      <Tag className="h-4 w-4" />
-                      UTM метки
-                    </h4>
-                    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                  {lead.utm_source && (
-                        <div className="p-2.5 rounded-lg bg-[var(--color-bg-secondary)]">
-                          <p className="text-xs text-[var(--color-text-muted)]">Source</p>
-                          <p className="text-sm font-medium text-[var(--color-text-primary)]">
-                            {lead.utm_source}
-                          </p>
-                    </div>
-                  )}
-                  {lead.utm_medium && (
-                        <div className="p-2.5 rounded-lg bg-[var(--color-bg-secondary)]">
-                          <p className="text-xs text-[var(--color-text-muted)]">Medium</p>
-                          <p className="text-sm font-medium text-[var(--color-text-primary)]">
-                            {lead.utm_medium}
-                          </p>
-                    </div>
-                  )}
-                  {lead.utm_campaign && (
-                        <div className="p-2.5 rounded-lg bg-[var(--color-bg-secondary)]">
-                          <p className="text-xs text-[var(--color-text-muted)]">Campaign</p>
-                          <p className="text-sm font-medium text-[var(--color-text-primary)]">
-                            {lead.utm_campaign}
-                          </p>
-                        </div>
-                      )}
-                      {lead.utm_term && (
-                        <div className="p-2.5 rounded-lg bg-[var(--color-bg-secondary)]">
-                          <p className="text-xs text-[var(--color-text-muted)]">Term</p>
-                          <p className="text-sm font-medium text-[var(--color-text-primary)]">
-                            {lead.utm_term}
-                          </p>
-                        </div>
-                      )}
-                      {lead.utm_content && (
-                        <div className="p-2.5 rounded-lg bg-[var(--color-bg-secondary)]">
-                          <p className="text-xs text-[var(--color-text-muted)]">Content</p>
-                          <p className="text-sm font-medium text-[var(--color-text-primary)]">
-                            {lead.utm_content}
-                          </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-                {/* Page Info */}
-                <div className="grid gap-1 sm:grid-cols-2">
-            {lead.source_url && (
-                    <InfoRow
-                      icon={LinkIcon}
-                      label="Страница отправки"
-                      value={lead.page_path || lead.source_url}
-                    href={lead.source_url} 
-                    />
-                  )}
-                  {lead.page_title && (
-                    <InfoRow icon={FileText} label="Заголовок страницы" value={lead.page_title} />
-                  )}
-                  {lead.referrer_url && (
-                    <InfoRow
-                      icon={Globe}
-                      label="Источник перехода"
-                      value={lead.referrer_url}
-                      href={lead.referrer_url}
-                    />
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-            )}
-
-          {/* Technical Data - Collapsible */}
-          {hasTechnicalData && (
+          {lead.product && (
             <Card>
               <CardHeader>
-                <button
-                  onClick={() => setShowTechnicalData(!showTechnicalData)}
-                  className="flex w-full items-center justify-between"
-                >
-                  <CardTitle className="flex items-center gap-2">
-                    <Monitor className="h-5 w-5" />
-                    Технические данные
-                  </CardTitle>
-                  {showTechnicalData ? (
-                    <ChevronUp className="h-5 w-5 text-[var(--color-text-muted)]" />
-                  ) : (
-                    <ChevronDown className="h-5 w-5 text-[var(--color-text-muted)]" />
-                  )}
-                </button>
+                <CardTitle className="flex items-center gap-2">
+                  <Package className="h-5 w-5" />
+                  Товар
+                </CardTitle>
               </CardHeader>
-              {showTechnicalData && (
-                <CardContent>
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {/* Device Info */}
-                    {(lead.device_type || lead.browser || lead.os) && (
-                      <div className="p-3 rounded-lg border border-[var(--color-border)]">
-                        <h4 className="text-xs font-medium text-[var(--color-text-muted)] mb-2 flex items-center gap-1.5">
-                          <DeviceIcon deviceType={lead.device_type} />
-                          Устройство
-                        </h4>
-                        <div className="space-y-1 text-sm">
-                          {lead.device_type && (
-                            <p className="text-[var(--color-text-primary)]">{lead.device_type}</p>
-                          )}
-                          {lead.browser && (
-                            <p className="text-[var(--color-text-secondary)]">{lead.browser}</p>
-                          )}
-                          {lead.os && (
-                            <p className="text-[var(--color-text-secondary)]">{lead.os}</p>
-                          )}
-                </div>
-              </div>
-            )}
-
-                    {/* Location */}
-            {(lead.city || lead.country) && (
-                      <div className="p-3 rounded-lg border border-[var(--color-border)]">
-                        <h4 className="text-xs font-medium text-[var(--color-text-muted)] mb-2 flex items-center gap-1.5">
-                          <MapPin className="h-4 w-4" />
-                          Геолокация
-                        </h4>
-                        <p className="text-sm text-[var(--color-text-primary)]">
-                  {[lead.city, lead.country].filter(Boolean).join(", ")}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* IP Address */}
-                    {lead.ip_address && (
-                      <div className="p-3 rounded-lg border border-[var(--color-border)]">
-                        <h4 className="text-xs font-medium text-[var(--color-text-muted)] mb-2 flex items-center gap-1.5">
-                          <Network className="h-4 w-4" />
-                          IP адрес
-                        </h4>
-                        <p className="text-sm text-[var(--color-text-primary)] font-mono">
-                          {lead.ip_address}
-                        </p>
-              </div>
-            )}
-
-                    {/* Session Info */}
-                    {(lead.session_id || lead.session_page_views || lead.time_on_page) && (
-                      <div className="p-3 rounded-lg border border-[var(--color-border)]">
-                        <h4 className="text-xs font-medium text-[var(--color-text-muted)] mb-2 flex items-center gap-1.5">
-                          <Eye className="h-4 w-4" />
-                          Сессия
-                        </h4>
-                        <div className="space-y-1 text-sm">
-                          {lead.session_page_views && (
-                            <p className="text-[var(--color-text-primary)]">
-                              {lead.session_page_views} просмотров
-                            </p>
-                          )}
-                          {lead.time_on_page && (
-                            <p className="text-[var(--color-text-secondary)]">
-                              {Math.round(lead.time_on_page / 60)} мин. на странице
-                            </p>
-                          )}
-                          {lead.session_id && (
-                            <p className="text-[var(--color-text-muted)] text-xs font-mono truncate">
-                              ID: {lead.session_id}
-                            </p>
-                          )}
-                </div>
-              </div>
-            )}
+              <CardContent>
+                <a
+                  href={ROUTES.PRODUCT_EDIT(lead.product.id)}
+                  className="flex items-center gap-3 rounded-lg border border-[var(--color-border)] p-3 transition-colors hover:bg-[var(--color-bg-hover)]"
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded bg-[var(--color-bg-secondary)]">
+                    <Package className="h-5 w-5 text-[var(--color-accent-primary)]" />
                   </div>
-                </CardContent>
-              )}
+                  <div>
+                    <p className="font-medium text-[var(--color-text-primary)]">
+                      {lead.product.name || lead.product.slug}
+                    </p>
+                    <p className="text-xs text-[var(--color-text-muted)]">
+                      SKU: {lead.product.sku} · /{lead.product.slug}
+                    </p>
+                  </div>
+                </a>
+              </CardContent>
             </Card>
           )}
 
-          {/* Custom Fields - with interpreted labels/values for known fields */}
+          {lead.form_slug === "mvp-brief" && lead.custom_fields && (
+            <LeadBriefDataCard customFields={lead.custom_fields} />
+          )}
+
+          <LeadTechnicalData lead={lead} />
+
           {lead.custom_fields && Object.keys(lead.custom_fields).length > 0 && (
-            <CustomFieldsCard customFields={lead.custom_fields} formSlug={lead.form_slug} />
+            <LeadCustomFieldsCard customFields={lead.custom_fields} formSlug={lead.form_slug} />
           )}
         </div>
 
-        {/* Sidebar - Status & Notes */}
+        {/* Sidebar */}
         <div className="space-y-6">
-          {/* Status & Timeline */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
-                Статус заявки
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <StatusTimeline
-                status={lead.status}
-                createdAt={lead.created_at}
-                updatedAt={lead.updated_at}
-                contactedAt={lead.contacted_at}
-              />
-          </CardContent>
-        </Card>
+          <LeadStatusTimeline
+            status={lead.status}
+            createdAt={lead.created_at}
+            updatedAt={lead.updated_at}
+            contactedAt={lead.contacted_at}
+          />
 
-          {/* Assignment */}
           {lead.assigned_to && (
             <Card>
               <CardHeader>
@@ -1052,60 +163,9 @@ export default function LeadDetailPage({
             </Card>
           )}
 
-        {/* Notes */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Заметки
-                </CardTitle>
-              {!isEditingNotes && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => {
-                    setNotes(lead.notes || "");
-                    setIsEditingNotes(true);
-                  }}
-                >
-                  Редактировать
-                </Button>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent>
-            {isEditingNotes ? (
-              <div className="space-y-3">
-                <Textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Добавьте заметки о заявке..."
-                  className="min-h-[120px]"
-                />
-                <div className="flex gap-2">
-                  <Button size="sm" onClick={handleSaveNotes} isLoading={isUpdating}>
-                    Сохранить
-                  </Button>
-                    <Button variant="ghost" size="sm" onClick={() => setIsEditingNotes(false)}>
-                    Отмена
-                  </Button>
-                </div>
-              </div>
-            ) : lead.notes ? (
-                <p className="text-sm text-[var(--color-text-primary)] whitespace-pre-wrap leading-relaxed">
-                  {lead.notes}
-                </p>
-            ) : (
-                <p className="text-sm text-[var(--color-text-muted)] italic">
-                  Заметки не добавлены
-                </p>
-            )}
-          </CardContent>
-        </Card>
+          <LeadNotesCard leadId={id} notes={lead.notes} />
 
-          {/* Notification Status */}
-        <Card>
+          <Card>
             <CardContent className="py-4">
               <div className="flex items-center gap-3">
                 {lead.notification_sent ? (
@@ -1137,11 +197,10 @@ export default function LeadDetailPage({
                     </div>
                   </>
                 )}
-                </div>
-          </CardContent>
-        </Card>
+              </div>
+            </CardContent>
+          </Card>
 
-          {/* Meta Info */}
           <div className="text-xs text-[var(--color-text-muted)] space-y-1 px-1">
             <p>ID: {lead.id}</p>
             {lead.form_slug && <p>Тип формы: {lead.form_slug}</p>}
@@ -1160,18 +219,6 @@ export default function LeadDetailPage({
           </div>
         </div>
       </div>
-
-      {/* Delete confirmation modal */}
-      <ConfirmModal
-        isOpen={deleteModalOpen}
-        onClose={() => setDeleteModalOpen(false)}
-        onConfirm={handleDelete}
-        title="Удалить заявку?"
-        description={`Вы уверены, что хотите удалить заявку от "${lead.name}"? Это действие нельзя отменить.`}
-        confirmText="Удалить"
-        variant="danger"
-        isLoading={isDeleting}
-      />
     </div>
   );
 }

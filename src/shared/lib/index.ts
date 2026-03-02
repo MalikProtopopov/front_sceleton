@@ -28,4 +28,8 @@ export {
   getErrorMessage,
   createMutationErrorHandler,
 } from "./versionConflict";
+export { useAppMutation } from "./useAppMutation";
+export type { AppMutationOptions } from "./useAppMutation";
+export { createContentBlockHooks } from "./createContentBlockHooks";
+export { createLocaleHooks } from "./createLocaleHooks";
 

@@ -12,4 +12,5 @@ export {
   useDeleteRedirect,
   useToggleRedirect 
 } from "./model/useSEO";
+export { SEORouteFilters, SEORoutesTable, SEORouteModal } from "./ui";
 

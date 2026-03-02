@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useAppMutation } from "@/shared/lib";
 import { settingsApi, settingsKeys } from "../api/settingsApi";
 import { tenantsKeys } from "@/features/tenants/api/tenantsApi";
 import type { UpdateTenantDto, UpdateTenantSettingsDto, UpdateFeatureFlagDto } from "@/entities/tenant";
@@ -11,39 +12,28 @@ export function useTenant(tenantId: string) {
     queryKey: settingsKeys.tenant(tenantId),
     queryFn: () => settingsApi.getTenant(tenantId),
     enabled: !!tenantId,
-    staleTime: 0, // Данные сразу считаются устаревшими - не кэшировать
+    staleTime: 0,
   });
 }
 
 export function useUpdateTenant(tenantId: string) {
   const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: UpdateTenantDto) => settingsApi.updateTenant(tenantId, data),
+    successMessage: "Настройки организации сохранены",
+    errorMessage: "Не удалось сохранить настройки",
     onSuccess: (tenant) => {
       queryClient.setQueryData(settingsKeys.tenant(tenantId), tenant);
-      toast.success("Настройки организации сохранены");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось сохранить настройки";
-      toast.error(message);
     },
   });
 }
 
 export function useUpdateTenantSettings(tenantId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: UpdateTenantSettingsDto) => settingsApi.updateSettings(tenantId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: settingsKeys.tenant(tenantId) });
-      toast.success("Настройки сохранены");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось сохранить настройки";
-      toast.error(message);
-    },
+    successMessage: "Настройки сохранены",
+    errorMessage: "Не удалось сохранить настройки",
+    invalidateKeys: [settingsKeys.tenant(tenantId)],
   });
 }
 
@@ -52,7 +42,7 @@ export function useFeatureFlags(tenantId: string) {
     queryKey: settingsKeys.featureFlags(tenantId),
     queryFn: () => settingsApi.getFeatureFlags(tenantId),
     enabled: !!tenantId,
-    staleTime: 0, // Данные сразу считаются устаревшими - не кэшировать
+    staleTime: 0,
   });
 }
 
@@ -66,13 +56,10 @@ export function useUpdateFeatureFlag(tenantId: string) {
     
     // Optimistic update для мгновенного отклика UI
     onMutate: async ({ featureName, data }) => {
-      // Отменяем исходящие запросы
       await queryClient.cancelQueries({ queryKey });
       
-      // Сохраняем предыдущее состояние
       const previousFlags = queryClient.getQueryData(queryKey);
       
-      // Оптимистично обновляем кэш
       queryClient.setQueryData(queryKey, (old: { items: Array<{ feature_name: string; enabled: boolean }> } | undefined) => {
         if (!old) return old;
         return {
@@ -88,7 +75,6 @@ export function useUpdateFeatureFlag(tenantId: string) {
       return { previousFlags };
     },
     
-    // Откат при ошибке
     onError: (error, _variables, context) => {
       if (context?.previousFlags) {
         queryClient.setQueryData(queryKey, context.previousFlags);
@@ -101,10 +87,8 @@ export function useUpdateFeatureFlag(tenantId: string) {
       toast.success("Модуль обновлен");
     },
     
-    // Всегда перезапрашиваем после мутации для синхронизации с сервером
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey });
-      // Обновляем список фич для сайдбара текущего пользователя
       queryClient.invalidateQueries({ queryKey: tenantsKeys.enabledFeatures() });
     },
   });
@@ -116,46 +100,30 @@ export interface ChangePasswordDto {
 }
 
 export function useChangePassword() {
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: ChangePasswordDto) => settingsApi.changePassword(data),
-    onSuccess: () => {
-      toast.success("Пароль успешно изменен");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось изменить пароль";
-      toast.error(message);
-    },
+    successMessage: "Пароль успешно изменен",
+    errorMessage: "Не удалось изменить пароль",
   });
 }
 
 export function useUploadTenantLogo(tenantId: string) {
   const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (file: File) => settingsApi.uploadLogo(tenantId, file),
+    successMessage: "Логотип загружен",
+    errorMessage: "Не удалось загрузить логотип",
     onSuccess: (tenant) => {
       queryClient.setQueryData(settingsKeys.tenant(tenantId), tenant);
-      toast.success("Логотип загружен");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось загрузить логотип";
-      toast.error(message);
     },
   });
 }
 
 export function useDeleteTenantLogo(tenantId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: () => settingsApi.deleteLogo(tenantId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: settingsKeys.tenant(tenantId) });
-      toast.success("Логотип удален");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось удалить логотип";
-      toast.error(message);
-    },
+    successMessage: "Логотип удален",
+    errorMessage: "Не удалось удалить логотип",
+    invalidateKeys: [settingsKeys.tenant(tenantId)],
   });
 }

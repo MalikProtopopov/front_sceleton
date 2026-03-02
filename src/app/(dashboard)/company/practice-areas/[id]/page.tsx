@@ -3,6 +3,7 @@
 import { use, useState } from "react";
 import { notFound } from "next/navigation";
 import { usePracticeArea, useUpdatePracticeArea, useDeletePracticeArea, PracticeAreaForm } from "@/features/company";
+import type { UpdatePracticeAreaDto } from "@/entities/company";
 import { Button, Spinner, ConfirmModal } from "@/shared/ui";
 import { formatDateTime } from "@/shared/lib";
 
@@ -43,7 +44,7 @@ export default function EditPracticeAreaPage({ params }: { params: Promise<{ id:
         </Button>
       </div>
 
-      <PracticeAreaForm practiceArea={item} onSubmit={update} isSubmitting={isUpdating} />
+      <PracticeAreaForm practiceArea={item} onSubmit={(data) => update(data as UpdatePracticeAreaDto)} isSubmitting={isUpdating} />
 
       <ConfirmModal
         isOpen={deleteModalOpen}

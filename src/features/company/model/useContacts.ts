@@ -1,8 +1,8 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { useAppMutation } from "@/shared/lib";
 import { contactsApi, companyKeys } from "../api/companyApi";
 import { ROUTES } from "@/shared/config";
 import type { CreateContactDto, UpdateContactDto } from "@/entities/company";
@@ -24,54 +24,37 @@ export function useContact(id: string) {
 
 export function useCreateContact() {
   const router = useRouter();
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: CreateContactDto) => contactsApi.create(data),
+    successMessage: "Контакт создан",
+    errorMessage: "Не удалось создать контакт",
+    invalidateKeys: [companyKeys.contacts.list()],
     onSuccess: (item) => {
-      queryClient.invalidateQueries({ queryKey: companyKeys.contacts.list() });
-      toast.success("Контакт создан");
       router.push(ROUTES.CONTACT_EDIT(item.id));
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось создать контакт";
-      toast.error(message);
     },
   });
 }
 
 export function useUpdateContact(id: string) {
   const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: UpdateContactDto) => contactsApi.update(id, data),
+    successMessage: "Контакт обновлен",
+    errorMessage: "Не удалось обновить контакт",
+    invalidateKeys: [companyKeys.contacts.list()],
     onSuccess: (item) => {
       queryClient.setQueryData(companyKeys.contacts.detail(id), item);
-      queryClient.invalidateQueries({ queryKey: companyKeys.contacts.list() });
-      toast.success("Контакт обновлен");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось обновить контакт";
-      toast.error(message);
     },
   });
 }
 
 export function useDeleteContact() {
   const router = useRouter();
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (id: string) => contactsApi.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: companyKeys.contacts.list() });
-      toast.success("Контакт удален");
-      router.push(ROUTES.CONTACTS_LIST);
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось удалить контакт";
-      toast.error(message);
-    },
+    successMessage: "Контакт удален",
+    errorMessage: "Не удалось удалить контакт",
+    invalidateKeys: [companyKeys.contacts.list()],
+    onSuccess: () => router.push(ROUTES.CONTACTS_LIST),
   });
 }
-

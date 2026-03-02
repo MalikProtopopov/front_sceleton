@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Pencil, Trash2, Star } from "lucide-react";
 import {
-  useCases,
+  useCasesList,
   useDeleteCase,
   usePublishCase,
   useUnpublishCase,
@@ -25,7 +25,7 @@ export default function CasesPage() {
   const [selectedCase, setSelectedCase] = useState<Case | null>(null);
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
 
-  const { data, isLoading } = useCases(filters);
+  const { data, isLoading } = useCasesList(filters);
   const { data: servicesData } = useServicesList();
   const { mutate: deleteCase, isPending: isDeleting } = useDeleteCase();
   const { mutate: publishCase } = usePublishCase();

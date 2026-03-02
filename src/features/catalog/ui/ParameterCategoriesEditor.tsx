@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Save } from "lucide-react";
 import { Button } from "@/shared/ui";
+import { TREE_INDENT_PER_LEVEL } from "@/shared/config";
 import { useCategoriesTree } from "../model/useCategories";
 import { useSetParameterCategories } from "../model/useParameters";
 import type { Category } from "@/entities/product";
@@ -59,7 +60,7 @@ export function ParameterCategoriesEditor({
       <div key={cat.id}>
         <label
           className="flex items-center gap-2 py-1 cursor-pointer hover:bg-[var(--color-bg-hover)] rounded px-2"
-          style={{ paddingLeft: `${depth * 24 + 8}px` }}
+          style={{ paddingLeft: `${depth * TREE_INDENT_PER_LEVEL + 8}px` }}
         >
           <input
             type="checkbox"

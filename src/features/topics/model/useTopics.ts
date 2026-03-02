@@ -1,12 +1,11 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAppMutation } from "@/shared/lib";
 import { topicsApi, topicsKeys } from "../api/topicsApi";
 import type { TopicFilterParams, CreateTopicDto, UpdateTopicDto, CreateTopicLocaleDto, UpdateTopicLocaleDto } from "@/entities/topic";
-import { handleLocaleError } from "@/shared/lib/localeErrors";
 
-export function useTopics(params?: TopicFilterParams) {
+export function useTopicsList(params?: TopicFilterParams) {
   return useQuery({
     queryKey: topicsKeys.list(params),
     queryFn: () => topicsApi.getAll(params),
@@ -22,52 +21,33 @@ export function useTopic(id: string) {
 }
 
 export function useCreateTopic() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: CreateTopicDto) => topicsApi.create(data),
-    onSuccess: () => {
-      // Invalidate all topic queries to ensure list is refreshed
-      queryClient.invalidateQueries({ queryKey: topicsKeys.all });
-      toast.success("Тема создана");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось создать тему";
-      toast.error(message);
-    },
+    successMessage: "Тема создана",
+    errorMessage: "Не удалось создать тему",
+    invalidateKeys: [topicsKeys.all],
   });
 }
 
 export function useUpdateTopic(id: string) {
   const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: UpdateTopicDto) => topicsApi.update(id, data),
+    successMessage: "Тема обновлена",
+    errorMessage: "Не удалось обновить тему",
+    invalidateKeys: [topicsKeys.lists()],
     onSuccess: (topic) => {
       queryClient.setQueryData(topicsKeys.detail(id), topic);
-      queryClient.invalidateQueries({ queryKey: topicsKeys.lists() });
-      toast.success("Тема обновлена");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось обновить тему";
-      toast.error(message);
     },
   });
 }
 
 export function useDeleteTopic() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (id: string) => topicsApi.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: topicsKeys.lists() });
-      toast.success("Тема удалена");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось удалить тему";
-      toast.error(message);
-    },
+    successMessage: "Тема удалена",
+    errorMessage: "Не удалось удалить тему",
+    invalidateKeys: [topicsKeys.lists()],
   });
 }
 
@@ -75,18 +55,14 @@ export function useDeleteTopic() {
 // This hook is kept for backward compatibility but may not work with current API
 export function useToggleTopicActive(id: string) {
   const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: ({ version }: { isActive: boolean; version: number }) =>
       topicsApi.update(id, { version } as UpdateTopicDto),
+    successMessage: "Тема обновлена",
+    errorMessage: "Не удалось изменить статус",
+    invalidateKeys: [topicsKeys.lists()],
     onSuccess: (topic) => {
       queryClient.setQueryData(topicsKeys.detail(id), topic);
-      queryClient.invalidateQueries({ queryKey: topicsKeys.lists() });
-      toast.success("Тема обновлена");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось изменить статус";
-      toast.error(message);
     },
   });
 }
@@ -96,51 +72,29 @@ export function useToggleTopicActive(id: string) {
 // =====================
 
 export function useCreateTopicLocale(topicId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: CreateTopicLocaleDto) => topicsApi.createLocale(topicId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: topicsKeys.detail(topicId) });
-      queryClient.invalidateQueries({ queryKey: topicsKeys.lists() });
-      toast.success("Локаль добавлена");
-    },
-    onError: (error) => {
-      handleLocaleError(error);
-    },
+    successMessage: "Локаль добавлена",
+    useLocaleError: true,
+    invalidateKeys: [topicsKeys.detail(topicId), topicsKeys.lists()],
   });
 }
 
 export function useUpdateTopicLocale(topicId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: ({ localeId, data }: { localeId: string; data: UpdateTopicLocaleDto }) =>
       topicsApi.updateLocale(topicId, localeId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: topicsKeys.detail(topicId) });
-      queryClient.invalidateQueries({ queryKey: topicsKeys.lists() });
-      toast.success("Локаль обновлена");
-    },
-    onError: (error) => {
-      handleLocaleError(error);
-    },
+    successMessage: "Локаль обновлена",
+    useLocaleError: true,
+    invalidateKeys: [topicsKeys.detail(topicId), topicsKeys.lists()],
   });
 }
 
 export function useDeleteTopicLocale(topicId: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (localeId: string) => topicsApi.deleteLocale(topicId, localeId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: topicsKeys.detail(topicId) });
-      queryClient.invalidateQueries({ queryKey: topicsKeys.lists() });
-      toast.success("Локаль удалена");
-    },
-    onError: (error) => {
-      handleLocaleError(error);
-    },
+    successMessage: "Локаль удалена",
+    useLocaleError: true,
+    invalidateKeys: [topicsKeys.detail(topicId), topicsKeys.lists()],
   });
 }
-

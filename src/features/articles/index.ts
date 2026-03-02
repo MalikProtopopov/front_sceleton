@@ -1,7 +1,7 @@
 // Articles feature exports
 export { articlesApi, articlesKeys, topicsKeys } from "./api/articlesApi";
 export {
-  useArticles,
+  useArticlesList,
   useArticle,
   useCreateArticle,
   useUpdateArticle,

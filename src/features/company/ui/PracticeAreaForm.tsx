@@ -42,8 +42,7 @@ type PracticeAreaFormValues = z.infer<typeof practiceAreaSchema>;
 
 interface PracticeAreaFormProps {
   practiceArea?: PracticeArea;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onSubmit: (data: any) => void;
+  onSubmit: (data: CreatePracticeAreaDto | UpdatePracticeAreaDto) => void;
   isSubmitting?: boolean;
 }
 

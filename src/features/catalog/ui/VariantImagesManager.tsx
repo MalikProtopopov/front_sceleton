@@ -11,6 +11,7 @@ import {
   useDeleteVariantImage,
 } from "../model/useVariants";
 import { getMediaUrl } from "@/shared/lib";
+import { MAX_IMAGE_SIZE } from "@/shared/config";
 import type { ProductImage } from "@/entities/product";
 
 interface VariantImagesManagerProps {
@@ -96,7 +97,7 @@ function SingleVariantImages({
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: { "image/*": [".jpeg", ".jpg", ".png", ".webp", ".gif"] },
-    maxSize: 10 * 1024 * 1024,
+    maxSize: MAX_IMAGE_SIZE,
     disabled: !canEdit,
   });
 

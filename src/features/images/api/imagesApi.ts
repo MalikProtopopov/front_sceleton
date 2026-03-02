@@ -1,5 +1,5 @@
 import { apiClient } from "@/shared/api";
-import { API_ENDPOINTS } from "@/shared/config";
+import { API_ENDPOINTS, MAX_IMAGE_SIZE } from "@/shared/config";
 import type { Article } from "@/entities/article";
 import type { Case } from "@/entities/case";
 import type { Service } from "@/entities/service";
@@ -16,7 +16,7 @@ export const SUPPORTED_IMAGE_TYPES = [
   "image/gif",
 ];
 
-export const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
+export { MAX_IMAGE_SIZE } from "@/shared/config";
 
 // Validation helper
 export interface ImageValidationResult {

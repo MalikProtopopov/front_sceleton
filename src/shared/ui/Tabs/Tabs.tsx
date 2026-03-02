@@ -65,9 +65,9 @@ export function Tabs({
 
     return (
       <div className={className}>
-        {/* Tab headers */}
+        {/* Tab headers — scrollable when many tabs */}
         <div
-          className="flex gap-1 border-b border-[var(--color-border)] pb-px"
+          className="flex gap-1 border-b border-[var(--color-border)] pb-px overflow-x-auto overflow-y-hidden"
           role="tablist"
         >
           {childArray.map((child, index) => {
@@ -82,7 +82,7 @@ export function Tabs({
                 aria-selected={isSelected}
                 onClick={() => onChange?.(index)}
                 className={cn(
-                  "relative px-4 py-2 text-sm font-medium transition-colors",
+                  "relative flex-shrink-0 px-4 py-2 text-sm font-medium transition-colors",
                   "focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-primary)] focus-visible:ring-offset-2",
                   isSelected
                     ? "text-[var(--color-accent-primary)]"
@@ -135,7 +135,7 @@ export function TabsList({ children, className }: TabsListProps) {
   return (
     <div
       className={cn(
-        "flex gap-1 border-b border-[var(--color-border)] pb-px",
+        "flex gap-1 border-b border-[var(--color-border)] pb-px overflow-x-auto overflow-y-hidden",
         className,
       )}
       role="tablist"
@@ -164,7 +164,7 @@ export function TabsTrigger({ value, children, className, disabled }: TabsTrigge
       disabled={disabled}
       onClick={() => onValueChange(value)}
       className={cn(
-        "relative px-4 py-2 text-sm font-medium transition-colors",
+        "relative flex-shrink-0 px-4 py-2 text-sm font-medium transition-colors",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-primary)] focus-visible:ring-offset-2",
         "disabled:cursor-not-allowed disabled:opacity-50",
         isSelected

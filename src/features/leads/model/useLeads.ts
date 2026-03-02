@@ -1,8 +1,8 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { useAppMutation } from "@/shared/lib";
 import { leadsApi, leadsKeys } from "../api/leadsApi";
 import { ROUTES } from "@/shared/config";
 import type { InquiryFilterParams, UpdateInquiryDto, InquiryStatus } from "@/entities/inquiry";
@@ -24,53 +24,38 @@ export function useLead(id: string) {
 
 export function useUpdateLead(id: string) {
   const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: UpdateInquiryDto) => leadsApi.update(id, data),
+    successMessage: "Лид обновлен",
+    errorMessage: "Не удалось обновить лид",
+    invalidateKeys: [leadsKeys.lists()],
     onSuccess: (inquiry) => {
       queryClient.setQueryData(leadsKeys.detail(id), inquiry);
-      queryClient.invalidateQueries({ queryKey: leadsKeys.lists() });
-      toast.success("Лид обновлен");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось обновить лид";
-      toast.error(message);
     },
   });
 }
 
 export function useUpdateLeadStatus(id: string) {
   const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (status: InquiryStatus) => leadsApi.update(id, { status }),
+    successMessage: "Статус обновлен",
+    errorMessage: "Не удалось изменить статус",
+    invalidateKeys: [leadsKeys.lists()],
     onSuccess: (inquiry) => {
       queryClient.setQueryData(leadsKeys.detail(id), inquiry);
-      queryClient.invalidateQueries({ queryKey: leadsKeys.lists() });
-      toast.success("Статус обновлен");
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось изменить статус";
-      toast.error(message);
     },
   });
 }
 
 export function useDeleteLead() {
   const router = useRouter();
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (id: string) => leadsApi.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: leadsKeys.lists() });
-      toast.success("Лид удален");
-      router.push(ROUTES.LEADS);
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Не удалось удалить лид";
-      toast.error(message);
-    },
+    successMessage: "Лид удален",
+    errorMessage: "Не удалось удалить лид",
+    invalidateKeys: [leadsKeys.lists()],
+    onSuccess: () => router.push(ROUTES.LEADS),
   });
 }
 
@@ -86,7 +71,6 @@ export function useInquiryForms() {
   return useQuery({
     queryKey: leadsKeys.forms(),
     queryFn: () => leadsApi.getForms(),
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
 }
-

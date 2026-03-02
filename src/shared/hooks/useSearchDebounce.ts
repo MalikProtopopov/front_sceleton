@@ -1,22 +1,7 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-
-function useDebounce<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState<T>(value);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [value, delay]);
-
-  return debouncedValue;
-}
+import { useState, useMemo } from "react";
+import { useDebounce } from "./useDebounce";
 
 export function useSearchDebounce(delay = 300) {
   const [searchTerm, setSearchTerm] = useState("");
@@ -24,7 +9,6 @@ export function useSearchDebounce(delay = 300) {
 
   return useMemo(
     () => ({ searchTerm, debouncedTerm, setSearchTerm }),
-    [searchTerm, debouncedTerm]
+    [searchTerm, debouncedTerm],
   );
 }
-

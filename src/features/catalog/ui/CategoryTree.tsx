@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronRight, ChevronDown, Pencil, Trash2, FolderOpen, Folder } from "lucide-react";
 import { Button, Badge } from "@/shared/ui";
-import { ROUTES } from "@/shared/config";
+import { ROUTES, TREE_INDENT_PER_LEVEL, TREE_BASE_PADDING } from "@/shared/config";
 import type { Category } from "@/entities/product";
 
 interface CategoryTreeProps {
@@ -56,13 +56,13 @@ function TreeItem({
   return (
     <div>
       <div
-        className="group flex items-center gap-2 rounded-lg px-3 py-2 hover:bg-[var(--color-bg-hover)] transition-colors"
-        style={{ paddingLeft: `${depth * 24 + 12}px` }}
+        className="group flex items-center gap-2 rounded-lg px-3 py-2.5 transition-colors hover:bg-[var(--color-bg-hover)]"
+        style={{ paddingLeft: `${depth * TREE_INDENT_PER_LEVEL + TREE_BASE_PADDING}px` }}
       >
         <button
           type="button"
           onClick={() => setIsExpanded(!isExpanded)}
-          className="flex h-5 w-5 items-center justify-center text-[var(--color-text-muted)]"
+          className="flex h-5 w-5 flex-shrink-0 items-center justify-center text-[var(--color-text-muted)]"
           disabled={!hasChildren}
         >
           {hasChildren ? (
@@ -75,28 +75,31 @@ function TreeItem({
         </button>
 
         {hasChildren && isExpanded ? (
-          <FolderOpen className="h-4 w-4 text-[var(--color-accent-primary)]" />
+          <FolderOpen className="h-4 w-4 flex-shrink-0 text-[var(--color-accent-primary)]" />
         ) : (
-          <Folder className="h-4 w-4 text-[var(--color-text-muted)]" />
+          <Folder className="h-4 w-4 flex-shrink-0 text-[var(--color-text-muted)]" />
         )}
 
         <button
           type="button"
           onClick={() => router.push(ROUTES.CATEGORY_EDIT(node.id))}
-          className="flex-1 text-left text-sm font-medium text-[var(--color-text-primary)] hover:text-[var(--color-accent-primary)]"
+          className="flex min-w-0 flex-1 items-center gap-2 text-left"
         >
-          {node.title}
+          <span className="truncate text-sm font-medium text-[var(--color-text-primary)] group-hover:text-[var(--color-accent-primary)]">
+            {node.title}
+          </span>
+          <span className="flex-shrink-0 rounded bg-[var(--color-bg-secondary)] px-1.5 py-0.5 text-xs text-[var(--color-text-muted)]">
+            /{node.slug}
+          </span>
         </button>
 
         {!node.is_active && (
-          <Badge variant="secondary" className="text-xs">
+          <Badge variant="secondary" className="flex-shrink-0 text-xs">
             Скрыта
           </Badge>
         )}
 
-        <span className="text-xs text-[var(--color-text-muted)]">/{node.slug}</span>
-
-        <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+        <div className="flex flex-shrink-0 gap-1 opacity-0 transition-opacity group-hover:opacity-100">
           <Button
             variant="ghost"
             size="icon"

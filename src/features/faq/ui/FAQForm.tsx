@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
@@ -52,7 +52,6 @@ const editFAQSchema = z.object({
 });
 
 type CreateFAQFormValues = z.infer<typeof createFAQSchema>;
-type EditFAQFormValues = z.infer<typeof editFAQSchema>;
 
 interface FAQFormProps {
   faq?: FAQ;
@@ -144,47 +143,35 @@ export function FAQForm({ faq, onSubmit, isSubmitting = false }: FAQFormProps) {
   const updateLocale = useUpdateFAQLocale(faq?.id || "");
   const deleteLocale = useDeleteFAQLocale(faq?.id || "");
 
-  const createForm = useForm<CreateFAQFormValues>({
-    resolver: zodResolver(createFAQSchema),
-    defaultValues: {
-      category: "",
-      is_published: false,
-      sort_order: null,
-      locales: [{ locale: "ru", question: "", answer: "" }],
-    },
+  const form = useForm<CreateFAQFormValues>({
+    resolver: zodResolver(isEditing ? editFAQSchema : createFAQSchema) as unknown as Resolver<CreateFAQFormValues>,
+    defaultValues: isEditing
+      ? { category: faq?.category || "", is_published: faq?.is_published ?? false, sort_order: faq?.sort_order ?? null, locales: [] }
+      : { category: "", is_published: false, sort_order: null, locales: [{ locale: "ru", question: "", answer: "" }] },
   });
 
-  const editForm = useForm<EditFAQFormValues>({
-    resolver: zodResolver(editFAQSchema),
-    defaultValues: {
-      category: faq?.category || "",
-      is_published: faq?.is_published ?? false,
-      sort_order: faq?.sort_order ?? null,
-    },
-  });
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const form = (isEditing ? editForm : createForm) as any;
-  const locales = isEditing ? [] : createForm.watch("locales");
+  const locales = isEditing ? [] : form.watch("locales");
 
   // Sync form values when faq loads/changes (for edit mode)
   useEffect(() => {
     if (isEditing && faq) {
-      editForm.reset({
+      form.reset({
         category: faq.category || "",
         is_published: faq.is_published ?? false,
         sort_order: faq.sort_order ?? null,
+        locales: [],
       });
     }
-  }, [faq, isEditing, editForm]);
+  }, [faq, isEditing, form]);
 
-  const handleFormSubmit = isEditing
-    ? (data: EditFAQFormValues) => {
-        onSubmit({ ...data, category: data.category || undefined, version: faq!.version } as UpdateFAQDto);
-      }
-    : (data: CreateFAQFormValues) => {
-        onSubmit({ ...data, category: data.category || undefined } as CreateFAQDto);
-      };
+  const handleFormSubmit = (data: CreateFAQFormValues) => {
+    if (isEditing) {
+      const { locales: _, ...editData } = data;
+      onSubmit({ ...editData, category: editData.category || undefined, version: faq!.version } as UpdateFAQDto);
+    } else {
+      onSubmit({ ...data, category: data.category || undefined } as CreateFAQDto);
+    }
+  };
 
   const handleCreateLocale = async (data: Omit<FAQLocale & { id: string }, "id">) => {
     const apiData: CreateFAQLocaleDto = { locale: data.locale, question: data.question, answer: data.answer };
@@ -198,15 +185,15 @@ export function FAQForm({ faq, onSubmit, isSubmitting = false }: FAQFormProps) {
 
   const addLocale = (locale: string) => {
     if (!locales.map((l) => l.locale).includes(locale)) {
-      createForm.setValue("locales", [...locales, { locale, question: "", answer: "" }]);
+      form.setValue("locales", [...locales, { locale, question: "", answer: "" }]);
     }
   };
-  const removeLocale = (index: number) => { if (locales.length > 1) createForm.setValue("locales", locales.filter((_, i) => i !== index)); };
+  const removeLocale = (index: number) => { if (locales.length > 1) form.setValue("locales", locales.filter((_, i) => i !== index)); };
 
   const availableLocales = SUPPORTED_LOCALES.filter((l) => !locales.map((loc) => loc.locale).includes(l.value));
 
   return (
-    <form onSubmit={form.handleSubmit(handleFormSubmit as any)} className="space-y-6">
+    <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
       <Card>
         <CardHeader><CardTitle>Основные настройки</CardTitle></CardHeader>
         <CardContent className="space-y-4">
@@ -256,9 +243,9 @@ export function FAQForm({ faq, onSubmit, isSubmitting = false }: FAQFormProps) {
               {locales.map((locale, index) => (
                 <TabsContent key={locale.locale} value={locale.locale}>
                   <div className="space-y-4">
-                    <input type="hidden" {...createForm.register(`locales.${index}.locale`)} />
-                    <Textarea label="Вопрос" placeholder="Введите вопрос..." {...createForm.register(`locales.${index}.question`)} error={createForm.formState.errors.locales?.[index]?.question?.message} required className="min-h-[80px]" />
-                    <Textarea label="Ответ" placeholder="Введите ответ (поддерживается HTML)..." {...createForm.register(`locales.${index}.answer`)} error={createForm.formState.errors.locales?.[index]?.answer?.message} required className="min-h-[200px]" />
+                    <input type="hidden" {...form.register(`locales.${index}.locale`)} />
+                    <Textarea label="Вопрос" placeholder="Введите вопрос..." {...form.register(`locales.${index}.question`)} error={form.formState.errors.locales?.[index]?.question?.message} required className="min-h-[80px]" />
+                    <Textarea label="Ответ" placeholder="Введите ответ (поддерживается HTML)..." {...form.register(`locales.${index}.answer`)} error={form.formState.errors.locales?.[index]?.answer?.message} required className="min-h-[200px]" />
                   </div>
                 </TabsContent>
               ))}

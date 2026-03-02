@@ -1,6 +1,6 @@
 export { topicsApi, topicsKeys } from "./api/topicsApi";
 export { 
-  useTopics, 
+  useTopicsList, 
   useTopic, 
   useCreateTopic, 
   useUpdateTopic, 

@@ -1,9 +1,8 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
+import { useAppMutation } from "@/shared/lib";
 import { uomsApi, uomsKeys } from "../api/uomsApi";
-import { getErrorMessage } from "@/shared/lib/versionConflict";
 import type { CreateUOMDto, UpdateUOMDto } from "@/entities/product";
 
 export function useUomsList() {
@@ -15,33 +14,19 @@ export function useUomsList() {
 }
 
 export function useCreateUom() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: CreateUOMDto) => uomsApi.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: uomsKeys.list() });
-      toast.success("Единица измерения создана");
-    },
-    onError: (error) => {
-      const message = getErrorMessage(error, "Не удалось создать единицу измерения");
-      toast.error(message);
-    },
+    successMessage: "Единица измерения создана",
+    errorMessage: "Не удалось создать единицу измерения",
+    invalidateKeys: [uomsKeys.list()],
   });
 }
 
 export function useUpdateUom(id: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: UpdateUOMDto) => uomsApi.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: uomsKeys.list() });
-      toast.success("Единица измерения обновлена");
-    },
-    onError: (error) => {
-      const message = getErrorMessage(error, "Не удалось обновить единицу измерения");
-      toast.error(message);
-    },
+    successMessage: "Единица измерения обновлена",
+    errorMessage: "Не удалось обновить единицу измерения",
+    invalidateKeys: [uomsKeys.list()],
   });
 }

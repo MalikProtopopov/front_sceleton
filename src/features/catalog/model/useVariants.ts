@@ -1,10 +1,9 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
+import { useAppMutation } from "@/shared/lib";
 import { variantsApi, variantsKeys } from "../api/variantsApi";
 import { productsKeys } from "../api/productsApi";
-import { getErrorMessage } from "@/shared/lib/versionConflict";
 import type {
   OptionGroupCreate,
   OptionGroupUpdate,
@@ -30,80 +29,62 @@ export function useOptionGroups(productId: string) {
 }
 
 export function useCreateOptionGroup(productId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: OptionGroupCreate) => variantsApi.createOptionGroup(productId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: variantsKeys.optionGroups(productId) });
-      toast.success("Группа опций создана");
-    },
-    onError: (error) => toast.error(getErrorMessage(error, "Не удалось создать группу опций")),
+    successMessage: "Группа опций создана",
+    errorMessage: "Не удалось создать группу опций",
+    invalidateKeys: [variantsKeys.optionGroups(productId)],
   });
 }
 
 export function useUpdateOptionGroup(productId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useAppMutation({
     mutationFn: ({ groupId, data }: { groupId: string; data: OptionGroupUpdate }) =>
       variantsApi.updateOptionGroup(productId, groupId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: variantsKeys.optionGroups(productId) });
-      toast.success("Группа опций обновлена");
-    },
-    onError: (error) => toast.error(getErrorMessage(error, "Не удалось обновить группу опций")),
+    successMessage: "Группа опций обновлена",
+    errorMessage: "Не удалось обновить группу опций",
+    invalidateKeys: [variantsKeys.optionGroups(productId)],
   });
 }
 
 export function useDeleteOptionGroup(productId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useAppMutation({
     mutationFn: (groupId: string) => variantsApi.deleteOptionGroup(productId, groupId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: variantsKeys.optionGroups(productId) });
-      toast.success("Группа опций удалена");
-    },
-    onError: (error) => toast.error(getErrorMessage(error, "Не удалось удалить группу опций")),
+    successMessage: "Группа опций удалена",
+    errorMessage: "Не удалось удалить группу опций",
+    invalidateKeys: [variantsKeys.optionGroups(productId)],
   });
 }
 
 // --- Option Values ---
 
 export function useCreateOptionValue(productId: string, groupId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: OptionValueCreate) =>
       variantsApi.createOptionValue(productId, groupId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: variantsKeys.optionGroups(productId) });
-      toast.success("Значение добавлено");
-    },
-    onError: (error) => toast.error(getErrorMessage(error, "Не удалось добавить значение")),
+    successMessage: "Значение добавлено",
+    errorMessage: "Не удалось добавить значение",
+    invalidateKeys: [variantsKeys.optionGroups(productId)],
   });
 }
 
 export function useUpdateOptionValue(productId: string, groupId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useAppMutation({
     mutationFn: ({ valueId, data }: { valueId: string; data: OptionValueUpdate }) =>
       variantsApi.updateOptionValue(productId, groupId, valueId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: variantsKeys.optionGroups(productId) });
-      toast.success("Значение обновлено");
-    },
-    onError: (error) => toast.error(getErrorMessage(error, "Не удалось обновить значение")),
+    successMessage: "Значение обновлено",
+    errorMessage: "Не удалось обновить значение",
+    invalidateKeys: [variantsKeys.optionGroups(productId)],
   });
 }
 
 export function useDeleteOptionValue(productId: string, groupId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useAppMutation({
     mutationFn: (valueId: string) =>
       variantsApi.deleteOptionValue(productId, groupId, valueId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: variantsKeys.optionGroups(productId) });
-      toast.success("Значение удалено");
-    },
-    onError: (error) => toast.error(getErrorMessage(error, "Не удалось удалить значение")),
+    successMessage: "Значение удалено",
+    errorMessage: "Не удалось удалить значение",
+    invalidateKeys: [variantsKeys.optionGroups(productId)],
   });
 }
 
@@ -118,55 +99,40 @@ export function useVariantsList(productId: string) {
 }
 
 export function useCreateVariant(productId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: VariantCreate) => variantsApi.createVariant(productId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: variantsKeys.variants(productId) });
-      queryClient.invalidateQueries({ queryKey: productsKeys.detail(productId) });
-      toast.success("Вариант создан");
-    },
-    onError: (error) => toast.error(getErrorMessage(error, "Не удалось создать вариант")),
+    successMessage: "Вариант создан",
+    errorMessage: "Не удалось создать вариант",
+    invalidateKeys: [variantsKeys.variants(productId), productsKeys.detail(productId)],
   });
 }
 
 export function useUpdateVariant(productId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useAppMutation({
     mutationFn: ({ variantId, data }: { variantId: string; data: VariantUpdate }) =>
       variantsApi.updateVariant(productId, variantId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: variantsKeys.variants(productId) });
-      toast.success("Вариант обновлён");
-    },
-    onError: (error) => toast.error(getErrorMessage(error, "Не удалось обновить вариант")),
+    successMessage: "Вариант обновлён",
+    errorMessage: "Не удалось обновить вариант",
+    invalidateKeys: [variantsKeys.variants(productId)],
   });
 }
 
 export function useDeleteVariant(productId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useAppMutation({
     mutationFn: (variantId: string) => variantsApi.deleteVariant(productId, variantId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: variantsKeys.variants(productId) });
-      queryClient.invalidateQueries({ queryKey: productsKeys.detail(productId) });
-      toast.success("Вариант удалён");
-    },
-    onError: (error) => toast.error(getErrorMessage(error, "Не удалось удалить вариант")),
+    successMessage: "Вариант удалён",
+    errorMessage: "Не удалось удалить вариант",
+    invalidateKeys: [variantsKeys.variants(productId), productsKeys.detail(productId)],
   });
 }
 
 export function useGenerateVariants(productId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: VariantGenerateRequest) =>
       variantsApi.generateVariants(productId, data),
-    onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: variantsKeys.variants(productId) });
-      queryClient.invalidateQueries({ queryKey: productsKeys.detail(productId) });
-      toast.success(`Создано вариантов: ${result.created_count}`);
-    },
-    onError: (error) => toast.error(getErrorMessage(error, "Не удалось сгенерировать варианты")),
+    successMessage: (result) => `Создано вариантов: ${result.created_count}`,
+    errorMessage: "Не удалось сгенерировать варианты",
+    invalidateKeys: [variantsKeys.variants(productId), productsKeys.detail(productId)],
   });
 }
 
@@ -181,47 +147,44 @@ export function useVariantPrices(productId: string, variantId: string) {
 }
 
 export function useCreateVariantPrice(productId: string, variantId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: VariantPriceCreate) =>
       variantsApi.createVariantPrice(productId, variantId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: variantsKeys.variantPrices(productId, variantId) });
-      queryClient.invalidateQueries({ queryKey: variantsKeys.variants(productId) });
-      queryClient.invalidateQueries({ queryKey: productsKeys.detail(productId) });
-      toast.success("Цена добавлена");
-    },
-    onError: (error) => toast.error(getErrorMessage(error, "Не удалось добавить цену")),
+    successMessage: "Цена добавлена",
+    errorMessage: "Не удалось добавить цену",
+    invalidateKeys: [
+      variantsKeys.variantPrices(productId, variantId),
+      variantsKeys.variants(productId),
+      productsKeys.detail(productId),
+    ],
   });
 }
 
 export function useUpdateVariantPrice(productId: string, variantId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useAppMutation({
     mutationFn: ({ priceId, data }: { priceId: string; data: VariantPriceUpdate }) =>
       variantsApi.updateVariantPrice(productId, variantId, priceId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: variantsKeys.variantPrices(productId, variantId) });
-      queryClient.invalidateQueries({ queryKey: variantsKeys.variants(productId) });
-      queryClient.invalidateQueries({ queryKey: productsKeys.detail(productId) });
-      toast.success("Цена обновлена");
-    },
-    onError: (error) => toast.error(getErrorMessage(error, "Не удалось обновить цену")),
+    successMessage: "Цена обновлена",
+    errorMessage: "Не удалось обновить цену",
+    invalidateKeys: [
+      variantsKeys.variantPrices(productId, variantId),
+      variantsKeys.variants(productId),
+      productsKeys.detail(productId),
+    ],
   });
 }
 
 export function useDeleteVariantPrice(productId: string, variantId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useAppMutation({
     mutationFn: (priceId: string) =>
       variantsApi.deleteVariantPrice(productId, variantId, priceId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: variantsKeys.variantPrices(productId, variantId) });
-      queryClient.invalidateQueries({ queryKey: variantsKeys.variants(productId) });
-      queryClient.invalidateQueries({ queryKey: productsKeys.detail(productId) });
-      toast.success("Цена удалена");
-    },
-    onError: (error) => toast.error(getErrorMessage(error, "Не удалось удалить цену")),
+    successMessage: "Цена удалена",
+    errorMessage: "Не удалось удалить цену",
+    invalidateKeys: [
+      variantsKeys.variantPrices(productId, variantId),
+      variantsKeys.variants(productId),
+      productsKeys.detail(productId),
+    ],
   });
 }
 
@@ -236,22 +199,20 @@ export function useVariantInclusions(productId: string, variantId: string) {
 }
 
 export function useCreateVariantInclusion(productId: string, variantId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: VariantInclusionCreate) =>
       variantsApi.createVariantInclusion(productId, variantId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: variantsKeys.variantInclusions(productId, variantId) });
-      queryClient.invalidateQueries({ queryKey: variantsKeys.variants(productId) });
-      toast.success("Включение добавлено");
-    },
-    onError: (error) => toast.error(getErrorMessage(error, "Не удалось добавить включение")),
+    successMessage: "Включение добавлено",
+    errorMessage: "Не удалось добавить включение",
+    invalidateKeys: [
+      variantsKeys.variantInclusions(productId, variantId),
+      variantsKeys.variants(productId),
+    ],
   });
 }
 
 export function useUpdateVariantInclusion(productId: string, variantId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useAppMutation({
     mutationFn: ({
       inclusionId,
       data,
@@ -259,26 +220,25 @@ export function useUpdateVariantInclusion(productId: string, variantId: string) 
       inclusionId: string;
       data: VariantInclusionUpdate;
     }) => variantsApi.updateVariantInclusion(productId, variantId, inclusionId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: variantsKeys.variantInclusions(productId, variantId) });
-      queryClient.invalidateQueries({ queryKey: variantsKeys.variants(productId) });
-      toast.success("Включение обновлено");
-    },
-    onError: (error) => toast.error(getErrorMessage(error, "Не удалось обновить включение")),
+    successMessage: "Включение обновлено",
+    errorMessage: "Не удалось обновить включение",
+    invalidateKeys: [
+      variantsKeys.variantInclusions(productId, variantId),
+      variantsKeys.variants(productId),
+    ],
   });
 }
 
 export function useDeleteVariantInclusion(productId: string, variantId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useAppMutation({
     mutationFn: (inclusionId: string) =>
       variantsApi.deleteVariantInclusion(productId, variantId, inclusionId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: variantsKeys.variantInclusions(productId, variantId) });
-      queryClient.invalidateQueries({ queryKey: variantsKeys.variants(productId) });
-      toast.success("Включение удалено");
-    },
-    onError: (error) => toast.error(getErrorMessage(error, "Не удалось удалить включение")),
+    successMessage: "Включение удалено",
+    errorMessage: "Не удалось удалить включение",
+    invalidateKeys: [
+      variantsKeys.variantInclusions(productId, variantId),
+      variantsKeys.variants(productId),
+    ],
   });
 }
 
@@ -293,29 +253,27 @@ export function useVariantImages(productId: string, variantId: string) {
 }
 
 export function useUploadVariantImage(productId: string, variantId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useAppMutation({
     mutationFn: ({ file, alt, isCover }: { file: File; alt?: string; isCover?: boolean }) =>
       variantsApi.uploadVariantImage(productId, variantId, file, alt, isCover),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: variantsKeys.variantImages(productId, variantId) });
-      queryClient.invalidateQueries({ queryKey: variantsKeys.variants(productId) });
-      toast.success("Изображение загружено");
-    },
-    onError: (error) => toast.error(getErrorMessage(error, "Не удалось загрузить изображение")),
+    successMessage: "Изображение загружено",
+    errorMessage: "Не удалось загрузить изображение",
+    invalidateKeys: [
+      variantsKeys.variantImages(productId, variantId),
+      variantsKeys.variants(productId),
+    ],
   });
 }
 
 export function useDeleteVariantImage(productId: string, variantId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
+  return useAppMutation({
     mutationFn: (imageId: string) =>
       variantsApi.deleteVariantImage(productId, variantId, imageId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: variantsKeys.variantImages(productId, variantId) });
-      queryClient.invalidateQueries({ queryKey: variantsKeys.variants(productId) });
-      toast.success("Изображение удалено");
-    },
-    onError: (error) => toast.error(getErrorMessage(error, "Не удалось удалить изображение")),
+    successMessage: "Изображение удалено",
+    errorMessage: "Не удалось удалить изображение",
+    invalidateKeys: [
+      variantsKeys.variantImages(productId, variantId),
+      variantsKeys.variants(productId),
+    ],
   });
 }

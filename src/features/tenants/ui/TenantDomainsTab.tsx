@@ -36,6 +36,7 @@ import {
   ConfirmModal,
 } from "@/shared/ui";
 import type { TenantDomainResponse, DNSVerifyResponse } from "@/entities/tenant";
+import { COPY_FEEDBACK_DURATION } from "@/shared/config";
 
 interface TenantDomainsTabProps {
   tenantId: string;
@@ -100,7 +101,7 @@ function CopyButton({ text }: { text: string }) {
   const handleCopy = async () => {
     await navigator.clipboard.writeText(text);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setCopied(false), COPY_FEEDBACK_DURATION);
   };
 
   return (

@@ -1,11 +1,10 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { useAppMutation } from "@/shared/lib";
 import { rolesApi, rolesKeys } from "../api/rolesApi";
 import { ROUTES } from "@/shared/config";
-import { getErrorMessage } from "@/shared/lib/versionConflict";
 import type { CreateRoleDto, UpdateRoleDto } from "@/entities/user";
 
 export function useRolesList() {
@@ -27,60 +26,43 @@ export function usePermissions() {
   return useQuery({
     queryKey: rolesKeys.permissions(),
     queryFn: () => rolesApi.getPermissions(),
-    staleTime: 10 * 60 * 1000, // Cache for 10 minutes
+    staleTime: 10 * 60 * 1000,
   });
 }
 
 export function useCreateRole() {
   const router = useRouter();
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: CreateRoleDto) => rolesApi.create(data),
+    successMessage: "Роль создана",
+    errorMessage: "Не удалось создать роль",
+    invalidateKeys: [rolesKeys.list()],
     onSuccess: (role) => {
-      queryClient.invalidateQueries({ queryKey: rolesKeys.list() });
-      toast.success("Роль создана");
       router.push(ROUTES.ROLE_EDIT(role.id));
-    },
-    onError: (error) => {
-      const message = getErrorMessage(error, "Не удалось создать роль");
-      toast.error(message);
     },
   });
 }
 
 export function useUpdateRole(id: string) {
   const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: UpdateRoleDto) => rolesApi.update(id, data),
+    successMessage: "Роль обновлена",
+    errorMessage: "Не удалось обновить роль",
+    invalidateKeys: [rolesKeys.list()],
     onSuccess: (role) => {
       queryClient.setQueryData(rolesKeys.detail(id), role);
-      queryClient.invalidateQueries({ queryKey: rolesKeys.list() });
-      toast.success("Роль обновлена");
-    },
-    onError: (error) => {
-      const message = getErrorMessage(error, "Не удалось обновить роль");
-      toast.error(message);
     },
   });
 }
 
 export function useDeleteRole() {
   const router = useRouter();
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (id: string) => rolesApi.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: rolesKeys.list() });
-      toast.success("Роль удалена");
-      router.push(ROUTES.USERS);
-    },
-    onError: (error) => {
-      const message = getErrorMessage(error, "Не удалось удалить роль");
-      toast.error(message);
-    },
+    successMessage: "Роль удалена",
+    errorMessage: "Не удалось удалить роль",
+    invalidateKeys: [rolesKeys.list()],
+    onSuccess: () => router.push(ROUTES.USERS),
   });
 }
-

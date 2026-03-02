@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
@@ -76,7 +76,6 @@ const editEmployeeSchema = z.object({
 });
 
 type CreateEmployeeFormValues = z.infer<typeof createEmployeeSchema>;
-type EditEmployeeFormValues = z.infer<typeof editEmployeeSchema>;
 
 interface EmployeeFormProps {
   employee?: Employee;
@@ -202,37 +201,27 @@ export function EmployeeForm({ employee, onSubmit, isSubmitting = false }: Emplo
   const deleteContentBlock = useDeleteEmployeeContentBlock(employee?.id || "");
   const reorderContentBlocks = useReorderEmployeeContentBlocks(employee?.id || "");
 
-  const createForm = useForm<CreateEmployeeFormValues>({
-    resolver: zodResolver(createEmployeeSchema),
-    defaultValues: {
-      email: "", phone: "", is_published: false, sort_order: null,
-      locales: [{ locale: "ru", first_name: "", last_name: "", position: "", slug: "", bio: "", meta_title: "", meta_description: "" }],
-    },
+  const form = useForm<CreateEmployeeFormValues>({
+    resolver: zodResolver(isEditing ? editEmployeeSchema : createEmployeeSchema) as unknown as Resolver<CreateEmployeeFormValues>,
+    defaultValues: isEditing
+      ? { email: employee?.email || "", phone: employee?.phone || "", is_published: employee?.is_published ?? false, sort_order: employee?.sort_order ?? null, locales: [] }
+      : { email: "", phone: "", is_published: false, sort_order: null, locales: [{ locale: "ru", first_name: "", last_name: "", position: "", slug: "", bio: "", meta_title: "", meta_description: "" }] },
   });
 
-  const editForm = useForm<EditEmployeeFormValues>({
-    resolver: zodResolver(editEmployeeSchema),
-    defaultValues: {
-      email: employee?.email || "", phone: employee?.phone || "",
-      is_published: employee?.is_published ?? false, sort_order: employee?.sort_order ?? null,
-    },
-  });
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const form = (isEditing ? editForm : createForm) as any;
-  const locales = isEditing ? [] : createForm.watch("locales");
+  const locales = isEditing ? [] : form.watch("locales");
 
   // Sync form values when employee loads/changes (for edit mode)
   useEffect(() => {
     if (isEditing && employee) {
-      editForm.reset({
+      form.reset({
         email: employee.email || "",
         phone: employee.phone || "",
         is_published: employee.is_published ?? false,
         sort_order: employee.sort_order ?? null,
+        locales: [],
       });
     }
-  }, [employee, isEditing, editForm]);
+  }, [employee, isEditing, form]);
 
   // Sync photoUrl when employee changes
   useEffect(() => {
@@ -241,39 +230,37 @@ export function EmployeeForm({ employee, onSubmit, isSubmitting = false }: Emplo
     }
   }, [employee?.photo_url, photoUrl]);
 
-  const handleFormSubmit = isEditing
-    ? (data: EditEmployeeFormValues) => {
-        const payload: UpdateEmployeeDto = {
-          email: data.email || undefined,
-          phone: data.phone || undefined,
-          is_published: data.is_published,
-          version: employee!.version,
-        };
-        // Only include sort_order if it's a number (not null)
-        if (data.sort_order !== null && data.sort_order !== undefined) {
-          payload.sort_order = data.sort_order;
-        }
-        onSubmit(payload);
-      }
-    : (data: CreateEmployeeFormValues) => {
-        const payload: CreateEmployeeDto = {
-          email: data.email || undefined,
-          phone: data.phone || undefined,
-          is_published: data.is_published,
-          locales: data.locales.map((l) => ({
-            ...l,
-            position: l.position || undefined,
-            bio: l.bio || undefined,
-            meta_title: l.meta_title || undefined,
-            meta_description: l.meta_description || undefined,
-          })),
-        };
-        // Only include sort_order if it's a number (not null)
-        if (data.sort_order !== null && data.sort_order !== undefined) {
-          payload.sort_order = data.sort_order;
-        }
-        onSubmit(payload);
+  const handleFormSubmit = (data: CreateEmployeeFormValues) => {
+    if (isEditing) {
+      const payload: UpdateEmployeeDto = {
+        email: data.email || undefined,
+        phone: data.phone || undefined,
+        is_published: data.is_published,
+        version: employee!.version,
       };
+      if (data.sort_order !== null && data.sort_order !== undefined) {
+        payload.sort_order = data.sort_order;
+      }
+      onSubmit(payload);
+    } else {
+      const payload: CreateEmployeeDto = {
+        email: data.email || undefined,
+        phone: data.phone || undefined,
+        is_published: data.is_published,
+        locales: data.locales.map((l) => ({
+          ...l,
+          position: l.position || undefined,
+          bio: l.bio || undefined,
+          meta_title: l.meta_title || undefined,
+          meta_description: l.meta_description || undefined,
+        })),
+      };
+      if (data.sort_order !== null && data.sort_order !== undefined) {
+        payload.sort_order = data.sort_order;
+      }
+      onSubmit(payload);
+    }
+  };
 
   const handlePhotoUpload = async (file: File) => { const result = await uploadPhoto.mutateAsync(file); setPhotoUrl(result.photo_url); };
   const handlePhotoDelete = async () => { await deletePhoto.mutateAsync(); setPhotoUrl(null); };
@@ -316,15 +303,15 @@ export function EmployeeForm({ employee, onSubmit, isSubmitting = false }: Emplo
 
   const addLocale = (locale: string) => {
     if (!locales.map((l) => l.locale).includes(locale)) {
-      createForm.setValue("locales", [...locales, { locale, first_name: "", last_name: "", position: "", slug: "", bio: "", meta_title: "", meta_description: "" }]);
+      form.setValue("locales", [...locales, { locale, first_name: "", last_name: "", position: "", slug: "", bio: "", meta_title: "", meta_description: "" }]);
     }
   };
-  const removeLocale = (index: number) => { if (locales.length > 1) createForm.setValue("locales", locales.filter((_, i) => i !== index)); };
+  const removeLocale = (index: number) => { if (locales.length > 1) form.setValue("locales", locales.filter((_, i) => i !== index)); };
 
   const availableLocales = SUPPORTED_LOCALES.filter((l) => !locales.map((loc) => loc.locale).includes(l.value));
 
   return (
-    <form onSubmit={form.handleSubmit(handleFormSubmit as any)} className="space-y-6">
+    <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
       <Card>
         <CardHeader><CardTitle>Основные настройки</CardTitle></CardHeader>
         <CardContent className="space-y-4">
@@ -413,19 +400,19 @@ export function EmployeeForm({ employee, onSubmit, isSubmitting = false }: Emplo
               {locales.map((locale, index) => (
                 <TabsContent key={locale.locale} value={locale.locale}>
                   <div className="space-y-4">
-                    <input type="hidden" {...createForm.register(`locales.${index}.locale`)} />
+                    <input type="hidden" {...form.register(`locales.${index}.locale`)} />
                     <div className="grid gap-4 md:grid-cols-2">
-                      <Input label="Имя" placeholder="Иван" {...createForm.register(`locales.${index}.first_name`, { onChange: () => { const fn = createForm.watch(`locales.${index}.first_name`); const ln = createForm.watch(`locales.${index}.last_name`); createForm.setValue(`locales.${index}.slug`, generateSlug(`${fn} ${ln}`)); }})} error={createForm.formState.errors.locales?.[index]?.first_name?.message} required />
-                      <Input label="Фамилия" placeholder="Петров" {...createForm.register(`locales.${index}.last_name`, { onChange: () => { const fn = createForm.watch(`locales.${index}.first_name`); const ln = createForm.watch(`locales.${index}.last_name`); createForm.setValue(`locales.${index}.slug`, generateSlug(`${fn} ${ln}`)); }})} error={createForm.formState.errors.locales?.[index]?.last_name?.message} required />
+                      <Input label="Имя" placeholder="Иван" {...form.register(`locales.${index}.first_name`, { onChange: () => { const fn = form.watch(`locales.${index}.first_name`); const ln = form.watch(`locales.${index}.last_name`); form.setValue(`locales.${index}.slug`, generateSlug(`${fn} ${ln}`)); }})} error={form.formState.errors.locales?.[index]?.first_name?.message} required />
+                      <Input label="Фамилия" placeholder="Петров" {...form.register(`locales.${index}.last_name`, { onChange: () => { const fn = form.watch(`locales.${index}.first_name`); const ln = form.watch(`locales.${index}.last_name`); form.setValue(`locales.${index}.slug`, generateSlug(`${fn} ${ln}`)); }})} error={form.formState.errors.locales?.[index]?.last_name?.message} required />
                     </div>
-                    <Input label="Должность" placeholder="Старший юрист" {...createForm.register(`locales.${index}.position`)} error={createForm.formState.errors.locales?.[index]?.position?.message} />
-                    <Input label="Slug" placeholder="ivan-petrov" {...createForm.register(`locales.${index}.slug`)} error={createForm.formState.errors.locales?.[index]?.slug?.message} required />
-                    <Controller name={`locales.${index}.bio`} control={createForm.control} render={({ field }) => (<RichTextEditor label="Биография" value={field.value || ""} onChange={field.onChange} placeholder="Описание сотрудника..." />)} />
+                    <Input label="Должность" placeholder="Старший юрист" {...form.register(`locales.${index}.position`)} error={form.formState.errors.locales?.[index]?.position?.message} />
+                    <Input label="Slug" placeholder="ivan-petrov" {...form.register(`locales.${index}.slug`)} error={form.formState.errors.locales?.[index]?.slug?.message} required />
+                    <Controller name={`locales.${index}.bio`} control={form.control} render={({ field }) => (<RichTextEditor label="Биография" value={field.value || ""} onChange={field.onChange} placeholder="Описание сотрудника..." />)} />
                     <div className="border-t border-[var(--color-border)] pt-4">
                       <h4 className="mb-4 text-sm font-medium text-[var(--color-text-secondary)]">SEO настройки</h4>
                       <div className="space-y-4">
-                        <Input label="Meta Title" placeholder="SEO заголовок (до 70 символов)" {...createForm.register(`locales.${index}.meta_title`)} error={createForm.formState.errors.locales?.[index]?.meta_title?.message} />
-                        <Textarea label="Meta Description" placeholder="SEO описание (до 160 символов)" {...createForm.register(`locales.${index}.meta_description`)} error={createForm.formState.errors.locales?.[index]?.meta_description?.message} className="min-h-[80px]" />
+                        <Input label="Meta Title" placeholder="SEO заголовок (до 70 символов)" {...form.register(`locales.${index}.meta_title`)} error={form.formState.errors.locales?.[index]?.meta_title?.message} />
+                        <Textarea label="Meta Description" placeholder="SEO описание (до 160 символов)" {...form.register(`locales.${index}.meta_description`)} error={form.formState.errors.locales?.[index]?.meta_description?.message} className="min-h-[80px]" />
                       </div>
                     </div>
                   </div>

@@ -1,8 +1,9 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useAppMutation } from "@/shared/lib";
 import { usersApi, usersKeys } from "../api/usersApi";
 import { ROUTES } from "@/shared/config";
 import { getErrorMessage, handleVersionConflict } from "@/shared/lib/versionConflict";
@@ -25,21 +26,15 @@ export function useUser(id: string, tenantId?: string) {
 
 export function useCreateUser(tenantId?: string) {
   const router = useRouter();
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: CreateUserDto) => usersApi.create(data, tenantId),
+    successMessage: "Пользователь создан",
+    errorMessage: "Не удалось создать пользователя",
+    invalidateKeys: [usersKeys.lists()],
     onSuccess: (user) => {
-      queryClient.invalidateQueries({ queryKey: usersKeys.lists() });
-      toast.success("Пользователь создан");
-      // If managing cross-tenant users, don't navigate away
       if (!tenantId) {
         router.push(ROUTES.USER_EDIT(user.id));
       }
-    },
-    onError: (error) => {
-      const message = getErrorMessage(error, "Не удалось создать пользователя");
-      toast.error(message);
     },
   });
 }
@@ -47,13 +42,12 @@ export function useCreateUser(tenantId?: string) {
 export function useUpdateUser(id: string, tenantId?: string) {
   const router = useRouter();
   const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: UpdateUserDto) => usersApi.update(id, data, tenantId),
+    successMessage: "Пользователь обновлен",
+    invalidateKeys: [usersKeys.lists()],
     onSuccess: (user) => {
       queryClient.setQueryData(usersKeys.detail(id, tenantId), user);
-      queryClient.invalidateQueries({ queryKey: usersKeys.lists() });
-      toast.success("Пользователь обновлен");
     },
     onError: (error) => {
       if (handleVersionConflict(error, queryClient, usersKeys.detail(id, tenantId))) {
@@ -76,20 +70,16 @@ export function useUpdateUser(id: string, tenantId?: string) {
 export function useDeleteUser(tenantId?: string) {
   const router = useRouter();
   const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: (id: string) => usersApi.delete(id, tenantId),
+    successMessage: "Пользователь удален",
+    errorMessage: "Не удалось удалить пользователя",
+    invalidateKeys: [usersKeys.lists()],
     onSuccess: (_data, id) => {
       queryClient.removeQueries({ queryKey: usersKeys.detail(id, tenantId) });
-      queryClient.invalidateQueries({ queryKey: usersKeys.lists() });
-      toast.success("Пользователь удален");
       if (!tenantId) {
         router.push(ROUTES.USERS);
       }
-    },
-    onError: (error) => {
-      const message = getErrorMessage(error, "Не удалось удалить пользователя");
-      toast.error(message);
     },
   });
 }
@@ -98,21 +88,21 @@ export function useRoles(tenantId?: string) {
   return useQuery({
     queryKey: usersKeys.roles(tenantId),
     queryFn: () => usersApi.getRoles(tenantId),
-    staleTime: 10 * 60 * 1000, // Cache for 10 minutes
+    staleTime: 10 * 60 * 1000,
   });
 }
 
 export function useToggleUserActive(id: string, tenantId?: string) {
   const router = useRouter();
   const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: ({ isActive, version }: { isActive: boolean; version: number }) =>
       usersApi.update(id, { is_active: isActive, version }, tenantId),
+    successMessage: (user) =>
+      user.is_active ? "Пользователь активирован" : "Пользователь деактивирован",
+    invalidateKeys: [usersKeys.lists()],
     onSuccess: (user) => {
       queryClient.setQueryData(usersKeys.detail(id, tenantId), user);
-      queryClient.invalidateQueries({ queryKey: usersKeys.lists() });
-      toast.success(user.is_active ? "Пользователь активирован" : "Пользователь деактивирован");
     },
     onError: (error) => {
       if (handleVersionConflict(error, queryClient, usersKeys.detail(id, tenantId))) {

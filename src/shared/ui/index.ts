@@ -29,3 +29,4 @@ export * from "./TenantInactivePage";
 export * from "./FeatureDisabledNotice";
 export * from "./DomainNotFoundPage";
 export * from "./NoAccessPage";
+export * from "./ErrorBoundary";

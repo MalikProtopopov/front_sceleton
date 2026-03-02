@@ -1,13 +1,13 @@
 "use client";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useAppMutation } from "@/shared/lib";
 import { bulkApi } from "../api/bulkApi";
 import type { BulkOperationRequest, BulkResourceType } from "@/entities/bulk";
 import { articlesKeys } from "@/features/articles";
 import { casesKeys } from "@/features/cases";
 
-// Get query keys to invalidate based on resource type
 function getQueryKeysToInvalidate(resourceType: BulkResourceType) {
   switch (resourceType) {
     case "articles":
@@ -26,16 +26,15 @@ function getQueryKeysToInvalidate(resourceType: BulkResourceType) {
 export function useBulkOperation() {
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useAppMutation({
     mutationFn: (data: BulkOperationRequest) => bulkApi.execute(data),
+    errorMessage: "Ошибка при выполнении операции",
     onSuccess: (response, variables) => {
-      // Invalidate relevant queries
       const keysToInvalidate = getQueryKeysToInvalidate(variables.resource_type);
       keysToInvalidate.forEach((key) => {
         queryClient.invalidateQueries({ queryKey: key });
       });
 
-      // Show appropriate toast
       const { summary } = response;
       if (summary.failed === 0) {
         toast.success(`Успешно обработано: ${summary.succeeded}`);
@@ -45,10 +44,5 @@ export function useBulkOperation() {
         toast.warning(`Обработано ${summary.succeeded} из ${summary.total}. Ошибок: ${summary.failed}`);
       }
     },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "Ошибка при выполнении операции";
-      toast.error(message);
-    },
   });
 }
-

@@ -13,6 +13,7 @@ import {
   FileImage,
 } from "lucide-react";
 import { cn, formatFileSize, getMediaUrl } from "@/shared/lib";
+import { MAX_IMAGE_SIZE } from "../../config/constants";
 
 // ============================================================================
 // CONSTANTS
@@ -26,7 +27,6 @@ const SUPPORTED_IMAGE_TYPES = [
 ] as const;
 
 const SUPPORTED_EXTENSIONS = "JPEG, PNG, WebP, GIF";
-const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
 const MAX_SIZE_TEXT = "10MB";
 
 // ============================================================================
