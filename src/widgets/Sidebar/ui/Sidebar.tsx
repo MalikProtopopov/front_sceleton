@@ -116,6 +116,12 @@ const SUPPLEMENTARY_ITEMS: Record<string, Omit<SidebarItem, "visible" | "accessi
     { name: "categories", title: "Категории", path: "/catalog/categories", icon: "folder-tree", category: "commerce" },
     { name: "parameters", title: "Параметры", path: "/catalog/parameters", icon: "sliders-horizontal", category: "commerce" },
   ],
+  billing: [
+    { name: "billing_plans", title: "Каталог тарифов", path: "/billing/plans", icon: "layout-grid", category: "billing" },
+    { name: "billing_limits", title: "Лимиты", path: "/billing/limits", icon: "sliders-horizontal", category: "billing" },
+    { name: "billing_modules", title: "Модули", path: "/billing/modules", icon: "puzzle", category: "billing" },
+    { name: "billing_requests", title: "Заявки", path: "/billing/requests", icon: "arrow-up-circle", category: "billing" },
+  ],
 };
 
 function groupByCategory(items: SidebarItem[]): SidebarSection[] {
@@ -133,10 +139,17 @@ function groupByCategory(items: SidebarItem[]): SidebarSection[] {
   }
 
   for (const [cat, extras] of Object.entries(SUPPLEMENTARY_ITEMS)) {
-    const group = groups.get(cat);
-    if (!group) continue;
-    for (const extra of extras) {
-      if (existingNames.has(extra.name)) continue;
+    let group = groups.get(cat);
+    const itemsToInject = extras.filter((e) => !existingNames.has(e.name));
+    if (itemsToInject.length === 0) continue;
+
+    if (!group) {
+      const config = CATEGORY_CONFIG[cat] ?? { label: cat, order: 99 };
+      group = { category: cat, label: config.label, order: config.order, items: [] };
+      groups.set(cat, group);
+    }
+
+    for (const extra of itemsToInject) {
       group.items.push({
         ...extra,
         visible: true,
