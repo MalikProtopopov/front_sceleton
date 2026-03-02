@@ -8,9 +8,23 @@ import { toast } from "sonner";
 import { API_BASE_URL } from "@/shared/config";
 import { API_TIMEOUT } from "../config/constants";
 import type { ApiError } from "@/shared/types";
-import { useGlobalErrors } from "@/shared/model/useGlobalErrors";
+import { useErrorStore } from "@/shared/model/useErrorStore";
 import { useTenantStore } from "@/shared/model/useTenantStore";
-import { useLimitExceededStore } from "@/shared/model/useLimitExceededStore";
+
+/**
+ * Extract error_code from RFC 7807 `type` URL.
+ * "https://api.cms.local/errors/feature_disabled" → "feature_disabled"
+ * Falls back to `error_code` field for backward compat.
+ */
+function getErrorCode(data: Record<string, unknown> | undefined): string | null {
+  if (!data) return null;
+  if (typeof data.type === "string" && data.type.includes("/")) {
+    const parts = data.type.split("/");
+    return parts[parts.length - 1] || null;
+  }
+  if (typeof data.error_code === "string") return data.error_code;
+  return null;
+}
 
 // Token storage functions - imported from auth feature
 let getAccessToken: () => string | null = () => null;
@@ -92,72 +106,72 @@ class ApiClient {
           _retry?: boolean;
         };
 
-        // Handle 403 errors with specific error codes
+        const data = error.response?.data as Record<string, unknown> | undefined;
+        const errorCode = getErrorCode(data);
+        const store = useErrorStore.getState();
+
+        // ── 403: Authorization / Feature / Limit ──
         if (error.response?.status === 403) {
-          const data = error.response.data;
-          const errorCode = data?.error_code;
+          switch (errorCode) {
+            case "tenant_inactive":
+              clearTokens();
+              store.showTenantInactive();
+              return Promise.reject(error);
 
-          if (errorCode === "tenant_inactive") {
-            // Clear tokens — they won't work while tenant is suspended
-            clearTokens();
-            useGlobalErrors.getState().setTenantInactive();
-            return Promise.reject(error);
-          }
-
-          if (errorCode === "feature_disabled") {
-            // Use the dedicated "feature" field, fall back to detail
-            const featureName = data?.feature || (typeof data?.detail === "string" ? data.detail : "unknown");
-            useGlobalErrors.getState().setFeatureDisabled(featureName);
-            return Promise.reject(error);
-          }
-
-          if (errorCode === "permission_denied" || errorCode === "insufficient_role") {
-            // User-level restriction: their role lacks the permission
-            const detail = typeof data?.detail === "string" ? data.detail : "Недостаточно прав для выполнения действия";
-            toast.error(detail, {
-              description: "Обратитесь к администратору организации для обновления роли.",
-            });
-            return Promise.reject(error);
-          }
-
-          if (errorCode === "system_role_protected") {
-            toast.error("Системную роль нельзя изменить или удалить");
-            return Promise.reject(error);
-          }
-
-          // Limit exceeded — show modal via store
-          const errorType = typeof data?.type === "string" ? data.type : "";
-          if (errorCode === "limit_exceeded" || errorType.includes("limit_exceeded")) {
-            const raw = data as unknown as Record<string, unknown> | undefined;
-            const resource = raw?.resource as string | undefined;
-            const currentUsage = raw?.current_usage as number | undefined;
-            const limit = raw?.limit as number | undefined;
-            if (resource != null && currentUsage != null && limit != null) {
-              useLimitExceededStore.getState().show(resource, currentUsage, limit);
+            case "feature_disabled": {
+              const feature =
+                (data?.feature as string) ||
+                (typeof data?.detail === "string" ? data.detail : "unknown");
+              store.showFeatureDisabled({ feature, message: data?.detail as string });
+              return Promise.reject(error);
             }
-            return Promise.reject(error);
+
+            case "permission_denied":
+              store.showPermissionDenied({
+                permission: data?.required_permission as string | undefined,
+                message: data?.detail as string | undefined,
+              });
+              return Promise.reject(error);
+
+            case "insufficient_role":
+              store.showPermissionDenied({
+                role: data?.required_role as string | undefined,
+                message: data?.detail as string | undefined,
+              });
+              return Promise.reject(error);
+
+            case "limit_exceeded": {
+              const resource = data?.resource as string | undefined;
+              const currentUsage = data?.current_usage as number | undefined;
+              const limit = data?.limit as number | undefined;
+              if (resource != null && currentUsage != null && limit != null) {
+                store.showLimitExceeded({ resource, currentUsage, limit, message: data?.detail as string });
+              }
+              return Promise.reject(error);
+            }
+
+            case "system_role_protected":
+              toast.error("Системную роль нельзя изменить или удалить");
+              return Promise.reject(error);
+
+            default:
+              store.showGenericForbidden(data?.detail as string | undefined);
+              return Promise.reject(error);
           }
         }
 
-        // Handle 429 rate limit
+        // ── 429: Rate limit ──
         if (error.response?.status === 429) {
-          const retryAfter = error.response.headers?.["retry-after"];
-          const seconds = retryAfter ? parseInt(retryAfter, 10) : null;
-          const message = seconds && !isNaN(seconds)
-            ? `Слишком много запросов. Повторите через ${seconds} сек.`
-            : "Слишком много запросов. Подождите немного и попробуйте снова.";
-          toast.error(message);
+          const retryAfter = data?.retry_after as number | undefined;
+          store.showRateLimit(retryAfter);
           return Promise.reject(error);
         }
 
-        // Handle 404 feature_not_available (public API returns 404 for disabled features)
-        if (error.response?.status === 404) {
-          const errorCode = error.response.data?.error_code;
-          if (errorCode === "feature_not_available") {
-            const featureName = error.response.data?.feature || "unknown";
-            useGlobalErrors.getState().setFeatureDisabled(featureName);
-            return Promise.reject(error);
-          }
+        // ── 404: feature_not_available (public API) ──
+        if (error.response?.status === 404 && errorCode === "feature_not_available") {
+          const feature = (data?.feature as string) || "unknown";
+          store.showFeatureDisabled({ feature });
+          return Promise.reject(error);
         }
 
         // Skip refresh token flow for login endpoint (401 is expected for wrong credentials)

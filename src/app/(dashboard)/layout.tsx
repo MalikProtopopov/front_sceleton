@@ -5,23 +5,21 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/providers";
 import { Sidebar } from "@/widgets/Sidebar";
 import { Header } from "@/widgets/Header";
-import { Spinner, TenantInactivePage, FeatureDisabledNotice, ErrorBoundary } from "@/shared/ui";
+import { Spinner, TenantInactivePage, ErrorBoundary } from "@/shared/ui";
+import { ErrorModal } from "@/shared/ui/ErrorModal";
 import { ROUTES } from "@/shared/config";
-import { useGlobalErrors } from "@/shared/model/useGlobalErrors";
-import { LimitExceededModal } from "@/features/billing/ui/LimitExceededModal";
+import { useErrorStore } from "@/shared/model/useErrorStore";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { isAuthenticated, isLoading } = useAuth();
-  const isTenantInactive = useGlobalErrors((s) => s.isTenantInactive);
-  const disabledFeature = useGlobalErrors((s) => s.disabledFeature);
+  const isTenantInactive = useErrorStore((s) => s.isTenantInactive);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.replace(ROUTES.LOGIN);
     }
   }, [isAuthenticated, isLoading, router]);
-
 
   if (isLoading) {
     return (
@@ -35,7 +33,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return null;
   }
 
-  // Full-screen overlay when tenant is deactivated
   if (isTenantInactive) {
     return <TenantInactivePage />;
   }
@@ -46,12 +43,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <Header />
       <main className="ml-[var(--sidebar-width)] pt-[var(--header-height)]">
         <div className="p-6">
-          <ErrorBoundary>
-            {disabledFeature ? <FeatureDisabledNotice /> : children}
-          </ErrorBoundary>
+          <ErrorBoundary>{children}</ErrorBoundary>
         </div>
       </main>
-      <LimitExceededModal />
+      <ErrorModal />
     </div>
   );
 }

@@ -40,7 +40,7 @@ export { ActiveModulesList } from "./ui/ActiveModulesList";
 export { PlanComparisonTable } from "./ui/PlanComparisonTable";
 export { UpgradeRequestModal } from "./ui/UpgradeRequestModal";
 export { UpgradeRequestsList } from "./ui/UpgradeRequestsList";
-export { LimitExceededModal } from "./ui/LimitExceededModal";
+// LimitExceededModal replaced by unified ErrorModal in @/shared/ui
 export { PlanForm } from "./ui/PlanForm";
 export { ModuleForm } from "./ui/ModuleForm";
 export { BundleForm } from "./ui/BundleForm";
