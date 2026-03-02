@@ -27,6 +27,10 @@ import {
   FolderTree,
   Ruler,
   SlidersHorizontal,
+  CreditCard,
+  LayoutGrid,
+  ArrowUpCircle,
+  Puzzle,
 } from "lucide-react";
 import { cn } from "@/shared/lib";
 import { ROUTES } from "@/shared/config";
@@ -66,6 +70,10 @@ const platformNavigation: NavSection = {
   items: [
     { href: ROUTES.PLATFORM_DASHBOARD, icon: LayoutDashboard, label: "Дашборд" },
     { href: ROUTES.TENANTS, icon: Building2, label: "Проекты" },
+    { href: ROUTES.PLATFORM_PLANS, icon: CreditCard, label: "Тарифы" },
+    { href: ROUTES.PLATFORM_MODULES, icon: Puzzle, label: "Модули" },
+    { href: ROUTES.PLATFORM_BUNDLES, icon: Package, label: "Бандлы" },
+    { href: ROUTES.PLATFORM_REQUESTS, icon: ArrowUpCircle, label: "Заявки" },
   ],
 };
 
@@ -127,6 +135,14 @@ const navigation: NavSection[] = [
       },
       { href: ROUTES.AUDIT, icon: History, label: "Журнал аудита" }, // Always visible
       { href: ROUTES.SETTINGS, icon: Settings, label: "Настройки" }, // Always visible
+    ],
+  },
+  {
+    label: "Биллинг",
+    items: [
+      { href: ROUTES.BILLING, icon: CreditCard, label: "Мой тариф" },
+      { href: ROUTES.BILLING_PLANS, icon: LayoutGrid, label: "Каталог тарифов" },
+      { href: ROUTES.BILLING_REQUESTS, icon: ArrowUpCircle, label: "Заявки" },
     ],
   },
 ];

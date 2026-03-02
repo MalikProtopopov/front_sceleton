@@ -319,5 +319,33 @@ export const API_ENDPOINTS = {
     WEBHOOK_URL: "/telegram/integration/webhook-url",
     WEBHOOK: "/telegram/integration/webhook",
   },
+
+  // Billing (user-facing)
+  BILLING: {
+    MY_PLAN: "/admin/my-plan",
+    MY_MODULES: "/admin/my-modules",
+    MY_LIMITS: "/admin/my-limits",
+    UPGRADE_REQUESTS: "/admin/upgrade-requests",
+  },
+
+  // Public billing catalog (no auth)
+  PUBLIC_BILLING: {
+    PLANS: "/public/plans",
+    MODULES: "/public/modules",
+    BUNDLES: "/public/bundles",
+  },
+
+  // Billing platform management (superuser only)
+  BILLING_PLATFORM: {
+    PLANS: "/admin/platform/plans",
+    PLAN_BY_ID: (id: string) => `/admin/platform/plans/${id}`,
+    MODULES: "/admin/platform/modules",
+    MODULE_BY_ID: (id: string) => `/admin/platform/modules/${id}`,
+    BUNDLES: "/admin/platform/bundles",
+    BUNDLE_BY_ID: (id: string) => `/admin/platform/bundles/${id}`,
+    UPGRADE_REQUESTS: "/admin/platform/upgrade-requests",
+    UPGRADE_REQUEST_BY_ID: (id: string) => `/admin/platform/upgrade-requests/${id}`,
+    TENANT_MODULES: (tenantId: string) => `/admin/platform/tenants/${tenantId}/modules`,
+  },
 } as const;
 

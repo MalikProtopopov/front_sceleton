@@ -22,10 +22,15 @@ import {
   ToggleLeft,
   Upload,
   X,
+  Copy,
+  Check,
+  Info,
 } from "lucide-react";
 import { useTenantDetail, useDeleteTenant, useUploadTenantLogo, useDeleteTenantLogo, TenantDomainsTab, TenantSettingsTab } from "@/features/tenants";
 import { TenantUsersTab } from "@/features/tenants/ui/TenantUsersTab";
 import { useFeatureFlags, useUpdateFeatureFlag } from "@/features/settings";
+import { useAddTenantModule, useRemoveTenantModule, usePlatformModules } from "@/features/billing";
+import type { ModuleSource } from "@/entities/billing";
 import {
   Button,
   Badge,
@@ -40,8 +45,9 @@ import {
   TabsTrigger,
   TabsContent,
   Switch,
+  Select,
 } from "@/shared/ui";
-import { ROUTES } from "@/shared/config";
+import { ROUTES, COPY_FEEDBACK_DURATION } from "@/shared/config";
 import { formatDateTime } from "@/shared/lib";
 
 const featureIcons: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -83,8 +89,14 @@ export default function TenantDetailPage() {
   const { data: flagsData, isLoading: isFlagsLoading } = useFeatureFlags(tenantId);
   const { mutate: updateFlag, isPending: isUpdatingFlag } = useUpdateFeatureFlag(tenantId);
 
+  const { data: allPlatformModules } = usePlatformModules();
+  const { mutate: addBillingModule, isPending: isAddingBillingModule } = useAddTenantModule(tenantId);
+  const { mutate: removeBillingModule, isPending: isRemovingBillingModule } = useRemoveTenantModule(tenantId);
+  const [selectedModuleSlug, setSelectedModuleSlug] = useState("");
+
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("details");
+  const [idCopied, setIdCopied] = useState(false);
 
   // Feature flag disable confirmation
   const [disableConfirm, setDisableConfirm] = useState<{ name: string; label: string } | null>(null);
@@ -190,12 +202,66 @@ export default function TenantDetailPage() {
           <TabsTrigger value="domains">Домены</TabsTrigger>
           <TabsTrigger value="settings">Настройки</TabsTrigger>
           <TabsTrigger value="modules">Модули</TabsTrigger>
+          <TabsTrigger value="billing-modules">Биллинг-модули</TabsTrigger>
           <TabsTrigger value="users">Пользователи</TabsTrigger>
         </TabsList>
 
         {/* General Info */}
         <TabsContent value="details">
           <div className="grid gap-6 lg:grid-cols-2">
+            {/* Tenant ID */}
+            <Card className="lg:col-span-2">
+              <CardContent className="p-4 sm:p-5">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--color-accent-primary)]/10 text-[var(--color-accent-primary)]">
+                      <Building2 className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-[var(--color-text-muted)]">Tenant ID</p>
+                      <div className="flex items-center gap-2">
+                        <code className="rounded bg-[var(--color-bg-tertiary)] px-2 py-0.5 font-mono text-sm text-[var(--color-text-primary)]">
+                          {tenant.id}
+                        </code>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(tenant.id);
+                            setIdCopied(true);
+                            setTimeout(() => setIdCopied(false), COPY_FEEDBACK_DURATION);
+                          }}
+                          className="inline-flex items-center gap-1.5 rounded-[var(--radius-md)] px-2 py-1 text-xs font-medium text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)]"
+                        >
+                          {idCopied ? (
+                            <>
+                              <Check className="h-3.5 w-3.5 text-green-500" />
+                              Скопировано
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="h-3.5 w-3.5" />
+                              Копировать
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-3 flex items-start gap-2 rounded-lg bg-[var(--color-bg-secondary)] p-3 text-xs text-[var(--color-text-muted)]">
+                  <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <div>
+                    <p className="mb-1 font-medium text-[var(--color-text-secondary)]">Как подключить клиентский сайт</p>
+                    <p>
+                      Укажите этот ID в переменной окружения{" "}
+                      <code className="rounded bg-[var(--color-bg-tertiary)] px-1 py-0.5">NEXT_PUBLIC_TENANT_ID</code>{" "}
+                      при сборке клиентского сайта. После этого сайт будет загружать контент и настройки именно этой организации.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Logo */}
             <Card className="lg:col-span-2">
               <CardHeader>
@@ -449,6 +515,79 @@ export default function TenantDetailPage() {
               })}
             </div>
           )}
+        </TabsContent>
+
+        {/* Billing modules */}
+        <TabsContent value="billing-modules">
+          <div className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Добавить модуль вручную</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-end gap-3">
+                  <Select
+                    label="Модуль"
+                    options={(allPlatformModules ?? []).map((m) => ({
+                      value: m.slug,
+                      label: `${m.name_ru} (${m.slug})`,
+                    }))}
+                    value={selectedModuleSlug}
+                    onChange={(e) => setSelectedModuleSlug(e.target.value)}
+                    placeholder="Выберите модуль..."
+                  />
+                  <Button
+                    onClick={() => {
+                      if (selectedModuleSlug) {
+                        addBillingModule(
+                          { module_slug: selectedModuleSlug, source: "manual" as ModuleSource, enabled: true },
+                          { onSuccess: () => setSelectedModuleSlug("") }
+                        );
+                      }
+                    }}
+                    disabled={!selectedModuleSlug || isAddingBillingModule}
+                    isLoading={isAddingBillingModule}
+                  >
+                    Добавить
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Удалить модуль</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-end gap-3">
+                  <Select
+                    label="Модуль для удаления"
+                    options={(allPlatformModules ?? []).map((m) => ({
+                      value: m.slug,
+                      label: `${m.name_ru} (${m.slug})`,
+                    }))}
+                    value={selectedModuleSlug}
+                    onChange={(e) => setSelectedModuleSlug(e.target.value)}
+                    placeholder="Выберите модуль..."
+                  />
+                  <Button
+                    variant="danger"
+                    onClick={() => {
+                      if (selectedModuleSlug) {
+                        removeBillingModule(
+                          { module_slug: selectedModuleSlug },
+                          { onSuccess: () => setSelectedModuleSlug("") }
+                        );
+                      }
+                    }}
+                    disabled={!selectedModuleSlug || isRemovingBillingModule}
+                    isLoading={isRemovingBillingModule}
+                  >
+                    Удалить
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         {/* Users */}

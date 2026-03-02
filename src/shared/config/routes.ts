@@ -105,5 +105,24 @@ export const ROUTES = {
   // Role Management
   ROLE_NEW: "/users/roles/new",
   ROLE_EDIT: (id: string) => `/users/roles/${id}`,
+  
+  // Billing (user-facing)
+  BILLING: "/billing",
+  BILLING_MODULES: "/billing/modules",
+  BILLING_LIMITS: "/billing/limits",
+  BILLING_PLANS: "/billing/plans",
+  BILLING_REQUESTS: "/billing/requests",
+  
+  // Billing platform management (superuser only)
+  PLATFORM_PLANS: "/platform/plans",
+  PLATFORM_PLAN_NEW: "/platform/plans/new",
+  PLATFORM_PLAN_EDIT: (id: string) => `/platform/plans/${id}`,
+  PLATFORM_MODULES: "/platform/modules",
+  PLATFORM_MODULE_NEW: "/platform/modules/new",
+  PLATFORM_MODULE_EDIT: (id: string) => `/platform/modules/${id}`,
+  PLATFORM_BUNDLES: "/platform/bundles",
+  PLATFORM_BUNDLE_NEW: "/platform/bundles/new",
+  PLATFORM_BUNDLE_EDIT: (id: string) => `/platform/bundles/${id}`,
+  PLATFORM_REQUESTS: "/platform/requests",
 } as const;
 

@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/providers";
 import { Sidebar } from "@/widgets/Sidebar";
 import { Header } from "@/widgets/Header";
-import { Spinner, TenantInactivePage, FeatureDisabledNotice } from "@/shared/ui";
+import { Spinner, TenantInactivePage, FeatureDisabledNotice, ErrorBoundary } from "@/shared/ui";
 import { ROUTES } from "@/shared/config";
 import { useGlobalErrors } from "@/shared/model/useGlobalErrors";
+import { LimitExceededModal } from "@/features/billing/ui/LimitExceededModal";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -45,9 +46,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <Header />
       <main className="ml-[var(--sidebar-width)] pt-[var(--header-height)]">
         <div className="p-6">
-          {disabledFeature ? <FeatureDisabledNotice /> : children}
+          <ErrorBoundary>
+            {disabledFeature ? <FeatureDisabledNotice /> : children}
+          </ErrorBoundary>
         </div>
       </main>
+      <LimitExceededModal />
     </div>
   );
 }

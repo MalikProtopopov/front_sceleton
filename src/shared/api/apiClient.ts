@@ -6,9 +6,11 @@ import axios, {
 } from "axios";
 import { toast } from "sonner";
 import { API_BASE_URL } from "@/shared/config";
+import { API_TIMEOUT } from "../config/constants";
 import type { ApiError } from "@/shared/types";
 import { useGlobalErrors } from "@/shared/model/useGlobalErrors";
 import { useTenantStore } from "@/shared/model/useTenantStore";
+import { useLimitExceededStore } from "@/shared/model/useLimitExceededStore";
 
 // Token storage functions - imported from auth feature
 let getAccessToken: () => string | null = () => null;
@@ -46,7 +48,7 @@ class ApiClient {
         "Cache-Control": "no-cache, no-store, must-revalidate",
         "Pragma": "no-cache",
       },
-      timeout: 30000, // 30 seconds
+      timeout: API_TIMEOUT,
     });
 
     this.setupInterceptors();
@@ -120,6 +122,19 @@ class ApiClient {
 
           if (errorCode === "system_role_protected") {
             toast.error("Системную роль нельзя изменить или удалить");
+            return Promise.reject(error);
+          }
+
+          // Limit exceeded — show modal via store
+          const errorType = typeof data?.type === "string" ? data.type : "";
+          if (errorCode === "limit_exceeded" || errorType.includes("limit_exceeded")) {
+            const raw = data as unknown as Record<string, unknown> | undefined;
+            const resource = raw?.resource as string | undefined;
+            const currentUsage = raw?.current_usage as number | undefined;
+            const limit = raw?.limit as number | undefined;
+            if (resource != null && currentUsage != null && limit != null) {
+              useLimitExceededStore.getState().show(resource, currentUsage, limit);
+            }
             return Promise.reject(error);
           }
         }
