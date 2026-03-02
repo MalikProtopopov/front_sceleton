@@ -11,6 +11,7 @@ export {
   useUploadTenantLogo,
   useDeleteTenantLogo,
   useEnabledFeatures,
+  useSidebar,
   useTenantDomains,
   useCreateTenantDomain,
   useUpdateTenantDomain,

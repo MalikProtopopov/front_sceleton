@@ -1,19 +1,27 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/providers";
 import { Sidebar } from "@/widgets/Sidebar";
 import { Header } from "@/widgets/Header";
 import { Spinner, TenantInactivePage, ErrorBoundary } from "@/shared/ui";
-import { ErrorModal } from "@/shared/ui/ErrorModal";
+import { AccessDeniedPage } from "@/shared/ui/AccessDeniedPage";
 import { ROUTES } from "@/shared/config";
 import { useErrorStore } from "@/shared/model/useErrorStore";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { isAuthenticated, isLoading } = useAuth();
   const isTenantInactive = useErrorStore((s) => s.isTenantInactive);
+  const pageError = useErrorStore((s) => s.pageError);
+  const clearPageError = useErrorStore((s) => s.clearPageError);
+
+  // Clear page-level error on route change
+  useEffect(() => {
+    clearPageError();
+  }, [pathname, clearPageError]);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -43,11 +51,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <Header />
       <main className="ml-[var(--sidebar-width)] pt-[var(--header-height)]">
         <div className="p-6">
-          <ErrorBoundary>{children}</ErrorBoundary>
+          <ErrorBoundary>
+            {pageError ? <AccessDeniedPage /> : children}
+          </ErrorBoundary>
         </div>
       </main>
-      <ErrorModal />
     </div>
   );
 }
-

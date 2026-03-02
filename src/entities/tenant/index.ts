@@ -30,6 +30,9 @@ export type {
   EmailLogParams,
   EmailLogEntry,
   EmailLogsResponse,
+  SidebarItem,
+  SidebarItemReason,
+  SidebarResponse,
 } from "./types";
 
 export {

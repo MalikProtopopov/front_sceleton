@@ -24,6 +24,7 @@ export const API_ENDPOINTS = {
     REFRESH: "/auth/refresh",
     ME: "/auth/me",
     ME_FEATURES: "/auth/me/features",
+    ME_SIDEBAR: "/auth/me/sidebar",
     ME_TENANTS: "/auth/me/tenants",
     SELECT_TENANT: "/auth/select-tenant",
     SWITCH_TENANT: "/auth/switch-tenant",

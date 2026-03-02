@@ -92,6 +92,15 @@ export function useEnabledFeatures() {
   });
 }
 
+export function useSidebar() {
+  return useQuery({
+    queryKey: tenantsKeys.sidebar(),
+    queryFn: () => tenantsApi.getSidebar(),
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: "always",
+  });
+}
+
 // --- Domains ---
 
 export function useTenantDomains(tenantId: string) {

@@ -37,7 +37,7 @@ export interface GenericForbiddenPayload {
   message?: string;
 }
 
-type ErrorPayload =
+export type ErrorPayload =
   | FeatureDisabledPayload
   | LimitExceededPayload
   | PermissionDeniedPayload
@@ -45,52 +45,38 @@ type ErrorPayload =
   | GenericForbiddenPayload
   | null;
 
-interface ErrorStoreState {
-  visible: boolean;
-  type: ErrorType | null;
+export interface PageError {
+  type: ErrorType;
   payload: ErrorPayload;
+}
+
+interface ErrorStoreState {
+  /** Inline page-level error (replaces page content) */
+  pageError: PageError | null;
 
   /** True when the tenant is fully deactivated (full-screen block) */
   isTenantInactive: boolean;
 
-  showFeatureDisabled: (payload: FeatureDisabledPayload) => void;
-  showLimitExceeded: (payload: LimitExceededPayload) => void;
-  showPermissionDenied: (payload: PermissionDeniedPayload) => void;
+  setPageError: (type: ErrorType, payload?: ErrorPayload) => void;
+  clearPageError: () => void;
   showTenantInactive: () => void;
-  showRateLimit: (retryAfter?: number) => void;
-  showGenericForbidden: (message?: string) => void;
 
-  dismiss: () => void;
   reset: () => void;
 }
 
 export const useErrorStore = create<ErrorStoreState>((set) => ({
-  visible: false,
-  type: null,
-  payload: null,
+  pageError: null,
   isTenantInactive: false,
 
-  showFeatureDisabled: (payload) =>
-    set({ visible: true, type: "feature_disabled", payload }),
+  setPageError: (type, payload = null) =>
+    set({ pageError: { type, payload } }),
 
-  showLimitExceeded: (payload) =>
-    set({ visible: true, type: "limit_exceeded", payload }),
-
-  showPermissionDenied: (payload) =>
-    set({ visible: true, type: "permission_denied", payload }),
+  clearPageError: () =>
+    set({ pageError: null }),
 
   showTenantInactive: () =>
     set({ isTenantInactive: true }),
 
-  showRateLimit: (retryAfter) =>
-    set({ visible: true, type: "rate_limit", payload: { retryAfter } }),
-
-  showGenericForbidden: (message) =>
-    set({ visible: true, type: "generic_forbidden", payload: { message } }),
-
-  dismiss: () =>
-    set({ visible: false, type: null, payload: null }),
-
   reset: () =>
-    set({ visible: false, type: null, payload: null, isTenantInactive: false }),
+    set({ pageError: null, isTenantInactive: false }),
 }));

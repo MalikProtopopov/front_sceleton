@@ -8,6 +8,7 @@ import type {
   UpdateTenantDto,
   EnabledFeaturesResponse,
   FeatureCatalogResponse,
+  SidebarResponse,
   TenantDomainResponse,
   TenantDomainListResponse,
   TenantDomainCreate,
@@ -96,6 +97,11 @@ export const tenantsApi = {
     }
     return data as EnabledFeaturesResponse;
   },
+
+  getSidebar: () =>
+    apiClient.get<SidebarResponse>(API_ENDPOINTS.AUTH.ME_SIDEBAR, {
+      params: { locale: "ru" },
+    }),
 };
 
 export const tenantsKeys = {
@@ -107,4 +113,5 @@ export const tenantsKeys = {
   domains: (tenantId: string) => [...tenantsKeys.all, "domains", tenantId] as const,
   emailLogs: (tenantId: string) => [...tenantsKeys.all, "emailLogs", tenantId] as const,
   enabledFeatures: () => ["enabledFeatures"] as const,
+  sidebar: () => ["sidebar"] as const,
 };

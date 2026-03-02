@@ -26,6 +26,36 @@ function getErrorCode(data: Record<string, unknown> | undefined): string | null 
   return null;
 }
 
+function isReadRequest(method?: string): boolean {
+  return !method || method.toLowerCase() === "get";
+}
+
+const RESOURCE_NAMES: Record<string, string> = {
+  max_users: "пользователей",
+  max_storage_mb: "хранилища (МБ)",
+  max_leads_per_month: "заявок в месяц",
+  max_products: "товаров",
+  max_variants: "вариаций",
+  max_domains: "доменов",
+  max_articles: "статей",
+  max_rbac_roles: "ролей",
+};
+
+const FEATURE_NAMES: Record<string, string> = {
+  blog_module: "Блог / Статьи",
+  cases_module: "Кейсы / Портфолио",
+  reviews_module: "Отзывы",
+  faq_module: "Вопросы и ответы",
+  team_module: "Команда / Сотрудники",
+  services_module: "Услуги",
+  catalog_module: "Каталог товаров",
+  variants_module: "Вариации товаров",
+  seo_advanced: "Расширенное SEO",
+  multilang: "Мультиязычность",
+  analytics_advanced: "Расширенная аналитика",
+  documents: "Документы",
+};
+
 // Token storage functions - imported from auth feature
 let getAccessToken: () => string | null = () => null;
 let getRefreshToken: () => string | null = () => null;
@@ -58,7 +88,6 @@ class ApiClient {
       baseURL: API_BASE_URL,
       headers: {
         "Content-Type": "application/json",
-        // Запрещаем браузеру кэшировать ответы API
         "Cache-Control": "no-cache, no-store, must-revalidate",
         "Pragma": "no-cache",
       },
@@ -77,9 +106,6 @@ class ApiClient {
           config.headers.Authorization = `Bearer ${token}`;
         }
 
-        // X-Tenant-ID: required on all authenticated requests.
-        // On POST /auth/login — only if tenant is known (resolved from domain).
-        // On POST /auth/select-tenant — not needed (tenant_id is in the body).
         const tenantId = useTenantStore.getState().tenantId;
         const isSelectTenant =
           config.url?.includes("/auth/select-tenant") && config.method === "post";
@@ -87,8 +113,6 @@ class ApiClient {
           config.headers["X-Tenant-ID"] = tenantId;
         }
 
-        // FormData must be sent as multipart/form-data with boundary.
-        // Do not send Content-Type so axios/browser sets it automatically.
         if (config.data instanceof FormData) {
           delete config.headers["Content-Type"];
         }
@@ -98,7 +122,7 @@ class ApiClient {
       (error) => Promise.reject(error),
     );
 
-    // Response interceptor - handle 401, 403 and refresh token
+    // Response interceptor - handle 401, 403, 429
     this.instance.interceptors.response.use(
       (response: AxiosResponse) => response,
       async (error: AxiosError<ApiError>) => {
@@ -109,6 +133,7 @@ class ApiClient {
         const data = error.response?.data as Record<string, unknown> | undefined;
         const errorCode = getErrorCode(data);
         const store = useErrorStore.getState();
+        const isRead = isReadRequest(originalRequest.method);
 
         // ── 403: Authorization / Feature / Limit ──
         if (error.response?.status === 403) {
@@ -122,30 +147,64 @@ class ApiClient {
               const feature =
                 (data?.feature as string) ||
                 (typeof data?.detail === "string" ? data.detail : "unknown");
-              store.showFeatureDisabled({ feature, message: data?.detail as string });
+              if (isRead) {
+                store.setPageError("feature_disabled", { feature, message: data?.detail as string });
+              } else {
+                const label = FEATURE_NAMES[feature] ?? feature;
+                toast.error(`Модуль «${label}» не входит в ваш тариф`, {
+                  description: "Перейдите в раздел «Тариф» для подключения.",
+                  action: { label: "Тарифы", onClick: () => { window.location.href = "/billing/plans"; } },
+                });
+              }
               return Promise.reject(error);
             }
 
-            case "permission_denied":
-              store.showPermissionDenied({
-                permission: data?.required_permission as string | undefined,
-                message: data?.detail as string | undefined,
-              });
+            case "permission_denied": {
+              if (isRead) {
+                store.setPageError("permission_denied", {
+                  permission: data?.required_permission as string | undefined,
+                  message: data?.detail as string | undefined,
+                });
+              } else {
+                toast.error("Нет прав на это действие", {
+                  description: "Обратитесь к администратору для расширения прав.",
+                });
+              }
               return Promise.reject(error);
+            }
 
-            case "insufficient_role":
-              store.showPermissionDenied({
-                role: data?.required_role as string | undefined,
-                message: data?.detail as string | undefined,
-              });
+            case "insufficient_role": {
+              if (isRead) {
+                store.setPageError("insufficient_role", {
+                  role: data?.required_role as string | undefined,
+                  message: data?.detail as string | undefined,
+                });
+              } else {
+                const role = data?.required_role as string | undefined;
+                toast.error(
+                  role
+                    ? `Действие доступно только для роли «${role}»`
+                    : "Недостаточно прав для этого действия",
+                  { description: "Обратитесь к администратору." },
+                );
+              }
               return Promise.reject(error);
+            }
 
             case "limit_exceeded": {
               const resource = data?.resource as string | undefined;
               const currentUsage = data?.current_usage as number | undefined;
               const limit = data?.limit as number | undefined;
               if (resource != null && currentUsage != null && limit != null) {
-                store.showLimitExceeded({ resource, currentUsage, limit, message: data?.detail as string });
+                if (isRead) {
+                  store.setPageError("limit_exceeded", { resource, currentUsage, limit, message: data?.detail as string });
+                } else {
+                  const label = RESOURCE_NAMES[resource] ?? resource;
+                  toast.error(`Лимит исчерпан: ${currentUsage}/${limit} ${label}`, {
+                    description: "Перейдите на расширенный тариф для увеличения лимитов.",
+                    action: { label: "Тарифы", onClick: () => { window.location.href = "/billing/plans"; } },
+                  });
+                }
               }
               return Promise.reject(error);
             }
@@ -155,33 +214,51 @@ class ApiClient {
               return Promise.reject(error);
 
             default:
-              store.showGenericForbidden(data?.detail as string | undefined);
+              if (isRead) {
+                store.setPageError("generic_forbidden", { message: data?.detail as string | undefined });
+              } else {
+                toast.error(
+                  (data?.detail as string) || "Доступ запрещён",
+                );
+              }
               return Promise.reject(error);
           }
         }
 
-        // ── 429: Rate limit ──
+        // ── 429: Rate limit (always toast) ──
         if (error.response?.status === 429) {
           const retryAfter = data?.retry_after as number | undefined;
-          store.showRateLimit(retryAfter);
+          const timeStr = retryAfter
+            ? retryAfter >= 60
+              ? `${Math.ceil(retryAfter / 60)} мин.`
+              : `${retryAfter} сек.`
+            : null;
+          toast.error("Слишком много запросов", {
+            description: timeStr
+              ? `Повторите попытку через ${timeStr}`
+              : "Подождите немного и попробуйте снова.",
+          });
           return Promise.reject(error);
         }
 
         // ── 404: feature_not_available (public API) ──
         if (error.response?.status === 404 && errorCode === "feature_not_available") {
           const feature = (data?.feature as string) || "unknown";
-          store.showFeatureDisabled({ feature });
+          if (isRead) {
+            store.setPageError("feature_disabled", { feature });
+          } else {
+            toast.error("Функция недоступна");
+          }
           return Promise.reject(error);
         }
 
-        // Skip refresh token flow for login endpoint (401 is expected for wrong credentials)
+        // Skip refresh token flow for login endpoint
         if (originalRequest.url?.includes('/auth/login')) {
           return Promise.reject(error);
         }
 
         // If error is 401 and we haven't retried yet
         if (error.response?.status === 401 && !originalRequest._retry) {
-          // If we're already refreshing, queue this request
           if (this.isRefreshing) {
             return new Promise((resolve, reject) => {
               this.failedQueue.push({ resolve, reject });
@@ -202,7 +279,6 @@ class ApiClient {
               throw new Error("No refresh token");
             }
 
-            // Make refresh request without interceptors
             const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {
               refresh_token: refreshToken,
             });
@@ -210,24 +286,20 @@ class ApiClient {
             const newTokens = response.data;
             setTokens(newTokens);
 
-            // Process queued requests
             this.failedQueue.forEach(({ resolve }) => {
               resolve(newTokens.access_token);
             });
             this.failedQueue = [];
 
-            // Retry original request
             originalRequest.headers.Authorization = `Bearer ${newTokens.access_token}`;
             return this.instance(originalRequest);
           } catch (refreshError) {
-            // Refresh failed - clear tokens and redirect to login
             this.failedQueue.forEach(({ reject }) => {
               reject(refreshError as Error);
             });
             this.failedQueue = [];
             clearTokens();
 
-            // Redirect to login (client-side only)
             if (typeof window !== "undefined") {
               window.location.href = "/login";
             }
@@ -269,7 +341,6 @@ class ApiClient {
     return response.data;
   }
 
-  // Upload file via multipart/form-data (Content-Type with boundary set by interceptor/axios)
   async uploadFile<T>(url: string, file: File, fieldName: string = "file"): Promise<T> {
     const formData = new FormData();
     formData.append(fieldName, file);
@@ -277,11 +348,9 @@ class ApiClient {
     return response.data;
   }
 
-  // Get the raw axios instance if needed
   get axios(): AxiosInstance {
     return this.instance;
   }
 }
 
 export const apiClient = new ApiClient();
-

@@ -26,7 +26,7 @@ export * from "./LocaleManager";
 export * from "./ContactsManager";
 export * from "./ContentBlocksManager";
 export * from "./TenantInactivePage";
-export * from "./ErrorModal";
+export * from "./AccessDeniedPage";
 export * from "./DomainNotFoundPage";
 export * from "./NoAccessPage";
 export * from "./ErrorBoundary";

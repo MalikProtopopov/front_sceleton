@@ -358,3 +358,26 @@ export const TIME_FORMATS = [
   { value: "hh:mm A", label: "11:59 PM (12ч)" },
 ] as const;
 
+// ─── Sidebar API ───
+
+export type SidebarItemReason = "billing" | "role" | "billing+role" | null;
+
+export interface SidebarItem {
+  name: string;
+  title: string;
+  path: string;
+  icon: string;
+  category: string;
+  visible: boolean;
+  accessible: boolean;
+  reason: SidebarItemReason;
+  required_permission: string | null;
+}
+
+export interface SidebarResponse {
+  tenant_id: string;
+  role: string;
+  all_access: boolean;
+  sections: SidebarItem[];
+}
+
