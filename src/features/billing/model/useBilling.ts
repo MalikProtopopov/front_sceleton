@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useAppMutation } from "@/shared/lib";
+import { tenantsKeys } from "@/features/tenants/api/tenantsApi";
 import { billingApi, billingKeys } from "../api/billingApi";
 import type { CreateUpgradeRequestDto } from "@/entities/billing";
 
@@ -58,7 +59,7 @@ export function useCreateUpgradeRequest() {
   return useAppMutation({
     mutationFn: (data: CreateUpgradeRequestDto) => billingApi.createUpgradeRequest(data),
     successMessage: "Заявка отправлена",
-    invalidateKeys: [billingKeys.upgradeRequests()],
+    invalidateKeys: [billingKeys.upgradeRequests(), tenantsKeys.enabledFeatures()],
     onError: (error: Error) => {
       const err = error as Error & { status?: number; retry_after?: number };
       if (err.status === 429) {

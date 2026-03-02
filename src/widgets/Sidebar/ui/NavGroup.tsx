@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { ChevronDown, ChevronRight, Lock } from "lucide-react";
 import { cn } from "@/shared/lib";
+import { ROUTES } from "@/shared/config";
 
 export interface NavGroupProps {
   icon: React.ComponentType<{ className?: string }>;
@@ -15,20 +16,39 @@ export interface NavGroupProps {
     label: string;
   }[];
   collapsed?: boolean;
+  /** Feature unavailable — lock icon, gray, click redirects to billing */
+  disabled?: boolean;
 }
 
-export function NavGroup({ icon: Icon, label, items, collapsed }: NavGroupProps) {
+export function NavGroup({ icon: Icon, label, items, collapsed, disabled }: NavGroupProps) {
+  const router = useRouter();
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(() => {
     // Автоматически открывать, если один из дочерних элементов активен
     return items.some(item => pathname === item.href || pathname.startsWith(item.href + "/"));
   });
 
-  const isActive = items.some(item => pathname === item.href || pathname.startsWith(item.href + "/"));
+  const isActive = !disabled && items.some(item => pathname === item.href || pathname.startsWith(item.href + "/"));
+
+  const goToBilling = () => router.push(ROUTES.BILLING);
+  const disabledTooltip = "Доступно в расширенном тарифе";
 
   if (collapsed) {
-    // В свернутом режиме показываем иконку родительского элемента
-    // При клике переходим на первый дочерний элемент
+    if (disabled) {
+      return (
+        <button
+          type="button"
+          onClick={goToBilling}
+          className={cn(
+            "group flex w-full items-center justify-center rounded-[var(--radius-md)] px-2 py-2.5 transition-colors duration-[var(--transition-fast)]",
+            "text-[var(--color-text-muted)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)]",
+          )}
+          title={disabledTooltip}
+        >
+          <Lock className="h-5 w-5 flex-shrink-0" />
+        </button>
+      );
+    }
     const firstItem = items[0];
     if (!firstItem) return null;
     return (
@@ -44,6 +64,23 @@ export function NavGroup({ icon: Icon, label, items, collapsed }: NavGroupProps)
       >
         <Icon className={cn("h-5 w-5 flex-shrink-0", isActive && "text-white")} />
       </Link>
+    );
+  }
+
+  if (disabled) {
+    return (
+      <button
+        type="button"
+        onClick={goToBilling}
+        className={cn(
+          "group flex w-full items-center gap-3 rounded-[var(--radius-md)] px-3 py-2.5 text-left transition-colors duration-[var(--transition-fast)]",
+          "text-[var(--color-text-muted)] hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)]",
+        )}
+        title={disabledTooltip}
+      >
+        <Lock className="h-5 w-5 flex-shrink-0" />
+        <span className="flex-1 text-sm font-medium">{label}</span>
+      </button>
     );
   }
 

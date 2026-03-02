@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import {
   FileText,
   HelpCircle,
@@ -149,6 +150,7 @@ const navigation: NavSection[] = [
 ];
 
 export function Sidebar() {
+  const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const { user } = useAuth();
   const { data: featuresData } = useEnabledFeatures();
@@ -250,6 +252,7 @@ export function Sidebar() {
                       label={item.label}
                       items={item.items}
                       collapsed={collapsed}
+                      disabled={!!isDisabled}
                     />
                   );
                 }
@@ -261,7 +264,8 @@ export function Sidebar() {
                     label={item.label}
                     collapsed={collapsed}
                     disabled={!!isDisabled}
-                    badge={isDisabled ? "По запросу" : undefined}
+                    onDisabledClick={isDisabled ? () => router.push(ROUTES.BILLING) : undefined}
+                    disabledTooltip={isDisabled ? "Доступно в расширенном тарифе" : undefined}
                     exact={item.exact}
                   />
                 );
