@@ -106,8 +106,22 @@ interface SidebarSection {
   items: SidebarItem[];
 }
 
+/**
+ * Sub-items that should always be present when a parent category exists in the API response.
+ * If the backend doesn't send these as separate items, we inject them.
+ */
+const SUPPLEMENTARY_ITEMS: Record<string, Omit<SidebarItem, "visible" | "accessible" | "reason" | "required_permission" | "limit_info">[]> = {
+  commerce: [
+    { name: "uom", title: "Ед. измерения", path: "/catalog/uom", icon: "ruler", category: "commerce" },
+    { name: "categories", title: "Категории", path: "/catalog/categories", icon: "folder-tree", category: "commerce" },
+    { name: "parameters", title: "Параметры", path: "/catalog/parameters", icon: "sliders-horizontal", category: "commerce" },
+  ],
+};
+
 function groupByCategory(items: SidebarItem[]): SidebarSection[] {
   const groups = new Map<string, SidebarSection>();
+  const existingNames = new Set(items.map((i) => i.name));
+
   for (const item of items) {
     if (!item.visible) continue;
     const cat = item.category;
@@ -117,6 +131,23 @@ function groupByCategory(items: SidebarItem[]): SidebarSection[] {
     }
     groups.get(cat)!.items.push(item);
   }
+
+  for (const [cat, extras] of Object.entries(SUPPLEMENTARY_ITEMS)) {
+    const group = groups.get(cat);
+    if (!group) continue;
+    for (const extra of extras) {
+      if (existingNames.has(extra.name)) continue;
+      group.items.push({
+        ...extra,
+        visible: true,
+        accessible: true,
+        reason: null,
+        required_permission: null,
+        limit_info: null,
+      });
+    }
+  }
+
   return Array.from(groups.values()).sort((a, b) => a.order - b.order);
 }
 
@@ -368,6 +399,7 @@ export function Sidebar() {
                       onLockedClick={isBilling && isLocked ? goToBilling : undefined}
                       exact={item.name === "_dashboard"}
                       limitInfo={item.limit_info}
+                      onLimitLockedClick={goToBilling}
                     />
                   );
                 })}

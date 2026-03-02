@@ -23,6 +23,8 @@ export interface NavItemProps {
   requiredPermission?: string | null;
   /** Limit usage info for inline badge */
   limitInfo?: SidebarLimitInfo | null;
+  /** Click handler when limit is exceeded/not_available (redirect to billing) */
+  onLimitLockedClick?: () => void;
 }
 
 const REASON_TOOLTIPS: Record<string, string> = {
@@ -42,6 +44,7 @@ export function NavItem({
   onLockedClick,
   requiredPermission,
   limitInfo,
+  onLimitLockedClick,
 }: NavItemProps) {
   const pathname = usePathname();
   const roleTooltip = reason === "role" || reason === "billing+role"
@@ -50,21 +53,29 @@ export function NavItem({
       : REASON_TOOLTIPS[reason] ?? "Нет прав. Обратитесь к администратору"
     : undefined;
   const tooltip = roleTooltip ?? (reason ? REASON_TOOLTIPS[reason] : undefined);
+
+  const isLimitBlocked = !!limitInfo && (limitInfo.status === "not_available" || limitInfo.status === "exceeded");
+  const isBillingLocked = (locked && (reason === "billing" || reason === "billing+role")) || isLimitBlocked;
+  const isRoleLocked = locked && !isBillingLocked && reason === "role";
+  const effectiveLocked = locked || isLimitBlocked;
+
   const isActive =
-    !locked &&
+    !effectiveLocked &&
     (exact
       ? pathname === href
       : pathname === href || pathname.startsWith(href + "/"));
 
-  const isBillingLocked = locked && (reason === "billing" || reason === "billing+role");
-  const isRoleLocked = locked && reason === "role";
+  // ── Billing/limit-locked: gold accent, clickable → billing ──
+  const billingClickHandler = isLimitBlocked ? onLimitLockedClick : onLockedClick;
+  const billingTooltip = isLimitBlocked
+    ? (limitInfo?.status === "exceeded" ? "Лимит исчерпан. Обновите тариф" : "Недоступно в вашем тарифе")
+    : tooltip;
 
-  // ── Billing-locked: gold accent, clickable → billing (читаемый контраст) ──
-  if (isBillingLocked && onLockedClick) {
+  if (isBillingLocked && billingClickHandler) {
     return (
       <button
         type="button"
-        onClick={onLockedClick}
+        onClick={billingClickHandler}
         className={cn(
           "group relative flex w-full items-center gap-3 rounded-[var(--radius-md)] px-3 py-2.5 text-left",
           "border-2 border-amber-500 bg-amber-100 transition-all duration-200",
@@ -73,7 +84,7 @@ export function NavItem({
           "dark:hover:border-amber-400 dark:hover:bg-amber-900/40",
           collapsed && "justify-center px-2",
         )}
-        title={collapsed ? `${label} — ${tooltip}` : tooltip}
+        title={collapsed ? `${label} — ${billingTooltip}` : billingTooltip}
       >
         <div className="relative flex-shrink-0">
           <Icon className="h-5 w-5 text-amber-800 dark:text-amber-300" />
@@ -115,7 +126,7 @@ export function NavItem({
   }
 
   // ── Generic locked fallback (billing+role without handler) ──
-  if (locked) {
+  if (effectiveLocked) {
     return (
       <span
         className={cn(
