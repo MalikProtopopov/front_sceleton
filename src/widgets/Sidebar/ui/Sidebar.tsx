@@ -367,6 +367,7 @@ export function Sidebar() {
                       requiredPermission={item.required_permission}
                       onLockedClick={isBilling && isLocked ? goToBilling : undefined}
                       exact={item.name === "_dashboard"}
+                      limitInfo={item.limit_info}
                     />
                   );
                 })}

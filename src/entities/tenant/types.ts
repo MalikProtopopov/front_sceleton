@@ -362,6 +362,13 @@ export const TIME_FORMATS = [
 
 export type SidebarItemReason = "billing" | "role" | "billing+role" | null;
 
+export interface SidebarLimitInfo {
+  resource: string;
+  current: number;
+  limit: number | null;
+  status: "ok" | "warning" | "exceeded" | "not_available";
+}
+
 export interface SidebarItem {
   name: string;
   title: string;
@@ -373,6 +380,8 @@ export interface SidebarItem {
   reason: SidebarItemReason;
   /** Код права RBAC при reason role/billing+role, например articles:read, catalog:read */
   required_permission: string | null;
+  /** Информация о лимите ресурса (null если лимит не применяется к разделу) */
+  limit_info: SidebarLimitInfo | null;
 }
 
 export interface SidebarResponse {

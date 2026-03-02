@@ -7,6 +7,8 @@ import { useLeadsList, useDeleteLead, useUpdateLeadStatus, useInquiryForms, Lead
 import { Button, Table, Pagination, Badge, ConfirmModal, Select, Input, FilterBar, type Column } from "@/shared/ui";
 import { ROUTES } from "@/shared/config";
 import { formatDateTime, downloadExport } from "@/shared/lib";
+import { useLimitGuard } from "@/shared/hooks";
+import { LimitBanner } from "@/shared/ui";
 import type { Inquiry, InquiryFilterParams, InquiryStatus } from "@/entities/inquiry";
 import { INQUIRY_STATUS_CONFIG, FORM_SLUG_CONFIG } from "@/entities/inquiry";
 
@@ -29,6 +31,7 @@ export default function LeadsPage() {
   const { data: forms } = useInquiryForms();
   const { mutate: deleteLead, isPending: isDeleting } = useDeleteLead();
   const updateStatus = useUpdateLeadStatus(selectedLead?.id || "");
+  const { entry: limitEntry } = useLimitGuard("max_leads_per_month");
 
   const handleFiltersChange = (newFilters: Partial<InquiryFilterParams>) => {
     setFilters((prev) => ({
@@ -256,6 +259,8 @@ export default function LeadsPage() {
           </Button>
         </div>
       </div>
+
+      {limitEntry && <LimitBanner limitKey="max_leads_per_month" entry={limitEntry} />}
 
       {/* Product filter banner */}
       {filters.productId && (

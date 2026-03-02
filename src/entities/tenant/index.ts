@@ -32,6 +32,7 @@ export type {
   EmailLogsResponse,
   SidebarItem,
   SidebarItemReason,
+  SidebarLimitInfo,
   SidebarResponse,
 } from "./types";
 

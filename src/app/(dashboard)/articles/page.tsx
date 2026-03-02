@@ -14,6 +14,8 @@ import { TopicsSidebar } from "@/features/topics";
 import { Button, Table, Pagination, StatusBadge, ConfirmModal, BulkActionsToolbar, type Column } from "@/shared/ui";
 import { ROUTES } from "@/shared/config";
 import { formatDate } from "@/shared/lib";
+import { useLimitGuard } from "@/shared/hooks";
+import { LimitBanner } from "@/shared/ui";
 import type { Article, ArticleFilterParams } from "@/entities/article";
 
 export default function ArticlesPage() {
@@ -31,6 +33,7 @@ export default function ArticlesPage() {
   const { mutate: deleteArticle, isPending: isDeleting } = useDeleteArticle();
   const { mutate: publishArticle } = usePublishArticle();
   const { mutate: unpublishArticle } = useUnpublishArticle();
+  const { canCreate, entry: limitEntry } = useLimitGuard("max_articles");
 
   const handleFiltersChange = (newFilters: Partial<ArticleFilterParams>) => {
     setFilters((prev) => ({
@@ -199,14 +202,18 @@ export default function ArticlesPage() {
           >
             Темы
           </Button>
-          <Button
-            onClick={() => router.push(ROUTES.ARTICLE_NEW)}
-            leftIcon={<Plus className="h-4 w-4" />}
-          >
-            Создать статью
-          </Button>
+          {canCreate && (
+            <Button
+              onClick={() => router.push(ROUTES.ARTICLE_NEW)}
+              leftIcon={<Plus className="h-4 w-4" />}
+            >
+              Создать статью
+            </Button>
+          )}
         </div>
       </div>
+
+      {limitEntry && <LimitBanner limitKey="max_articles" entry={limitEntry} />}
 
       {/* Filters */}
       <ArticleFilters

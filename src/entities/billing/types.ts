@@ -38,11 +38,11 @@ export interface PlanResponse {
 
 // ─── My Plan ───
 
-export type UsageStatus = "ok" | "warning" | "exceeded";
+export type UsageStatus = "ok" | "warning" | "exceeded" | "not_available";
 
 export interface UsageEntry {
   current: number;
-  limit: number;
+  limit: number | null;
   status: UsageStatus;
 }
 

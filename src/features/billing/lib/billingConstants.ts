@@ -65,4 +65,5 @@ export const usageStatusColors: Record<UsageStatus, string> = {
   ok: "var(--color-success, #22c55e)",
   warning: "var(--color-warning, #f59e0b)",
   exceeded: "var(--color-error, #ef4444)",
+  not_available: "var(--color-text-muted, #9ca3af)",
 };

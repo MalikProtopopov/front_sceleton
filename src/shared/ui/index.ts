@@ -30,3 +30,4 @@ export * from "./AccessDeniedPage";
 export * from "./DomainNotFoundPage";
 export * from "./NoAccessPage";
 export * from "./ErrorBoundary";
+export * from "./LimitBanner";

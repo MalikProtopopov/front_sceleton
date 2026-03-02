@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Lock } from "lucide-react";
 import { cn } from "@/shared/lib";
-import type { SidebarItemReason } from "@/entities/tenant";
+import type { SidebarItemReason, SidebarLimitInfo } from "@/entities/tenant";
 
 export interface NavItemProps {
   href: string;
@@ -21,6 +21,8 @@ export interface NavItemProps {
   onLockedClick?: () => void;
   /** Код права RBAC при reason role/billing+role, для подсказки */
   requiredPermission?: string | null;
+  /** Limit usage info for inline badge */
+  limitInfo?: SidebarLimitInfo | null;
 }
 
 const REASON_TOOLTIPS: Record<string, string> = {
@@ -39,6 +41,7 @@ export function NavItem({
   reason,
   onLockedClick,
   requiredPermission,
+  limitInfo,
 }: NavItemProps) {
   const pathname = usePathname();
   const roleTooltip = reason === "role" || reason === "billing+role"
@@ -131,6 +134,23 @@ export function NavItem({
     );
   }
 
+  // ── Limit badge (only in expanded sidebar, for accessible items with a limit) ──
+  const limitBadge = (() => {
+    if (collapsed || !limitInfo || limitInfo.status === "not_available" || limitInfo.limit === null) return null;
+    const { current, limit, status } = limitInfo;
+    const badgeColors = {
+      ok: "bg-[var(--color-bg-secondary)] text-[var(--color-text-muted)]",
+      warning: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+      exceeded: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
+      not_available: "",
+    };
+    return (
+      <span className={cn("ml-auto flex-shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold tabular-nums leading-none", badgeColors[status])}>
+        {current}/{limit}
+      </span>
+    );
+  })();
+
   // ── Normal active/inactive link ──
   return (
     <Link
@@ -145,7 +165,12 @@ export function NavItem({
       title={collapsed ? label : undefined}
     >
       <Icon className={cn("h-5 w-5 flex-shrink-0", isActive && "text-white")} />
-      {!collapsed && <span className="text-sm font-medium">{label}</span>}
+      {!collapsed && (
+        <span className="flex flex-1 items-center gap-2 text-sm font-medium">
+          {label}
+          {limitBadge}
+        </span>
+      )}
     </Link>
   );
 }

@@ -18,6 +18,8 @@ import {
 import { ROUTES } from "@/shared/config";
 import { formatDate, getMediaUrl } from "@/shared/lib";
 import { usePermissions } from "@/shared/hooks/usePermissions";
+import { useLimitGuard } from "@/shared/hooks";
+import { LimitBanner } from "@/shared/ui";
 import type { Product, ProductFilterParams } from "@/entities/product";
 
 export default function ProductsPage() {
@@ -34,6 +36,7 @@ export default function ProductsPage() {
   const { data, isLoading } = useProductsList(filters);
   const { mutate: deleteProduct, isPending: isDeleting } = useDeleteProduct();
   const { data: categoriesData } = useCategoriesTree();
+  const { canCreate: canCreateProduct, entry: limitEntry } = useLimitGuard("max_products");
 
   const handleFiltersChange = (newFilters: Partial<ProductFilterParams>) => {
     setFilters((prev) => ({ ...prev, ...newFilters, page: newFilters.page || 1 }));
@@ -164,7 +167,7 @@ export default function ProductsPage() {
           <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Товары</h1>
           <p className="text-[var(--color-text-secondary)]">Управление каталогом товаров</p>
         </div>
-        {can("catalog", "create") && (
+        {can("catalog", "create") && canCreateProduct && (
           <Button
             onClick={() => router.push(ROUTES.PRODUCT_NEW)}
             leftIcon={<Plus className="h-4 w-4" />}
@@ -173,6 +176,8 @@ export default function ProductsPage() {
           </Button>
         )}
       </div>
+
+      {limitEntry && <LimitBanner limitKey="max_products" entry={limitEntry} />}
 
       <FilterBar onReset={handleResetFilters}>
         <Input

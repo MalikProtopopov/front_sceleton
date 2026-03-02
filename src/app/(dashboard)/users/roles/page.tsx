@@ -7,6 +7,8 @@ import { useRolesList, useDeleteRole } from "@/features/users";
 import { Button, Table, Badge, ConfirmModal, type Column } from "@/shared/ui";
 import { ROUTES } from "@/shared/config";
 import { formatDate } from "@/shared/lib";
+import { useLimitGuard } from "@/shared/hooks";
+import { LimitBanner } from "@/shared/ui";
 import { getRoleLabel } from "@/entities/user";
 import type { Role } from "@/entities/user";
 
@@ -17,6 +19,7 @@ export default function RolesPage() {
 
   const { data, isLoading } = useRolesList();
   const { mutate: deleteRole, isPending: isDeleting } = useDeleteRole();
+  const { canCreate, entry: limitEntry } = useLimitGuard("max_rbac_roles");
 
   const handleDeleteClick = (role: Role) => {
     setSelectedRole(role);
@@ -124,13 +127,17 @@ export default function RolesPage() {
             Управление ролями и правами доступа
           </p>
         </div>
-        <Button
-          onClick={() => router.push(ROUTES.ROLE_NEW)}
-          leftIcon={<Plus className="h-4 w-4" />}
-        >
-          Создать роль
-        </Button>
+        {canCreate && (
+          <Button
+            onClick={() => router.push(ROUTES.ROLE_NEW)}
+            leftIcon={<Plus className="h-4 w-4" />}
+          >
+            Создать роль
+          </Button>
+        )}
       </div>
+
+      {limitEntry && <LimitBanner limitKey="max_rbac_roles" entry={limitEntry} />}
 
       {/* Table */}
       <Table

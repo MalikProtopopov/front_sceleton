@@ -32,4 +32,5 @@ export { useAppMutation } from "./useAppMutation";
 export type { AppMutationOptions } from "./useAppMutation";
 export { createContentBlockHooks } from "./createContentBlockHooks";
 export { createLocaleHooks } from "./createLocaleHooks";
+export { RESOURCE_NAMES, FEATURE_NAMES } from "./accessConstants";
 

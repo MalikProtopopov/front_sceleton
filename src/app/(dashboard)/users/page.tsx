@@ -7,6 +7,8 @@ import { useUsersList, useDeleteUser } from "@/features/users";
 import { Button, Table, Pagination, Badge, ConfirmModal, Select, Input, FilterBar, type Column } from "@/shared/ui";
 import { ROUTES } from "@/shared/config";
 import { formatDateTime } from "@/shared/lib";
+import { useLimitGuard } from "@/shared/hooks";
+import { LimitBanner } from "@/shared/ui";
 import { getRoleLabel } from "@/entities/user";
 import type { User, UserFilterParams } from "@/entities/user";
 
@@ -21,6 +23,7 @@ export default function UsersPage() {
 
   const { data, isLoading } = useUsersList(filters);
   const { mutate: deleteUser, isPending: isDeleting } = useDeleteUser();
+  const { canCreate, entry: limitEntry } = useLimitGuard("max_users");
 
   const handleFiltersChange = (newFilters: Partial<UserFilterParams>) => {
     setFilters((prev) => ({
@@ -157,13 +160,17 @@ export default function UsersPage() {
             Управление пользователями системы
           </p>
         </div>
-        <Button
-          onClick={() => router.push(ROUTES.USER_NEW)}
-          leftIcon={<Plus className="h-4 w-4" />}
-        >
-          Добавить пользователя
-        </Button>
+        {canCreate && (
+          <Button
+            onClick={() => router.push(ROUTES.USER_NEW)}
+            leftIcon={<Plus className="h-4 w-4" />}
+          >
+            Добавить пользователя
+          </Button>
+        )}
       </div>
+
+      {limitEntry && <LimitBanner limitKey="max_users" entry={limitEntry} />}
 
       {/* Filters */}
       <FilterBar onReset={handleResetFilters}>

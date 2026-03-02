@@ -16,7 +16,7 @@ export function UsageProgressBar({ limitKey, entry, className }: UsageProgressBa
 
   const { current, limit, status } = entry;
 
-  if (limit === 0) {
+  if (status === "not_available" || limit === 0) {
     return (
       <div className={cn("space-y-1.5", className)}>
         <div className="flex items-center justify-between text-sm">
@@ -28,7 +28,7 @@ export function UsageProgressBar({ limitKey, entry, className }: UsageProgressBa
     );
   }
 
-  const isUnlimited = limit === -1;
+  const isUnlimited = limit === null || limit === -1;
   const percent = isUnlimited ? 0 : Math.min((current / limit) * 100, 100);
   const color = usageStatusColors[status];
   const currentFormatted = formatLimit(current, meta.unit);

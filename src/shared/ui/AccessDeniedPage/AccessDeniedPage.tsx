@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/shared/ui/Button";
 import { ROUTES } from "@/shared/config";
+import { FEATURE_NAMES, RESOURCE_NAMES } from "@/shared/lib/accessConstants";
 import {
   useErrorStore,
   type PageError,
@@ -20,32 +21,6 @@ import {
   type PermissionDeniedPayload,
   type GenericForbiddenPayload,
 } from "@/shared/model/useErrorStore";
-
-const FEATURE_NAMES: Record<string, string> = {
-  blog_module: "Блог / Статьи",
-  cases_module: "Кейсы / Портфолио",
-  reviews_module: "Отзывы",
-  faq_module: "Вопросы и ответы",
-  team_module: "Команда / Сотрудники",
-  services_module: "Услуги",
-  catalog_module: "Каталог товаров",
-  variants_module: "Вариации товаров",
-  seo_advanced: "Расширенное SEO",
-  multilang: "Мультиязычность",
-  analytics_advanced: "Расширенная аналитика",
-  documents: "Документы",
-};
-
-const RESOURCE_NAMES: Record<string, string> = {
-  max_users: "пользователей",
-  max_storage_mb: "хранилища (МБ)",
-  max_leads_per_month: "заявок в месяц",
-  max_products: "товаров",
-  max_variants: "вариаций",
-  max_domains: "доменов",
-  max_articles: "статей",
-  max_rbac_roles: "ролей",
-};
 
 // ─── Feature Disabled ────────────────────────────────────────────────
 

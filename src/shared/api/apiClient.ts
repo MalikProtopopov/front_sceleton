@@ -10,6 +10,7 @@ import { API_TIMEOUT } from "../config/constants";
 import type { ApiError } from "@/shared/types";
 import { useErrorStore } from "@/shared/model/useErrorStore";
 import { useTenantStore } from "@/shared/model/useTenantStore";
+import { RESOURCE_NAMES, FEATURE_NAMES } from "@/shared/lib/accessConstants";
 
 /**
  * Extract error_code from RFC 7807 `type` URL.
@@ -29,32 +30,6 @@ function getErrorCode(data: Record<string, unknown> | undefined): string | null 
 function isReadRequest(method?: string): boolean {
   return !method || method.toLowerCase() === "get";
 }
-
-const RESOURCE_NAMES: Record<string, string> = {
-  max_users: "пользователей",
-  max_storage_mb: "хранилища (МБ)",
-  max_leads_per_month: "заявок в месяц",
-  max_products: "товаров",
-  max_variants: "вариаций",
-  max_domains: "доменов",
-  max_articles: "статей",
-  max_rbac_roles: "ролей",
-};
-
-const FEATURE_NAMES: Record<string, string> = {
-  blog_module: "Блог / Статьи",
-  cases_module: "Кейсы / Портфолио",
-  reviews_module: "Отзывы",
-  faq_module: "Вопросы и ответы",
-  team_module: "Команда / Сотрудники",
-  services_module: "Услуги",
-  catalog_module: "Каталог товаров",
-  variants_module: "Вариации товаров",
-  seo_advanced: "Расширенное SEO",
-  multilang: "Мультиязычность",
-  analytics_advanced: "Расширенная аналитика",
-  documents: "Документы",
-};
 
 // Token storage functions - imported from auth feature
 let getAccessToken: () => string | null = () => null;
